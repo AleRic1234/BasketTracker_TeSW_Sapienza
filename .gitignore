@@ -3,6 +3,35 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# =========================
+# Sistema Operativo
+# =========================
+# Ignora i file di sistema creati da Mac e Windows
+.DS_Store
+Thumbs.db
+
+# =========================
+# Editor di Testo / IDE
+# =========================
+# Ignora le impostazioni locali del tuo editor (es. VS Code, WebStorm, PyCharm)
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# =========================
+# Web e JavaScript
+# =========================
+# Se deciderai di usare npm per scaricare librerie JS, questa cartella è vitale da ignorare
+node_modules/
+# Ignora cartelle generate da eventuali tool di build (come Webpack o Vite)
+dist/
+build/
+.npm/
+
 # C extensions
 *.so
 
@@ -140,6 +169,7 @@ celerybeat.pid
 .venv
 env/
 venv/
+.venv/
 ENV/
 env.bak/
 venv.bak/
@@ -205,3 +235,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+#Security
+.env
+*.env
+*.pem
