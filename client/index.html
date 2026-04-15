@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BasketTracker - SPA Integrata</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app" v-cloak>
+        <header>
+            <h1>BasketTracker</h1>
+            <nav v-if="currentView !== 'login' && currentView !== 'setup'">
+                <button @click="currentView = 'court'">Campo</button>
+                <button @click="currentView = 'boxscore'">Tabellino</button>
+                <button @click="logout" class="btn-logout">Esci</button>
+            </nav>
+        </header>
+
+        <main>
+            <section v-if="currentView === 'login'" class="view-container">
+                <div class="login-card">
+                    <h2>Area Coach</h2>
+                    <input type="password" v-model="password" placeholder="Password (coach123)" @keyup.enter="effettuaLogin">
+                    <button class="btn-primary" @click="effettuaLogin">ACCEDI</button>
+                    <p v-if="erroreLogin" class="error">Password errata!</p>
+                </div>
+            </section>
+
+            <section v-if="currentView === 'setup'" class="view-container">
+                <h2>Configurazione Squadra</h2>
+                <div class="setup-card">
+                    <div v-for="(p, i) in teamA.giocatori" :key="'setup-'+i" class="input-row">
+                        <input v-model="p.numero" placeholder="N°" class="in-num">
+                        <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
+                    </div>
+                </div>
+                <button class="btn-primary" @click="iniziaPartita">INIZIA PARTITA</button>
+            </section>
+
+            <section v-if="currentView === 'court'" class="view-container">
+                <div class="court-header">
+                    <div class="score">Punti: {{ punteggioTotale }}</div>
+                    <div class="timer-box">{{ formatTime(timer) }}</div>
+                    <button @click="toggleTimer">{{ timerRunning ? 'PAUSA' : 'AVVIA' }}</button>
+                </div>
+
+                <div class="basketball-court">
+                    <template v-for="p in teamA.giocatori" :key="p.id">
+                        <div v-if="p.nome.trim() !== ''" 
+                             :class="['player', p.posClass]" 
+                             @click="selezionaGiocatore(p)">
+                            {{ p.numero }}
+                        </div>
+                    </template>
+
+                    <div v-if="giocatoreAttivo" class="stat-popup">
+                        <h4>{{ giocatoreAttivo.nome }}</h4>
+                        <div class="actions">
+                            <button @click="aggiungiStat('punti', 1)">+1</button>
+                            <button @click="aggiungiStat('punti', 2)">+2</button>
+                            <button @click="aggiungiStat('punti', 3)">+3</button>
+                        </div>
+                        <button @click="giocatoreAttivo = null" class="btn-close">Chiudi</button>
+                    </div>
+                </div>
+            </section>
+
+            <section v-if="currentView === 'boxscore'" class="view-container">
+                <h2>Statistiche</h2>
+                <table class="box-table">
+                    <thead>
+                        <tr><th>#</th><th>Nome</th><th>Punti</th></tr>
+                    </thead>
+                    <tbody>
+                        <template v-for="p in teamA.giocatori" :key="'row-'+p.id">
+                            <tr v-if="p.nome.trim() !== ''">
+                                <td>{{ p.numero }}</td>
+                                <td>{{ p.nome }}</td>
+                                <td>{{ p.punti }}</td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+/* --- 1. VARIABILI E RESET --- */
+:root {
+    --primary-color: #3498db;      /* Blu per i pulsanti e Team Casa */
+    --secondary-color: #e67e22;    /* Arancione Basket */
+    --success-color: #27ae60;      /* Verde per "Inizia" o "+1" */
+    --danger-color: #e74c3c;       /* Rosso per "Esci" o "Chiudi" */
+    --court-floor: #f3e5ab;        /* Colore parquet chiaro */
+    --line-color: #ffffff;         /* Linee del campo bianche */
+    --dark-bg: #2c3e50;
+    --text-light: #ecf0f1;
+}
+
+[v-cloak] { display: none; } /* Evita che Vue mostri le graffe all'avvio */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* --- 2. HEADER E NAVIGAZIONE --- */
+header {
+    background-color: var(--dark-bg);
+    color: var(--text-light);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+nav button {
+    background: transparent;
+    border: 1px solid var(--text-light);
+    color: var(--text-light);
+    padding: 5px 15px;
+    margin-left: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+nav button:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-logout {
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+/* --- 3. CONTENITORI VISTE (SPA) --- */
+.view-container {
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 4. LOGIN E SETUP --- */
+.login-card, .setup-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    display: inline-block;
+    min-width: 350px;
+    margin-top: 50px;
+}
+
+.input-row {
+    margin-bottom: 10px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.in-num { width: 50px; text-align: center; }
+.in-name { width: 200px; }
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 15px;
+}
+
+/* --- 5. IL CAMPO DA BASKET (COSTRUZIONE GRAFICA) --- */
+.court-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.score { font-size: 1.5rem; font-weight: bold; }
+.timer-box {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 2rem;
+    background: #222;
+    color: #ff4500;
+    padding: 5px 20px;
+    border-radius: 5px;
+}
+
+.basketball-court {
+    position: relative;
+    width: 800px; /* Dimensione ottimale per tablet */
+    height: 450px;
+    background-color: var(--court-floor);
+    border: 4px solid #333;
+    margin: 0 auto;
+    overflow: hidden;
+    /* Disegno delle linee del campo via CSS background */
+    background-image: 
+        linear-gradient(to right, var(--line-color) 2px, transparent 2px), /* Linea metà campo */
+        radial-gradient(circle at 50% 50%, transparent 60px, var(--line-color) 60px, var(--line-color) 62px, transparent 62px); /* Cerchio centrale */
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Area dei tre punti (Arco) - Semplificata */
+.basketball-court::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -150px; /* Posizionato a sinistra */
+    transform: translateY(-50%);
+    width: 400px;
+    height: 400px;
+    border: 2px solid var(--line-color);
+    border-radius: 50%;
+}
+
+/* Canestro e Tabellone */
+.hoop {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e67e22;
+    border-radius: 50%;
+}
+
+/* --- 6. GIOCATORI E POSIZIONAMENTO --- */
+.player {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    z-index: 10;
+    transition: transform 0.2s;
+}
+
+.player:hover { transform: scale(1.1); }
+
+/* Coordinate XY per i 5 giocatori (Team Casa) */
+.p1a { top: 20%; left: 15%; }
+.p2a { top: 70%; left: 15%; }
+.p3a { top: 45%; left: 35%; }
+.p4a { top: 15%; left: 55%; }
+.p5a { top: 75%; left: 55%; }
+
+/* --- 7. POPUP STATISTICHE (Ispirato al tuo bozzetto) --- */
+.stat-popup {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border: 3px solid var(--dark-bg);
+    padding: 20px;
+    border-radius: 12px;
+    z-index: 100;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.5);
+    min-width: 250px;
+}
+
+.stat-popup h4 { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+
+.actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.actions button {
+    padding: 10px;
+    border: none;
+    background: #eee;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.actions button:hover { background: var(--primary-color); color: white; }
+
+.btn-close {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 8px;
+    width: 100%;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* --- 8. TABELLA STATISTICHE --- */
+.box-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.box-table th {
+    background-color: var(--dark-bg);
+    color: white;
+    padding: 12px;
+}
+
+.box-table td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+/* --- 9. RESPONSIVITÀ PER TABLET --- */
+@media (max-width: 850px) {
+    .basketball-court {
+        width: 100%;
+        height: 400px;
+    }
+    .p-num { font-size: 0.8rem; }
+}
