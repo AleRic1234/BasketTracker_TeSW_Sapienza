@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BasketTracker - SPA Integrata</title>
+    <title>BasketTracker</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
@@ -11,10 +11,15 @@
     <div id="app" v-cloak>
         <header>
             <h1>BasketTracker</h1>
-            <nav v-if="currentView !== 'login' && currentView !== 'setup'">
-                <button @click="currentView = 'court'">Campo</button>
-                <button @click="currentView = 'boxscore'">Tabellino</button>
+            <nav v-if="currentView == 'home'">
                 <button @click="logout" class="btn-logout">Esci</button>
+            </nav>
+            <nav v-if="currentView == 'court'">
+                <button @click="currentView ='boxscore'">Box Score</button>
+                <button @click="backhome" class="btn-logout">Home</button>
+            </nav>
+             <nav v-if="currentView == 'setup'">
+                <button @click="backhome" class="btn-logout">Home</button>
             </nav>
         </header>
 
@@ -22,71 +27,132 @@
             <section v-if="currentView === 'login'" class="view-container">
                 <div class="login-card">
                     <h2>Area Coach</h2>
-                    <input type="password" v-model="password" placeholder="Password (coach123)" @keyup.enter="effettuaLogin">
+                    <input type="password" v-model="password" placeholder="Password (1)" @keyup.enter="effettuaLogin">
                     <button class="btn-primary" @click="effettuaLogin">ACCEDI</button>
                     <p v-if="erroreLogin" class="error">Password errata!</p>
                 </div>
             </section>
 
-            <section v-if="currentView === 'setup'" class="view-container">
-                <h2>Configurazione Squadra</h2>
-                <div class="setup-card">
-                    <div v-for="(p, i) in teamA.giocatori" :key="'setup-'+i" class="input-row">
-                        <input v-model="p.numero" placeholder="N°" class="in-num">
-                        <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
-                    </div>
+            <section v-if="currentView === 'home'" class="view-container">
+                <div class="home-card">   
+                    <h2>Benvenuto!</h2>
+                    <p>Seleziona un'azione per continuare:</p>
+                    <button class="btn-primary" @click="currentView = 'setup'">Configurazione Squadre</button>
+                    <button class="btn-secondary" @click="currentView = 'court'">Vai al Campo</button>
                 </div>
-                <button class="btn-primary" @click="iniziaPartita">INIZIA PARTITA</button>
             </section>
 
-            <section v-if="currentView === 'court'" class="view-container">
-                <div class="court-header">
-                    <div class="score">Punti: {{ punteggioTotale }}</div>
-                    <div class="timer-box">{{ formatTime(timer) }}</div>
-                    <button @click="toggleTimer">{{ timerRunning ? 'PAUSA' : 'AVVIA' }}</button>
-                </div>
-
-                <div class="basketball-court">
-                    <template v-for="p in teamA.giocatori" :key="p.id">
-                        <div v-if="p.nome.trim() !== ''" 
-                             :class="['player', p.posClass]" 
-                             @click="selezionaGiocatore(p)">
-                            {{ p.numero }}
+            <section v-if="currentView === 'setup'" class="view-container">
+                <h2>Configurazione Squadre</h2>
+                <div class="setup-container">
+                    <div class="setup-card">
+                        <input v-model="teamA.nome" placeholder="Nome Squadra Casa" class="in-team-name">
+                        <div v-for="(p, i) in teamA.giocatori" :key="'setupA-'+i" class="input-row">
+                            <input v-model="p.numero" placeholder="N°" class="in-num">
+                            <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
                         </div>
-                    </template>
-
-                    <div v-if="giocatoreAttivo" class="stat-popup">
-                        <h4>{{ giocatoreAttivo.nome }}</h4>
-                        <div class="actions">
-                            <button @click="aggiungiStat('punti', 1)">+1</button>
-                            <button @click="aggiungiStat('punti', 2)">+2</button>
-                            <button @click="aggiungiStat('punti', 3)">+3</button>
-                        </div>
-                        <button @click="giocatoreAttivo = null" class="btn-close">Chiudi</button>
                     </div>
+                    <div class="setup-card">
+                        <input v-model="teamB.nome" placeholder="Nome Squadra Ospiti" class="in-team-name">
+                        <div v-for="(p, i) in teamB.giocatori" :key="'setupB-'+i" class="input-row">
+                            <input v-model="p.numero" placeholder="N°" class="in-num">
+                            <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-primary" style="max-width: 400px; margin-top: 30px;" @click="iniziaPartita">INIZIA PARTITA</button>
+            </section>
+
+            <section v-if="currentView === 'court'" class="view-container" style="max-width: 1100px; margin-top: 10px;">
+                <div class="court-wrapper">
+                    
+                    <div class="basketball-court">
+                        
+                        <score-board 
+                            :punti-casa="punteggioTotale" 
+                            :punti-ospiti="punteggioTotaleB"
+                            :nome-casa="teamA.nome"
+                            :nome-ospiti="teamB.nome">
+                        </score-board>
+                        
+                        <div class="half-court-line"></div>
+                        <div class="center-circle"></div>
+                        <div class="three-point-line left-arc"></div>
+                        <div class="paint-area left-paint"></div>
+                        <div class="free-throw-circle left-ft"></div>
+                        <div class="hoop-box left-hoop"></div>
+                        <div class="three-point-line right-arc"></div>
+                        <div class="paint-area right-paint"></div>
+                        <div class="free-throw-circle right-ft"></div>
+                        <div class="hoop-box right-hoop"></div>
+                        
+                        <div class="bench-tag team">BENCH (CASA)</div>
+                        <div class="bench-tag opp">BENCH (OSPITI)</div>
+
+                        <template v-for="(p, index) in teamA.giocatori" :key="p.id">
+                            <div v-if="p.nome.trim() !== ''" 
+                                 :class="['player', 'team-left', p.posClass, { 'pronto-al-cambio': panchinaroSelezionato === p }]" 
+                                 @click="gestisciClickGiocatore(p)">
+                                {{ p.numero }}
+                            </div>
+                        </template>
+
+                        <template v-for="(p, index) in teamB.giocatori" :key="p.id">
+                            <div v-if="p.nome.trim() !== ''" 
+                                 :class="['player', 'team-right', p.posClass, { 'pronto-al-cambio': panchinaroSelezionato === p }]" 
+                                 @click="gestisciClickGiocatore(p)">
+                                {{ p.numero }}
+                            </div>
+                        </template>
+
+                        <div v-if="giocatoreAttivo" class="stat-popup">
+                            <h4>{{ giocatoreAttivo.nome }} (#{{ giocatoreAttivo.numero }})</h4>
+                            <div class="actions">
+                                <button @click="aggiungiStat('punti', 1)">+1pt</button>
+                                <button @click="aggiungiStat('punti', 2)">+2pt</button>
+                                <button @click="aggiungiStat('punti', 3)">+3pt</button>
+                                <button @click="rimuoviStat('punti', 1)">-1pt</button>
+                                <button @click="aggiungiStat('rimbalzi', 1)">+1rb</button>
+                                <button @click="aggiungiStat('assist', 1)">+1ast</button>
+                                <button @click="aggiungiStat('rubate', 1)">+1stl</button>
+                                <button @click="aggiungiStat('stoppate', 1)">+1blk</button>
+                                <button @click="aggiungiStat('perse', 1)">+1tov</button>
+                                <button @click="aggiungiStat('falli', 1)">+1pf</button>
+                            </div>
+                            <button @click="giocatoreAttivo = null" class="btn-close">Chiudi</button>
+                        </div>
+                    </div> 
+
+                    <game-timer></game-timer>
                 </div>
             </section>
 
             <section v-if="currentView === 'boxscore'" class="view-container">
-                <h2>Statistiche</h2>
+                <h2>Box Score</h2>
                 <table class="box-table">
                     <thead>
-                        <tr><th>#</th><th>Nome</th><th>Punti</th></tr>
+                        <tr><th>Team</th><th>#</th><th>Name</th><th>PTS</th><th>REB</th><th>AST</th><th>BLK</th><th>STL</th><th>TOV</th><th>PF</th></tr>
                     </thead>
                     <tbody>
-                        <template v-for="p in teamA.giocatori" :key="'row-'+p.id">
-                            <tr v-if="p.nome.trim() !== ''">
-                                <td>{{ p.numero }}</td>
-                                <td>{{ p.nome }}</td>
-                                <td>{{ p.punti }}</td>
-                            </tr>
-                        </template>
+                        <tr v-for="p in [...teamA.giocatori, ...teamB.giocatori]" :key="p.id" v-show="p.nome.trim() !== ''">
+                            <td>{{ p.id.startsWith('A') ? 'Casa' : 'Ospiti' }}</td>
+                            <td><strong>{{ p.numero }}</strong></td>
+                            <td>{{ p.nome }}</td>
+                            <td>{{ p.punti }}</td>
+                            <td>{{ p.rimbalzi }}</td>
+                            <td>{{ p.assist }}</td>
+                            <td>{{ p.stoppate }}</td>
+                            <td>{{ p.rubate }}</td>
+                            <td>{{ p.perse }}</td>
+                            <td>{{ p.falli }}</td>
+                        </tr>
                     </tbody>
                 </table>
+                <button class="btn-primary" @click="currentView = 'court'">Torna al Campo</button>
             </section>
         </main>
     </div>
-    <script src="js/api.js"></script>
-    <script src="js/main.js"></script>
+    
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>
