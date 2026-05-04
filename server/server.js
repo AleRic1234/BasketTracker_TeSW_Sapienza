@@ -2,34 +2,64 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
-const fs = require('fs');
 
 const app = express();
 app.use(cors());
-app.use(express.json()); // Permette di decodificare il JSON in arrivo
+app.use(express.json()); // Fondamentale per leggere il JSON da Vue
 
-// Connessione al database SQLite (creerà il file basket.db se non esiste)
-const db = new sqlite3.Database('./db/basket.db', (err) => {
-    if (err) console.error("Errore DB:", err.message);
-    else console.log("Connesso a SQLite.");
-});
+// Connessione al DB
+const db = new sqlite3.Database('./db/basket.db');
 
-// Endpoint che il frontend chiamerà per salvare i dati della partita
+// Inizializza le tabelle leggendo test.sql (opzionale ma comodo)
+const fs = require('fs');
+const initSql = fs.readFileSync('./db/test.sql', 'utf8');
+db.exec(initSql);
+
+// Endpoint che riceve i dati da api.js
 app.post('/api/salva_partita', (req, res) => {
-    const datiPartita = req.body; 
-    console.log("JSON ricevuto dal Frontend:", datiPartita);
+    const datiVue = req.body;
+    
+    // datiVue conterrà esattamente this.teamA e this.punteggioTotale dal main.js
+    console.log("Referto ricevuto per la squadra:", datiVue.teamA.nome);
 
-    // Inserire la logica SQL per salvare i dati nelle tabelle...
-    // db.run("INSERT INTO partite...", [...], function(err) { ... });
+    // 1. Inseriamo la partita
+    db.run(`INSERT INTO partite (squadra_casa, punteggio_casa) VALUES (?, ?)`, 
+        [datiVue.teamA.nome, datiVue.punteggioTotale], 
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            const idPartita = this.lastID;
 
-    // Generazione XML
-    generaRefertoXML(datiPartita);
-
-    res.status(200).json({ message: "Partita salvata e XML generato!" });
+            // 2. Inseriamo i giocatori e i loro punti
+            datiVue.teamA.giocatori.forEach(giocatore => {
+                // Ignoriamo gli slot vuoti del frontend
+                if (giocatore.nome.trim() !== '') {
+                    
+                    // Inseriamo il giocatore (se non esiste già)
+                    db.run(`INSERT OR IGNORE INTO giocatori (nome, numero_maglia, squadra) VALUES (?, ?, ?)`,
+                        [giocatore.nome, giocatore.numero, datiVue.teamA.nome],
+                        function(err) {
+                            // Recuperiamo l'ID del giocatore per le statistiche
+                            db.get(`SELECT id FROM giocatori WHERE numero_maglia = ? AND squadra = ?`, 
+                                [giocatore.numero, datiVue.teamA.nome], 
+                                (err, row) => {
+                                    if (row) {
+                                        // Salviamo i punti fatti in questa partita!
+                                        db.run(`INSERT INTO statistiche_partite (id_partita, id_giocatore, punti) VALUES (?, ?, ?)`,
+                                            [idPartita, row.id, giocatore.punti]
+                                        );
+                                    }
+                            });
+                        }
+                    );
+                }
+            });
+            
+            res.status(200).json({ message: "Partita e statistiche salvate con successo nel DB!" });
+    });
 });
 
 app.listen(3000, () => {
-    console.log("Server BasketTracker in esecuzione sulla porta 3000");
+    console.log("Server Backend in ascolto sulla porta 3000");
 });
 
 function generaRefertoXML(dati) {
