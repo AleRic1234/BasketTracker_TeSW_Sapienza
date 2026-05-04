@@ -3,7 +3,6 @@
 -- Tabella per i giocatori
 CREATE TABLE IF NOT EXISTS giocatori (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
     cognome TEXT NOT NULL,
     numero_maglia INTEGER NOT NULL,
     squadra TEXT NOT NULL,
@@ -35,8 +34,8 @@ CREATE TABLE IF NOT EXISTS statistiche_partite (
 );
 
 -- Dati di esempio per i giocatori
-INSERT INTO giocatori (nome, cognome, numero_maglia, squadra) VALUES 
-('Mario', 'Rossi', 10, 'Sapienza Bulls'),
-('Luigi', 'Verdi', 23, 'Sapienza Bulls'),
-('Carlo', 'Bianchi', 5, 'Roma Stars');
+INSERT INTO giocatori (cognome, numero_maglia, squadra) VALUES 
+('Rossi', 10, 'Sapienza Bulls'),
+('Verdi', 23, 'Sapienza Bulls'),
+('Bianchi', 5, 'Roma Stars');
 
