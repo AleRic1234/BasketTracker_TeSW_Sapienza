@@ -3,6 +3,13 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 
+const http = require('http'); 
+const { Server } = require("socket.io");
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {origin: "*"}  // Permette connessioni da qualsiasi origine 
+});
 const app = express();
 app.use(cors());
 app.use(express.json()); // Fondamentale per leggere il JSON da Vue
@@ -121,8 +128,30 @@ app.get('/api/classifica', (req, res) => {
     });
 });
 
-app.listen(3000, () => {
-    console.log("Server Backend in ascolto sulla porta 3000");
+// 3. Logica WebSocket per la diretta live
+io.on('connection', (socket) => {
+    console.log('Un utente si è connesso (Admin o Visualizzatore)');
+
+    // Quando un utente entra in una partita, lo mettiamo in una "Stanza" (Room)
+    socket.on('entra_partita', (idPartita) => {
+        socket.join(idPartita);
+        console.log(`Utente entrato nella stanza della partita: ${idPartita}`);
+    });
+
+    // Quando l'Admin aggiorna il punteggio, inoltriamo i dati ai visualizzatori in quella stanza
+    socket.on('aggiornamento_admin', (dati) => {
+        // Usa socket.to(stanza).emit() per inviare a tutti TRANNE a chi ha generato l'evento
+        socket.to(dati.idPartita).emit('dati_live', dati.payload);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Utente disconnesso');
+    });
+});
+
+// 4. ATTENZIONE: Usa server.listen invece di app.listen!
+server.listen(3000, () => {
+    console.log("Server Backend e WebSocket in ascolto sulla porta 3000");
 });
 
 function generaRefertoXML(dati) {
