@@ -12,40 +12,47 @@
 }
 
 [v-cloak] { display: none; }
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e0e0e0; color: #333; line-height: 1.6; }
 
 /* --- 2. HEADER E STRUTTURA APP --- */
 header { background-color: var(--dark-bg); color: var(--text-light); padding: 1rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
 nav button { background: transparent; border: 1px solid var(--text-light); color: var(--text-light); padding: 5px 15px; margin-left: 10px; border-radius: 4px; cursor: pointer; transition: 0.3s; }
 nav button:hover { background: var(--primary-color); border-color: var(--primary-color); }
-.btn-logout { border-color: var(--danger-color); color: var(--danger-color); }
 
-.view-container { padding: 20px; max-width: 900px; margin: 0 auto; animation: fadeIn 0.5s ease; display: flex; flex-direction: column; align-items: center; }
+.btn-logout { border-color: var(--danger-color); color: var(--danger-color); }
+.btn-success { border-color: var(--success-color); color: var(--success-color); }
+.btn-success:hover { background-color: var(--success-color) !important; color: white !important; }
+
+.view-container { padding: 20px; max-width: 1000px; margin: 0 auto; animation: fadeIn 0.5s ease; display: flex; flex-direction: column; align-items: center; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- 3. VISTE: LOGIN E HOME A 3 CARTE --- */
+.login-card, .setup-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: inline-block; min-width: 350px; margin-top: 50px; text-align: center; }
+.error { color: var(--danger-color); font-weight: bold; margin-top: 15px; }
+
+/* Home con 3 opzioni */
+.home-actions-wrapper { display: flex; justify-content: center; align-items: stretch; gap: 20px; margin: 30px 0; width: 100%; flex-wrap: wrap; }
+.action-card { background-color: white; border: 1px solid #dee2e6; border-radius: 12px; padding: 25px; width: 300px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: space-between; }
+.action-card h3 { margin-top: 0; color: #333; margin-bottom: 10px; }
+.action-card p { color: #666; font-size: 0.9em; margin-bottom: 20px; }
 
 /* Setup Squadre */
 .setup-container { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
-.login-card, .setup-card, .home-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: inline-block; min-width: 350px; margin-top: 50px; text-align: center; }
 .input-row { margin-bottom: 10px; display: flex; gap: 10px; justify-content: center; }
 input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
 .in-num { width: 50px; text-align: center; }
 .in-name { width: 200px; }
 .in-team-name { width: 100%; font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 15px; padding: 8px; border: 1px dashed #ddd; border-radius: 6px; background-color: transparent; transition: all 0.3s ease; }
 
-.btn-primary, .btn-secondary { background-color: var(--primary-color); color: white; border: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; }
+.btn-primary, .btn-secondary, .action-card .btn-success { background-color: var(--primary-color); color: white; border: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
 .btn-secondary { background-color: var(--dark-bg); }
+.action-card .btn-success { background-color: var(--success-color); }
+.btn-primary:hover { background-color: #2980b9; }
+.btn-secondary:hover { background-color: #1a252f; }
 
-/* --- 3. IL CAMPO DA BASKET --- */
-.court-wrapper { 
-    position: relative; 
-    margin-top: 130px; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-}
+/* --- 4. IL CAMPO DA BASKET --- */
+.court-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; }
 .basketball-court { position: relative; width: 578px; height: 325px; background-color: rgb(230, 156, 19); border: var(--border-width) solid var(--line-color); box-sizing: border-box; margin-bottom: 5px; }
 
 /* Linee del Campo */
@@ -72,66 +79,130 @@ input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
 .player { position: absolute; width: 51px; height: 51px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 10; display: flex; align-items: center; justify-content: center; font-weight: bold; color: rgb(0, 0, 0); cursor: pointer; transition: all 0.4s ease-in-out; }
 .pronto-al-cambio { border: 3px solid #f1c40f !important; transform: scale(1.15) !important; box-shadow: 0 0 15px rgba(241, 196, 15, 0.9); z-index: 20; }
 .player:hover { transform: scale(1.1); }
-.team-left { border-color: white; background-color:var(--primary-color); }
-.team-right { border-color: white;background-color:var(--danger-color); }
+.team-left { border-color: white; background-color:var(--primary-color); color: white;}
+.team-right { border-color: white; background-color:var(--danger-color); color: white;}
 
 /* Posizioni Giocatori */
 .p1a { top: 18%; left: 5%; }  .p2a { top: 64%; left: 5%; } .p3a { top: 41%; left: 18%; } .p4a { top: 18%; left: 31%; } .p5a { top: 64%; left: 31%; } 
 .p6a { top: 10%; left: -22%; } .p7a { top: 27%; left: -22%; } .p8a { top: 44%; left: -22%; } .p9a { top: 61%; left: -22%; } .p10a { top: 78%; left: -22%; }
-
 .p1b { top: 18%; right: 5%; } .p2b { top: 64%; right: 5%; } .p3b { top: 41%; right: 18%; } .p4b { top: 18%; right: 31%; } .p5b { top: 64%; right: 31%; }
 .p6b { top: 3%; right: -22%; } .p7b { top: 23%; right: -22%; } .p8b { top: 43%; right: -22%; } .p9b { top: 63%; right:-22%; } .p10b { top: 83%; right: -22%; }
 
-/* Stili specifici per i componenti */
-.timer-component { 
-    width: 100%;
-    display: flex; 
-    justify-content: center; /* Centra i bottoni */
-    margin-top: 20px;        /* Spazio tra il campo e i bottoni */
-}
-.scoreboard-timer { 
-    position: absolute;
-    top: -125px; /* Lo posiziona sopra ai nomi delle squadre */
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #222; 
-    color: var(--timer-color); 
-    padding: 5px 20px; 
-    border-radius: 8px; 
-    font-family: 'Courier New', monospace; 
-    font-size: 40px; 
-    font-weight: bold; 
-    border: 2px solid #444; 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
-.controls { 
-    display: flex; 
-    gap: 15px; 
-}
-.controls button { 
-    padding: 10px 25px; 
-    font-size: 14px; 
-    font-weight: bold; 
-    cursor: pointer; 
-    border: none; 
-    border-radius: 35px; 
-    background-color: #333; 
-    color: white; 
-    transition: all 0.3s; 
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-}
-.controls button:hover { 
-    background-color: var(--primary-color); 
-    transform: scale(1.05); 
-}
-/* Popup Statistiche e Tabella */
+/* --- 5. COMPONENTI E TABELLE --- */
+.timer-component { width: 100%; display: flex; justify-content: center; margin-top: 20px; }
+.scoreboard-timer { position: absolute; top: -125px; left: 50%; transform: translateX(-50%); background-color: #222; color: var(--timer-color); padding: 5px 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 40px; font-weight: bold; border: 2px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+.controls { display: flex; gap: 15px; }
+.controls button { padding: 10px 25px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; border-radius: 35px; background-color: #333; color: white; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+.controls button:hover { background-color: var(--primary-color); transform: scale(1.05); }
+
 .stat-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 3px solid var(--dark-bg); padding: 20px; border-radius: 12px; z-index: 100; box-shadow: 0 15px 50px rgba(0,0,0,0.5); min-width: 450px; text-align: center; }
 .stat-popup h4 { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
 .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-.actions button { padding: 10px; border: none; background: #eee; border-radius: 4px; cursor: pointer; font-weight: bold; color: black; }
+.actions button { padding: 10px; border: none; background: #eee; border-radius: 4px; cursor: pointer; font-weight: bold; color: black; transition: 0.2s; }
 .actions button:hover { background: var(--primary-color); color: white; }
 .btn-close { background: var(--danger-color); color: white; border: none; padding: 8px; width: 100%; border-radius: 4px; cursor: pointer; }
 
+/* Tabella Storico e Box Score */
 .box-table { width: 100%; border-spacing: 0; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-top: 20px; }
 .box-table th { background-color: var(--dark-bg); color: white; padding: 12px; }
-.box-table td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
+.box-table td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle; }
+/* --- 6. POPUP E MODALI --- */
+
+/* Sfondo scuro a tutto schermo che blocca i click dietro */
+.popup-overlay {
+    position: fixed; /* Lo stacca dalla pagina */
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75); /* Colore scuro semitrasparente */
+    backdrop-filter: blur(4px); /* Effetto sfocato elegante */
+    display: flex;
+    align-items: center; /* Centra in verticale */
+    justify-content: center; /* Centra in orizzontale */
+    z-index: 9999; /* Assicura che stia sopra a TUTTO il resto */
+    animation: fadeIn 0.3s ease;
+}
+
+/* Il riquadro bianco centrale */
+.popup-content {
+    background: white;
+    padding: 30px 40px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    max-width: 450px;
+    width: 90%;
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+}
+
+/* Stili per le scritte dentro al popup */
+.popup-icon {
+    font-size: 50px;
+    margin-bottom: 10px;
+}
+
+.popup-title {
+    margin: 0 0 10px 0;
+    font-weight: 900;
+}
+
+.popup-subtitle {
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.popup-text {
+    color: #666;
+    margin-bottom: 25px;
+}
+
+/* Bottoni dentro al popup */
+.popup-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.popup-actions button {
+    margin: 0; /* Rimuove margini extra */
+    padding: 12px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+}
+
+/* Animazioni di entrata fluide */
+@keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.team-selection {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.mini-logo {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.select-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+select {
+    padding: 10px;
+    font-size: 1.1rem;
+    border-radius: 5px;
+}

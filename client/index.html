@@ -15,62 +15,140 @@
                 <button @click="logout" class="btn-logout">Esci</button>
             </nav>
             <nav v-if="currentView == 'court'">
+                <button v-if="ruolo === 'admin'" @click="terminaESalva" class="btn-success">Salva Partita</button>
                 <button @click="currentView ='boxscore'">Box Score</button>
                 <button @click="backhome" class="btn-logout">Home</button>
             </nav>
-             <nav v-if="currentView == 'setup'">
+             <nav v-if="currentView == 'setup' || currentView == 'history'">
                 <button @click="backhome" class="btn-logout">Home</button>
             </nav>
         </header>
 
         <main>
+            <!-- VISTA LOGIN -->
             <section v-if="currentView === 'login'" class="view-container">
                 <div class="login-card">
-                    <h2>Area Coach</h2>
-                    <input type="password" v-model="password" placeholder="Password (1)" @keyup.enter="effettuaLogin">
+                    <h2>Accesso Tabellone</h2>
+                    <input type="password" v-model="password" placeholder="Password (es. 1)" @keyup.enter="effettuaLogin">
                     <button class="btn-primary" @click="effettuaLogin">ACCEDI</button>
                     <p v-if="erroreLogin" class="error">Password errata!</p>
                 </div>
             </section>
 
+            <!-- VISTA HOME (3 Opzioni) -->
             <section v-if="currentView === 'home'" class="view-container">
-                <div class="home-card">   
-                    <h2>Benvenuto!</h2>
-                    <p>Seleziona un'azione per continuare:</p>
-                    <button class="btn-primary" @click="currentView = 'setup'">Configurazione Squadre</button>
-                    <button class="btn-secondary" @click="currentView = 'court'">Vai al Campo</button>
+                <h2>Benvenuto! Scegli un'azione:</h2>
+                
+                <div class="home-actions-wrapper">
+                    <!-- OPZIONE 1: CREA PARTITA -->
+                    <div class="action-card">
+                        <h3>1. Crea Partita</h3>
+                        <p>Imposta i roster per arbitrare una nuova gara.</p>
+                        <button class="btn-primary" @click="currentView = 'setup'">Configura Squadre</button>
+                    </div>
+
+                    <!-- OPZIONE 2: STORICO -->
+                    <div class="action-card">
+                        <h3>2. Storico Partite</h3>
+                        <p>Visualizza le partite precedentemente salvate.</p>
+                        <button class="btn-success" @click="currentView = 'history'">Vedi Storico</button>
+                    </div>
+
+                    <!-- OPZIONE 3: ENTRA COME SPETTATORE -->
+                    <div class="action-card">
+                        <h3>3. Guarda Partita</h3>
+                        <p>Inserisci l'ID per seguire un match.</p>
+                        <input type="text" v-model="idRicerca" placeholder="Es: 0001" class="in-team-name" style="text-align: center; margin-bottom: 15px;">
+                        <button class="btn-secondary" @click="entraInPartitaEsistente">Entra (Viewer)</button>
+                    </div>
                 </div>
             </section>
 
+            <!-- VISTA STORICO -->
+            <section v-if="currentView === 'history'" class="view-container">
+                <h2>Storico Partite Salvate</h2>
+                <table class="box-table" v-if="storicoPartite.length > 0">
+                    <thead>
+                        <tr><th>ID</th><th>Data</th><th>Match</th><th>Risultato</th><th>Azioni</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="match in storicoPartite" :key="match.info.id_partita">
+                            <td><strong>{{ match.info.id_partita }}</strong></td>
+                            <td>{{ match.info.data_salvataggio }}</td>
+                            <td>{{ match.info.squadra_casa }} vs {{ match.info.squadra_ospite }}</td>
+                            <td><strong>{{ match.info.punti_casa }} - {{ match.info.punti_ospite }}</strong></td>
+                            <td><button @click="caricaDaStorico(match)" class="btn-primary" style="margin: 0; padding: 6px 12px; width: auto;">Apri</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p v-else style="margin-top: 30px; font-style: italic; color: #666;">Nessuna partita salvata nello storico.</p>
+            </section>
+
+            <!-- VISTA SETUP SQUADRE -->
             <section v-if="currentView === 'setup'" class="view-container">
-                <h2>Configurazione Squadre</h2>
-                <div class="setup-container">
-                    <div class="setup-card">
-                        <input v-model="teamA.nome" placeholder="Nome Squadra Casa" class="in-team-name">
-                        <div v-for="(p, i) in teamA.giocatori" :key="'setupA-'+i" class="input-row">
-                            <input v-model="p.numero" placeholder="N°" class="in-num">
-                            <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
-                        </div>
-                    </div>
-                    <div class="setup-card">
-                        <input v-model="teamB.nome" placeholder="Nome Squadra Ospiti" class="in-team-name">
-                        <div v-for="(p, i) in teamB.giocatori" :key="'setupB-'+i" class="input-row">
-                            <input v-model="p.numero" placeholder="N°" class="in-num">
-                            <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
-                        </div>
-                    </div>
-                </div>
-                <button class="btn-primary" style="max-width: 400px; margin-top: 30px;" @click="iniziaPartita">INIZIA PARTITA</button>
-            </section>
+    <h2>Configurazione Squadre</h2>
 
+    <!-- Sezione Selezione Rapida Squadre -->
+    <div class="team-selection" style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <div class="select-box">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Squadra Casa:</label>
+            <select v-model="squadraCasaSelezionata" @change="aggiornaNomiSquadre" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                <option :value="null">Manuale / Scegli...</option>
+                <option v-for="s in squadreDisponibili" :key="s.nome" :value="s">
+                    {{ s.nome }}
+                </option>
+            </select>
+            <img v-if="squadraCasaSelezionata" :src="squadraCasaSelezionata.logo" class="mini-logo" style="width: 30px; margin-left: 10px; vertical-align: middle;">
+        </div>
+
+        <div class="vs-label" style="font-weight: bold; font-size: 1.2rem; color: var(--primary-color);">VS</div>
+
+        <div class="select-box">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Squadra Ospite:</label>
+            <select v-model="squadraOspiteSelezionata" @change="aggiornaNomiSquadre" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                <option :value="null">Manuale / Scegli...</option>
+                <option v-for="s in squadreDisponibili" :key="s.nome" :value="s">
+                    {{ s.nome }}
+                </option>
+            </select>
+            <img v-if="squadraOspiteSelezionata" :src="squadraOspiteSelezionata.logo" class="mini-logo" style="width: 30px; margin-left: 10px; vertical-align: middle;">
+        </div>
+    </div>
+
+    <!-- Dettaglio Giocatori (Editable) -->
+    <div class="setup-container">
+        <div class="setup-card">
+            <input v-model="teamA.nome" placeholder="Nome Squadra Casa" class="in-team-name">
+            <div v-for="(p, i) in teamA.giocatori" :key="'setupA-'+i" class="input-row">
+                <input v-model="p.numero" placeholder="N°" class="in-num">
+                <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
+            </div>
+        </div>
+        <div class="setup-card">
+            <input v-model="teamB.nome" placeholder="Nome Squadra Ospiti" class="in-team-name">
+            <div v-for="(p, i) in teamB.giocatori" :key="'setupB-'+i" class="input-row">
+                <input v-model="p.numero" placeholder="N°" class="in-num">
+                <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-primary" style="max-width: 400px; margin-top: 30px;" @click="iniziaPartita">INIZIA PARTITA</button>
+</section>
+
+            <!-- VISTA CAMPO DA GIOCO -->
             <section v-if="currentView === 'court'" class="view-container" style="max-width: 1100px; margin-top: 10px;">
-                <div class="court-wrapper">
+                <div style="background: #333; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 578px;">
+                    <span>ID Partita: <strong style="font-size: 1.2em; color: #ffeb3b;">{{ idPartitaCorrente }}</strong></span>
+                    <span style="font-size: 0.9em; text-transform: uppercase;">Ruolo: <strong>{{ ruolo }}</strong></span>
+                </div>
+
+                <div class="court-wrapper" style="margin-top: 120px;">
                     
                     <div class="basketball-court">
-                        
                         <score-board 
-                            :punti-casa="punteggioTotale" 
-                            :punti-ospiti="punteggioTotaleB"
+                            :punti-casa="punteggioCasa" 
+                            :punti-ospiti="punteggioOspite"
                             :nome-casa="teamA.nome"
                             :nome-ospiti="teamB.nome">
                         </score-board>
@@ -105,7 +183,8 @@
                             </div>
                         </template>
 
-                        <div v-if="giocatoreAttivo" class="stat-popup">
+                        <!-- Popup Statistiche (Visibile solo all'Admin) -->
+                        <div v-if="giocatoreAttivo && ruolo === 'admin'" class="stat-popup">
                             <h4>{{ giocatoreAttivo.nome }} (#{{ giocatoreAttivo.numero }})</h4>
                             <div class="actions">
                                 <button @click="aggiungiStat('punti', 1)">+1pt</button>
@@ -123,10 +202,12 @@
                         </div>
                     </div> 
 
+                    <!-- TIMER con evento fine quarto collegato -->
                     <game-timer></game-timer>
                 </div>
             </section>
 
+            <!-- VISTA BOX SCORE -->
             <section v-if="currentView === 'boxscore'" class="view-container">
                 <h2>Box Score</h2>
                 <table class="box-table">
@@ -150,9 +231,23 @@
                 </table>
                 <button class="btn-primary" @click="currentView = 'court'">Torna al Campo</button>
             </section>
-        </main>
-    </div>
-    
+
+            <!-- POPUP AVANZATO: RITORNO ALLA HOME -->
+            <div v-if="mostraPopupHome" class="popup-overlay">
+                <div class="popup-content" style="border-top: 8px solid var(--primary-color);">
+                    <div class="popup-icon">⚠️</div>
+                    <h2 class="popup-title" style="color: var(--primary-color); font-size: 2.2rem; letter-spacing: 1px;">Attenzione</h2>
+                    <h3 class="popup-subtitle">Vuoi tornare alla Home?</h3>
+                    <p class="popup-text">Tutti i dati non salvati andranno persi.</p>
+                    
+                    <div class="popup-actions">
+                        <button class="btn-primary btn-large" @click="eseguiBackhome">🏠 Sì, esci</button>
+                        <button class="btn-secondary" @click="annullaBackhome">❌ Annulla</button>
+                    </div>
+                </div>
+            </div>
+
+   
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
