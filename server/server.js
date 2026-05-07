@@ -126,24 +126,32 @@ app.listen(3000, () => {
 });
 
 function generaRefertoXML(dati) {
+    const fs = require('fs');
     // Colleghiamo l'XML al foglio di stile XSLT
     let xmlString = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xmlString += `<?xml-stylesheet type="text/xsl" href="stile_referto.xsl"?>\n`;
     xmlString += `<referto_partita>\n`;
     xmlString += `  <data>${new Date().toLocaleDateString()}</data>\n`;
     xmlString += `  <risultato>\n`;
-    xmlString += `    <casa nome="${dati.squadraCasa}">${dati.puntiCasa}</casa>\n`;
-    xmlString += `    <ospiti nome="${dati.squadraOspite}">${dati.puntiOspiti}</ospiti>\n`;
+    
+    // CORREZIONE: Usiamo dati.info.* come arrivano dal frontend
+    xmlString += `    <casa nome="${dati.info.squadra_casa}">${dati.info.punti_casa}</casa>\n`;
+    xmlString += `    <ospiti nome="${dati.info.squadra_ospite}">${dati.info.punti_ospite}</ospiti>\n`;
     xmlString += `  </risultato>\n`;
     
     // Ciclo sui giocatori (forniti dal frontend in JSON)
     xmlString += `  <giocatori>\n`;
-    dati.statistiche.forEach(g => {
-        xmlString += `    <giocatore maglia="${g.numero}">\n`;
-        xmlString += `      <nome>${g.nome}</nome>\n`;
-        xmlString += `      <punti>${g.punti}</punti>\n`;
-        xmlString += `      <falli>${g.falli}</falli>\n`;
-        xmlString += `    </giocatore>\n`;
+    
+    // CORREZIONE: Iteriamo su dati.giocatori, non dati.statistiche
+    dati.giocatori.forEach(g => {
+        // Un piccolo controllo per evitare giocatori vuoti
+        if (g.nome && g.nome.trim() !== '') {
+            xmlString += `    <giocatore maglia="${g.numero}">\n`;
+            xmlString += `      <nome>${g.nome}</nome>\n`;
+            xmlString += `      <punti>${g.punti}</punti>\n`;
+            xmlString += `      <falli>${g.falli}</falli>\n`;
+            xmlString += `    </giocatore>\n`;
+        }
     });
     xmlString += `  </giocatori>\n`;
     xmlString += `</referto_partita>`;

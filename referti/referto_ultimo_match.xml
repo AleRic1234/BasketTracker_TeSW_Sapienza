@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="stile_referto.xsl"?>
+<referto_partita>
+  <data>07/05/2026</data>
+  <risultato>
+    <casa nome="Lakers">102</casa>
+    <ospiti nome="Celtics">98</ospiti>
+  </risultato>
+  <giocatori>
+    <giocatore maglia="23">
+      <nome>LeBron</nome>
+      <punti>30</punti>
+      <falli>2</falli>
+    </giocatore>
+    <giocatore maglia="3">
+      <nome>Davis</nome>
+      <punti>25</punti>
+      <falli>3</falli>
+    </giocatore>
+    <giocatore maglia="0">
+      <nome>Tatum</nome>
+      <punti>28</punti>
+      <falli>1</falli>
+    </giocatore>
+  </giocatori>
+</referto_partita>
