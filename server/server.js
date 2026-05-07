@@ -13,6 +13,8 @@ const io = new Server(server, {
 const app = express();
 app.use(cors());
 app.use(express.json()); // Fondamentale per leggere il JSON da Vue
+// Serve i file statici (referti XML e XSL)
+app.use('/referti', express.static('../referti'));
 
 // Connessione al DB
 const db = new sqlite3.Database('./db/basket.db');
@@ -95,7 +97,7 @@ app.post('/api/salva_partita', (req, res) => {
             });
             
             // 3. GENERAZIONE XML: Chiamiamo la funzione per la lode
-            generaRefertoXML(datiVue);
+            generaRefertoXML(datiVue, idPartita);
 
             res.status(200).json({ 
                 message: "Partita e statistiche salvate correttamente!",
@@ -154,30 +156,36 @@ server.listen(3000, () => {
     console.log("Server Backend e WebSocket in ascolto sulla porta 3000");
 });
 
-function generaRefertoXML(dati) {
-    // Colleghiamo l'XML al foglio di stile XSLT
+// Funzione per generare il referto XML
+function generaRefertoXML(dati, idPartita) {
+    // Trasformiamo l'ID in formato 0001, 0002 ecc.
+    const idFormattato = idPartita.toString().padStart(4, '0');
+    
     let xmlString = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    // Assicurati che stile_referto.xsl sia nella stessa cartella dei referti o correggi il path
     xmlString += `<?xml-stylesheet type="text/xsl" href="stile_referto.xsl"?>\n`;
-    xmlString += `<referto_partita>\n`;
-    xmlString += `  <data>${new Date().toLocaleDateString()}</data>\n`;
+    xmlString += `<referto_partita id="${idFormattato}">\n`;
+    xmlString += `  <data>${new Date().toLocaleDateString('it-IT')}</data>\n`;
     xmlString += `  <risultato>\n`;
-    xmlString += `    <casa nome="${dati.squadraCasa}">${dati.puntiCasa}</casa>\n`;
-    xmlString += `    <ospiti nome="${dati.squadraOspite}">${dati.puntiOspiti}</ospiti>\n`;
+    xmlString += `    <casa nome="${dati.info.squadra_casa}">${dati.info.punti_casa}</casa>\n`;
+    xmlString += `    <ospiti nome="${dati.info.squadra_ospite}">${dati.info.punti_ospite}</ospiti>\n`;
     xmlString += `  </risultato>\n`;
     
-    // Ciclo sui giocatori (forniti dal frontend in JSON)
     xmlString += `  <giocatori>\n`;
-    dati.statistiche.forEach(g => {
-        xmlString += `    <giocatore maglia="${g.numero}">\n`;
-        xmlString += `      <nome>${g.nome}</nome>\n`;
-        xmlString += `      <punti>${g.punti}</punti>\n`;
-        xmlString += `      <falli>${g.falli}</falli>\n`;
-        xmlString += `    </giocatore>\n`;
+    dati.giocatori.forEach(g => {
+        if (g.nome && g.nome.trim() !== '') {
+            xmlString += `    <giocatore maglia="${g.numero}" squadra="${g.id.startsWith('A') ? 'Casa' : 'Ospite'}">\n`;
+            xmlString += `      <nome>${g.nome}</nome>\n`;
+            xmlString += `      <punti>${g.punti}</punti>\n`;
+            xmlString += `      <falli>${g.falli}</falli>\n`;
+            xmlString += `    </giocatore>\n`;
+        }
     });
     xmlString += `  </giocatori>\n`;
     xmlString += `</referto_partita>`;
 
-    // Salva il file nella cartella referti
-    fs.writeFileSync('../referti/referto_ultimo_match.xml', xmlString);
-    console.log("File XML generato con successo.");
+    // IL CAMBIAMENTO CHIAVE: Nome file dinamico
+    const nomeFile = `referto_${idFormattato}.xml`;
+    fs.writeFileSync(`../referti/${nomeFile}`, xmlString);
+    console.log(`Creato con successo: ${nomeFile}`);
 }
