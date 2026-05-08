@@ -23,11 +23,13 @@ db.exec(initSql);
 const rottaSalvaPartita = require('./api/ajax/salva_partita')(db);
 const rottaClassifica = require('./api/ajax/classifica')(db);
 const rottaPartita = require('./api/ajax/partita')(db);
+const rottaListaReferti = require('./api/ajax/lista_referti')(db);
 
 // Diciamo a Express di usare queste rotte per percorsi specifici
 app.use('/api/salva_partita', rottaSalvaPartita);
 app.use('/api/classifica', rottaClassifica);
 app.use('/api/partita', rottaPartita);
+app.use('/api/lista_referti', rottaListaReferti);
 
 // --- WEBSOCKETS (LIVE SCORE) ---
 const server = http.createServer(app);
