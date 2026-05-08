@@ -2,7 +2,8 @@
 __pycache__/
 *.py[codz]
 *$py.class
-
+#DataBase
+*.db
 # =========================
 # Sistema Operativo
 # =========================
@@ -25,7 +26,7 @@ Thumbs.db
 # =========================
 # Web e JavaScript
 # =========================
-# Se deciderai di usare npm per scaricare librerie JS, questa cartella è vitale da ignorare
+# questa cartella è vitale da ignorare, contiene tutte le dipendenze installate con npm
 node_modules/
 # Ignora cartelle generate da eventuali tool di build (come Webpack o Vite)
 dist/
