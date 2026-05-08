@@ -47,6 +47,26 @@ app.get('/api/partita/:id', (req, res) => {
 // Endpoint che riceve i dati da api.js
 app.post('/api/salva_partita', (req, res) => {
     const datiVue = req.body; // Riceve il payload con { info, giocatori }
+
+    if (!datiVue || Object.keys(datiVue).length === 0) {
+        return res.status(400).json({ errore: "Nessun dato ricevuto. Il referto è vuoto." });
+    }
+
+    // 2. Controlla che esista l'oggetto 'info' e che contenga i nomi delle squadre
+    if (!datiVue.info || !datiVue.info.squadra_casa || !datiVue.info.squadra_ospite) {
+        return res.status(400).json({ errore: "Dati mancanti: specificare la squadra di casa e ospite." });
+    }
+
+    // 3. Controlla che i punteggi siano numeri (e non stringhe o vuoti)
+    if (typeof datiVue.info.punti_casa !== 'number' || typeof datiVue.info.punti_ospite !== 'number') {
+        return res.status(400).json({ errore: "I punteggi devono essere dei valori numerici validi." });
+    }
+
+    // 4. Controlla che esista l'array 'giocatori' e che non sia vuoto
+    if (!datiVue.giocatori || !Array.isArray(datiVue.giocatori) || datiVue.giocatori.length === 0) {
+        return res.status(400).json({ errore: "Referto non valido: la lista dei giocatori è assente o vuota." });
+    }
+
     const info = datiVue.info;
     
     console.log("Ricevuto referto:", info.squadra_casa, "vs", info.squadra_ospite);
