@@ -61,9 +61,23 @@ module.exports = function(db) {
                                     [giocatore.numero, giocatore.squadra], 
                                     (err, row) => {
                                         if (row) {
-                                            db.run(`INSERT INTO statistiche_partite (id_partita, id_giocatore, punti, falli) VALUES (?, ?, ?, ?)`,
-                                                [idPartita, row.id, giocatore.punti, giocatore.falli]
+                                            // INIZIO MODIFICA: Inserimento espanso per la Lode
+                                            db.run(`INSERT INTO statistiche_partite 
+                                                (id_partita, id_giocatore, punti, falli, rimbalzi, assist, rubate, stoppate, perse) 
+                                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                                [
+                                                    idPartita, 
+                                                    row.id, 
+                                                    giocatore.punti || 0, 
+                                                    giocatore.falli || 0,
+                                                    giocatore.rimbalzi || 0,
+                                                    giocatore.assist || 0,
+                                                    giocatore.rubate || 0,
+                                                    giocatore.stoppate || 0,
+                                                    giocatore.perse || 0
+                                                ]
                                             );
+                                            // FINE MODIFICA
                                         }
                                 });
                             }
