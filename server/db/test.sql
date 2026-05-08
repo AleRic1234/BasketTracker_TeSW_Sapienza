@@ -9,16 +9,16 @@ CREATE TABLE IF NOT EXISTS partite (
     punti_ospite INTEGER DEFAULT 0 
 );
 
--- 2. Tabella Giocatori
+-- Tabella Giocatori
 CREATE TABLE IF NOT EXISTS giocatori (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     numero_maglia TEXT NOT NULL,
     squadra TEXT NOT NULL,
-    UNIQUE(numero_maglia, squadra)
+    UNIQUE(numero_maglia, squadra) -- Non possono esserci due giocatori della stessa squadra con lo stesso numero di maglia
 );
 
--- 3. Tabella Statistiche Partite
+-- Tabella Statistiche Partite
 CREATE TABLE IF NOT EXISTS statistiche_partite (
     id_partita INTEGER,
     id_giocatore INTEGER,
