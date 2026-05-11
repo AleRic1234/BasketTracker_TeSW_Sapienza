@@ -1,4 +1,3 @@
-// client/js/api.js
 
 const api = {
     // 1. Funzione per salvare la partita (quella che avevi già, leggermente migliorata)
@@ -15,8 +14,7 @@ const api = {
             if (response.ok) {
                 const result = await response.json();
                 console.log("Risposta dal server:", result);
-                
-                // Mostra il messaggio all'utente come richiesto dalle specifiche
+                // Mostra il messaggio all'utente 
                 alert("Partita Archiviata! " + result.message);
                 return true;
             } else {
@@ -42,9 +40,8 @@ const api = {
             console.error("Errore di rete durante il recupero dei referti:", error);
             return [];
         }
-
-    // 2. NUOVA FUNZIONE: Recupera la classifica marcatori globale
-    // (Utile se lo Studente A vuole creare una pagina o una modale con la classifica)
+    },
+    //Recupera la classifica marcatori globale
     async ottieniClassifica() {
         try {
             const response = await fetch('http://localhost:3000/api/classifica');
@@ -62,7 +59,7 @@ const api = {
         }
     },
 
-    // 3. NUOVA FUNZIONE: Recupera il tabellino di una singola partita dato il suo ID
+    // Recupera il tabellino di una singola partita dato il suo ID
     // (Utile per una pagina "Storico Partite" o per rileggere i dati prima di stampare il referto)
     async ottieniPartita(id) {
         try {
@@ -81,3 +78,4 @@ const api = {
         }
     }
 };
+export default api;

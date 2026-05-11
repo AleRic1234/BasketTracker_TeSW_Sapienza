@@ -2,7 +2,6 @@ const express = require('express');
 const fs = require('fs');
 const router = express.Router();
 
-// Esportiamo una funzione che riceve l'oggetto 'db' dal server principale
 module.exports = function(db) {
 
     // Funzione interna per generare l'XML
@@ -12,16 +11,21 @@ module.exports = function(db) {
         let xmlString = `<?xml version="1.0" encoding="UTF-8"?>\n`;
         xmlString += `<?xml-stylesheet type="text/xsl" href="stile_referto.xsl"?>\n`;
         xmlString += `<referto_partita id="${idFormattato}">\n`;
-        xmlString += `  <data>${new Date().toLocaleDateString('it-IT')}</data>\n`;
+        xmlString += `  <data>${new Date(dati.data || Date.now()).toLocaleDateString('it-IT')}</data>\n`;
         xmlString += `  <risultato>\n`;
-        xmlString += `    <casa nome="${dati.info.squadra_casa}">${dati.info.punti_casa}</casa>\n`;
-        xmlString += `    <ospiti nome="${dati.info.squadra_ospite}">${dati.info.punti_ospite}</ospiti>\n`;
+        xmlString += `    <casa nome="${dati.squadraCasa.nome}">${dati.punteggioCasa}</casa>\n`;
+        xmlString += `    <ospiti nome="${dati.squadraOspite.nome}">${dati.punteggioOspite}</ospiti>\n`;
         xmlString += `  </risultato>\n`;
         
         xmlString += `  <giocatori>\n`;
-        dati.giocatori.forEach(g => {
+        
+        // Uniamo i giocatori di entrambe le squadre per il referto
+        const tuttiGiocatori = [...dati.squadraCasa.giocatori, ...dati.squadraOspite.giocatori];
+        
+        tuttiGiocatori.forEach(g => {
             if (g.nome && g.nome.trim() !== '') {
-                xmlString += `    <giocatore maglia="${g.numero}" squadra="${g.id.startsWith('A') ? 'Casa' : 'Ospite'}">\n`;
+                const nomeSquadra = g.id.startsWith('A') ? 'Casa' : 'Ospite';
+                xmlString += `    <giocatore maglia="${g.numero}" squadra="${nomeSquadra}">\n`;
                 xmlString += `      <nome>${g.nome}</nome>\n`;
                 xmlString += `      <punti>${g.punti}</punti>\n`;
                 xmlString += `      <falli>${g.falli}</falli>\n`;
@@ -33,35 +37,43 @@ module.exports = function(db) {
 
         const nomeFile = `referto_${idFormattato}.xml`;
         fs.writeFileSync(`../referti/${nomeFile}`, xmlString);
-        console.log(`Creato con successo: ${nomeFile}`);
+        console.log(`Creato con successo XML: ${nomeFile}`);
     }
 
-    // Rotta POST (il path è '/' perché verrà agganciata in server.js a '/api/salva_partita')
     router.post('/', (req, res) => {
         const datiVue = req.body; 
-        const info = datiVue.info;
         
-        console.log("Ricevuto referto:", info.squadra_casa, "vs", info.squadra_ospite);
+        // Leggiamo la nuova struttura inviata da main.js
+        const nomeCasa = datiVue.squadraCasa.nome;
+        const nomeOspite = datiVue.squadraOspite.nome;
+        const puntiCasa = datiVue.punteggioCasa;
+        const puntiOspite = datiVue.punteggioOspite;
+        
+        console.log("Ricevuto referto:", nomeCasa, "vs", nomeOspite);
 
         const sqlPartita = `INSERT INTO partite (squadra_casa, squadra_ospite, punti_casa, punti_ospite) VALUES (?, ?, ?, ?)`;
         
         db.run(sqlPartita, 
-            [info.squadra_casa, info.squadra_ospite, info.punti_casa, info.punti_ospite], 
+            [nomeCasa, nomeOspite, puntiCasa, puntiOspite], 
             function(err) {
                 if (err) return res.status(500).json({ error: err.message });
                 
                 const idPartita = this.lastID;
+                
+                // Creiamo un unico array con tutti i giocatori per inserirli nel DB
+                const tuttiGiocatori = [...datiVue.squadraCasa.giocatori, ...datiVue.squadraOspite.giocatori];
 
-                datiVue.giocatori.forEach(giocatore => {
+                tuttiGiocatori.forEach(giocatore => {
                     if (giocatore.nome && giocatore.nome.trim() !== '') {
+                        const nomeSquadraReale = giocatore.id.startsWith('A') ? nomeCasa : nomeOspite;
+                        
                         db.run(`INSERT OR IGNORE INTO giocatori (nome, numero_maglia, squadra) VALUES (?, ?, ?)`,
-                            [giocatore.nome, giocatore.numero, giocatore.squadra],
+                            [giocatore.nome, giocatore.numero, nomeSquadraReale],
                             function(err) {
                                 db.get(`SELECT id FROM giocatori WHERE numero_maglia = ? AND squadra = ?`, 
-                                    [giocatore.numero, giocatore.squadra], 
+                                    [giocatore.numero, nomeSquadraReale], 
                                     (err, row) => {
                                         if (row) {
-                                            // INIZIO MODIFICA: Inserimento espanso per la Lode
                                             db.run(`INSERT INTO statistiche_partite 
                                                 (id_partita, id_giocatore, punti, falli, rimbalzi, assist, rubate, stoppate, perse) 
                                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -77,7 +89,6 @@ module.exports = function(db) {
                                                     giocatore.perse || 0
                                                 ]
                                             );
-                                            // FINE MODIFICA
                                         }
                                 });
                             }
@@ -85,10 +96,11 @@ module.exports = function(db) {
                     }
                 });
                 
+                // Generiamo il file XML!
                 generaRefertoXML(datiVue, idPartita);
 
                 res.status(200).json({ 
-                    message: "Partita e statistiche salvate correttamente!",
+                    message: "Partita, statistiche e XML salvati correttamente!",
                     idPartita: idPartita 
                 });
         });

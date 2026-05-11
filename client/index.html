@@ -53,7 +53,7 @@
                     <div class="action-card">
                         <h3>2. Storico Partite</h3>
                         <p>Visualizza le partite precedentemente salvate.</p>
-                        <button class="btn-success" @click="currentView = 'history'">Vedi Storico</button>
+                        <button class="btn-success" @click="apriArchivio">Vedi Storico</button>
                     </div>
 
                     <!-- OPZIONE 3: ENTRA COME SPETTATORE -->
@@ -67,14 +67,12 @@
             </section>
 
             <!-- VISTA STORICO -->
-  
-
             <section v-if="currentView === 'history'" class="view-container">
                 <div class="header-archivio">
                     <h2>Archivio Referti Ufficiali</h2>
                     <button @click="eseguiBackhome" class="btn-back">Torna alla Home</button>
                 </div>
-                <div id>="archivio-container"</div>
+                <div id="archivio-container"></div>
                 <div class="referti-grid" style="display:flex; gap:15px; flex-wrap:wrap; margin-top: 20px;">
                     <div v-for="file in listaReferti" :key="file" class="referto-card" style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); width:200px; text-align:center;">
                         <div class="referto-icon" style="font-size:3rem; margin-bottom:10px;">📄</div>
@@ -329,7 +327,6 @@
                     </div>
                 </div>
             </div>
-            <script src="js/api.js"></script>
    
     <script type="module" src="js/main.js"></script>
 </body>

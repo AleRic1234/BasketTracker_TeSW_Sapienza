@@ -1,5 +1,6 @@
 import Timer from '../src/components/Timer.js';
 import Scoreboard from '../src/components/Scoreboard.js';
+import api from './api.js';
 
 const { createApp } = Vue;
 
@@ -10,11 +11,12 @@ const app = createApp({
             ruolo: null,
             tabellinoAttivo: 'casa',
             password: '',
+            storicoPartite: [],
             listaReferti: [],
             erroreLogin: false,
             idRicerca: '',
             idPartitaCorrente: '0000',
-            storicoPartite: [], // Array per salvare le partite
+           
             mostraPopupHome: false,
 
             squadreDisponibili: [
@@ -39,11 +41,7 @@ const app = createApp({
         punteggioOspite() { return this.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0); }
     },
     mounted() {
-        // Al caricamento, recupera lo storico dal browser
-        const salvato = localStorage.getItem('basket_storico');
-        if (salvato) {
-            this.storicoPartite = JSON.parse(salvato);
-        }
+       this.aggiornaListaReferti();
     },
     methods: {
         // Helper per generare un team vuoto
@@ -71,12 +69,7 @@ const app = createApp({
             const ospitiOk = this.teamB.giocatori.some(p => p.nome.trim() !== '');
 
             if (casaOk || ospitiOk) {
-                // Genera ID INCREMENTALE
-                let nextId = 1;
-                if (this.storicoPartite.length > 0) {
-                    const maxId = Math.max(...this.storicoPartite.map(p => parseInt(p.info.id_partita)));
-                    nextId = maxId + 1;
-                }
+               const nextId = this.listaReferti.length + 1;
                 this.idPartitaCorrente = nextId.toString().padStart(4, '0');
                 
                 this.ruolo = 'admin';
@@ -88,7 +81,7 @@ const app = createApp({
             if (this.idRicerca.trim() !== '') {
                 const idCercato = this.idRicerca.padStart(4, '0');
                 // Cerca nello storico locale
-                const match = this.storicoPartite.find(p => p.info.id_partita === idCercato);
+                const match = await api.ottieniPartita(idCercato);
                 
                 if (match) {
                     this.caricaPartita(match, 'viewer');
@@ -102,81 +95,54 @@ const app = createApp({
 
         caricaPartita(dati, ruolo) {
             this.ruolo = ruolo;
-            this.idPartitaCorrente = dati.info.id_partita;
-            this.teamA.nome = dati.info.squadra_casa;
-            this.teamB.nome = dati.info.squadra_ospite;
+            this.idPartitaCorrente = dati.info ? dati.info.id_partita : dati.id;
+            this.teamA.nome = dati.info ? dati.info.squadra_casa : dati.squadraCasa.nome;
+            this.teamB.nome = dati.info ? dati.info.squadra_ospite : dati.squadraOspite.nome;
             
             // Rimappa giocatori
-            this.teamA.giocatori = dati.giocatori.filter(g => g.id.startsWith('A'));
-            this.teamB.giocatori = dati.giocatori.filter(g => g.id.startsWith('B'));
+            this.teamA.giocatori = dati.giocatori ? dati.giocatori.filter(g => g.id.startsWith('A')) : dati.squadraCasa.giocatori;
+            this.teamB.giocatori = dati.giocatori ? dati.giocatori.filter(g => g.id.startsWith('B')) : dati.squadraOspite.giocatori;
             
             this.currentView = 'court';
         },
 
         async terminaESalva() {
-            if (confirm("Salvare i dati della partita nello storico e sul server?")) {
+            // 1. Prepariamo l'oggetto con tutti i dati della partita
+            const nuovaPartita = {
+                id: this.idPartitaCorrente,
+                data: new Date().toISOString(),
+                squadraCasa: this.teamA,
+                squadraOspite: this.teamB,
+                punteggioCasa: this.punteggioCasa,
+                punteggioOspite: this.punteggioOspite
+            };
+
+            // 2. Chiamata al server tramite l'API
+            const successo = await api.salva(nuovaPartita);
+
+            if (successo) {
+                // Se il salvataggio sul server va a buon fine, procediamo localmente
+                await this.aggiornaListaReferti();
                 
-                // 1. Prepariamo i giocatori (aggiungiamo a ognuno la proprietà 'squadra' necessaria per il DB)
-                const giocatoriCasa = this.teamA.giocatori.map(g => ({ ...g, squadra: this.teamA.nome || "Casa" }));
-                const giocatoriOspiti = this.teamB.giocatori.map(g => ({ ...g, squadra: this.teamB.nome || "Ospiti" }));
-                const tuttiIGiocatori = [...giocatoriCasa, ...giocatoriOspiti];
+                // Passiamo alla vista del Box Score finale
+                this.currentView = 'boxscore';
+            } else {
+                // Gestione errore (già gestita con alert nell'api.js, ma qui puoi aggiungere logica)
+                console.error("Salvataggio non riuscito.");
+            }
+        },
 
-                // 2. CREIAMO IL PAYLOAD LOCALE (Per il tuo storico nel browser)
-                const payloadLocale = {
-                    info: {
-                        id_partita: this.idPartitaCorrente,
-                        data_salvataggio: new Date().toLocaleString('it-IT'),
-                        squadra_casa: this.teamA.nome,
-                        squadra_ospite: this.teamB.nome,
-                        punti_casa: this.punteggioCasa,
-                        punti_ospite: this.punteggioOspite
-                    },
-                    giocatori: tuttiIGiocatori
-                };
-                
-                // 3. CREIAMO IL PAYLOAD SERVER (Strutturato esattamente come lo aspetta il tuo server.js per DB e XML)
-                const payloadServer = {
-                    info: {
-                        squadra_casa: this.teamA.nome || "Casa",
-                        squadra_ospite: this.teamB.nome || "Ospiti",
-                        punti_casa: this.punteggioCasa,
-                        punti_ospite: this.punteggioOspite
-                    },
-                    giocatori: tuttiIGiocatori,
-                    
-                    // Questi campi servono alla tua funzione generaRefertoXML nel server
-                    squadraCasa: this.teamA.nome || "Casa",
-                    squadraOspite: this.teamB.nome || "Ospiti",
-                    puntiCasa: this.punteggioCasa,
-                    puntiOspiti: this.punteggioOspite,
-                    statistiche: tuttiIGiocatori.filter(g => g.nome.trim() !== '') // Mandiamo all'XML solo i giocatori con un nome
-                };
+        async mostraStorico() {
+            this.currentView = 'history';
+            await this.aggiornaListaReferti();
+        },
 
-                // 4. SALVATAGGIO LOCALE (La tua logica intatta)
-                const index = this.storicoPartite.findIndex(p => p.info.id_partita === this.idPartitaCorrente);
-                if (index >= 0) {
-                    this.storicoPartite[index] = payloadLocale;
-                } else {
-                    this.storicoPartite.push(payloadLocale);
-                }
-                localStorage.setItem('basket_storico', JSON.stringify(this.storicoPartite));
-
-                // 5. SALVATAGGIO SUL SERVER TRAMITE AJAX (Node.js + SQLite + XML)
-                try {
-                    // Assicurati di aver messo <script src="js/api.js"></script> nel tuo index.html!
-                    console.log("Inviando dati al server...", payloadServer);
-                    const successo = await api.salva(payloadServer);
-                    
-                    if (successo) {
-                        alert("Partita salvata con successo nello storico, nel Database e in XML!");
-                        this.eseguiBackhome(); // Opzionale: torna alla home dopo il salvataggio
-                    } else {
-                        alert("Salvata in locale, ma si è verificato un errore sul Server.");
-                    }
-                } catch (error) {
-                    console.error("Errore di connessione al server:", error);
-                    alert("Salvata in locale, ma il Server non è raggiungibile. Assicurati che Node.js sia avviato sulla porta 3000.");
-                }
+        async aggiornaListaReferti() {
+            try {
+                const files = await api.getListaReferti();
+                this.listaReferti = files;
+            } catch (error) {
+                console.error("Errore nel caricamento della lista:", error);
             }
         },
 
@@ -185,12 +151,11 @@ const app = createApp({
         this.listaReferti = await api.getListaReferti();
         // Cambia la vista per mostrare l'archivio
         this.currentView = 'history';
-        
+        setTimeout(() => { 
+                if (typeof DataViz !== 'undefined') DataViz.caricaArchivio(); 
+            }, 100); 
         },
-        apriArchivio() {
-            this.currentView = 'history';
-            setTimeout(() => { DataViz.caricaArchivio(); }, 100); // 100ms per far renderizzare il div a Vue
-        },
+
         logout() {
             this.currentView = 'login'; this.password = ''; this.ruolo = null;
             this.teamA = this.getEmptyTeam("", "A", "a");
