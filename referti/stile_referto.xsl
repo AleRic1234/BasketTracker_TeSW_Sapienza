@@ -3,49 +3,6 @@
   <xsl:template match="/">
     <html>
       <head>
-        <style>
-          body { font-family: sans-serif; padding: 20px; }
-          .testata { border: 2px solid #000; padding: 10px; margin-bottom: 20px; text-align: center; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #999; padding: 8px; text-align: left; }
-          th { background-color: #eee; }
-          .punteggio { font-size: 24px; font-weight: bold; }
-        </style>
-      </head>
-      <body>
-        <div class="testata">
-          <h1>Referto Ufficiale BasketTracker</h1>
-          <p>Data Partita: <xsl:value-of select="referto_partita/data"/></p>
-          <div class="punteggio">
-            <xsl:value-of select="referto_partita/risultato/casa/@nome"/> 
-            [<xsl:value-of select="referto_partita/risultato/casa"/>] - 
-            [<xsl:value-of select="referto_partita/risultato/ospiti"/>] 
-            <xsl:value-of select="referto_partita/risultato/ospiti/@nome"/>
-          </div>
-        </div>
-
-        <h2>Tabellino Giocatori</h2>
-        <table>
-          <tr>
-            <th>Maglia</th>
-            <th>Nome</th>
-            <th>Punti</th>
-            <th>Falli</th>
-          </tr>
-          <xsl:for-each select="referto_partita/giocatori/giocatore">
-            <xsl:sort select="punti" data-type="number" order="descending"/>
-            <tr>
-              <td><xsl:value-of select="@maglia"/></td>
-              <td><xsl:value-of select="nome"/></td>
-              <td><xsl:value-of select="punti"/></td>
-              <td><xsl:value-of select="falli"/></td>
-            </tr>
-          </xsl:for-each>
-        </table>
-      </body>
-    </html>
-  </xsl:template>
-</xsl:stylesheet>
         <title>Referto Ufficiale di Gara</title>
         <style>
           /* Stile burocratico e ufficiale tipo FIP */
@@ -101,19 +58,45 @@
             <table>
               <tr>
                 <th width="10%" class="center">N. Maglia</th>
-                <th width="50%">Tesserato</th>
-                <th width="20%" class="center">Punti</th>
-                <th width="20%" class="center">Falli</th>
+                <th width="30%">Tesserato</th>
+                <th width="10%" class="center">PTS</th>
+                <th width="10%" class="center">REB</th>
+                <th width="10%" class="center">AST</th>
+                <th width="10%" class="center">STL</th>
+                <th width="10%" class="center">BLK</th>
+                <th width="10%" class="center">TOV</th>
+                <th width="10%" class="center">Falli</th>
+                <th width="10%" class="center">+/-</th> 
               </tr>
               <xsl:for-each select="referto_partita/giocatori/giocatore[@squadra='Casa']">
                 <tr>
                   <td class="center"><strong><xsl:value-of select="@maglia"/></strong></td>
                   <td><xsl:value-of select="nome"/></td>
                   <td class="center"><strong><xsl:value-of select="punti"/></strong></td>
+                  <td class="center"><xsl:value-of select="rimbalzi"/></td>
+                  <td class="center"><xsl:value-of select="assist"/></td>
+                  <td class="center"><xsl:value-of select="rubate"/></td>
+                  <td class="center"><xsl:value-of select="stoppate"/></td>
+                  <td class="center"><xsl:value-of select="perse"/></td>
                   <td class="center">
                     <xsl:value-of select="falli"/>
                     <xsl:if test="falli >= 5"> <span class="alert">(USCITO)</span></xsl:if>
                   </td>
+                  
+                  <td class="center">
+                    <xsl:choose>
+                      <xsl:when test="plsm &gt; 0">
+                        <strong style="color: green;">+<xsl:value-of select="plsm"/></strong>
+                      </xsl:when>
+                      <xsl:when test="plsm &lt; 0">
+                        <strong style="color: red;"><xsl:value-of select="plsm"/></strong>
+                      </xsl:when>
+                      <xsl:otherwise>
+                        0
+                      </xsl:otherwise>
+                    </xsl:choose>
+                  </td>
+
                 </tr>
               </xsl:for-each>
             </table>
@@ -124,19 +107,45 @@
             <table>
               <tr>
                 <th width="10%" class="center">N. Maglia</th>
-                <th width="50%">Tesserato</th>
-                <th width="20%" class="center">Punti</th>
-                <th width="20%" class="center">Falli</th>
+                <th width="30%">Tesserato</th>
+                <th width="10%" class="center">PTS</th>
+                <th width="10%" class="center">REB</th>
+                <th width="10%" class="center">AST</th>
+                <th width="10%" class="center">STL</th>
+                <th width="10%" class="center">BLK</th>
+                <th width="10%" class="center">TOV</th>
+                <th width="10%" class="center">Falli</th>
+                <th width="10%" class="center">+/-</th> 
               </tr>
-              <xsl:for-each select="referto_partita/giocatori/giocatore[@squadra='Ospite']">
+              <xsl:for-each select="referto_partita/giocatori/giocatore[@squadra='Casa']">
                 <tr>
                   <td class="center"><strong><xsl:value-of select="@maglia"/></strong></td>
                   <td><xsl:value-of select="nome"/></td>
                   <td class="center"><strong><xsl:value-of select="punti"/></strong></td>
+                  <td class="center"><xsl:value-of select="rimbalzi"/></td>
+                  <td class="center"><xsl:value-of select="assist"/></td>
+                  <td class="center"><xsl:value-of select="rubate"/></td>
+                  <td class="center"><xsl:value-of select="stoppate"/></td>
+                  <td class="center"><xsl:value-of select="perse"/></td>
                   <td class="center">
                     <xsl:value-of select="falli"/>
                     <xsl:if test="falli >= 5"> <span class="alert">(USCITO)</span></xsl:if>
                   </td>
+                  
+                  <td class="center">
+                    <xsl:choose>
+                      <xsl:when test="plsm &gt; 0">
+                        <strong style="color: green;">+<xsl:value-of select="plsm"/></strong>
+                      </xsl:when>
+                      <xsl:when test="plsm &lt; 0">
+                        <strong style="color: red;"><xsl:value-of select="plsm"/></strong>
+                      </xsl:when>
+                      <xsl:otherwise>
+                        0
+                      </xsl:otherwise>
+                    </xsl:choose>
+                  </td>
+
                 </tr>
               </xsl:for-each>
             </table>

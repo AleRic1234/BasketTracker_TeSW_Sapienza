@@ -28,7 +28,13 @@ module.exports = function(db) {
                 xmlString += `    <giocatore maglia="${g.numero}" squadra="${nomeSquadra}">\n`;
                 xmlString += `      <nome>${g.nome}</nome>\n`;
                 xmlString += `      <punti>${g.punti}</punti>\n`;
-                xmlString += `      <falli>${g.falli}</falli>\n`;
+                xmlString += `      <rimbalzi>${g.rimbalzi || 0}</rimbalzi>\n`;
+                xmlString += `      <assist>${g.assist || 0}</assist>\n`;
+                xmlString += `      <rubate>${g.rubate || 0}</rubate>\n`;
+                xmlString += `      <stoppate>${g.stoppate || 0}</stoppate>\n`;
+                xmlString += `      <perse>${g.perse || 0}</perse>\n`;
+                xmlString += `      <falli>${g.falli || 0}</falli>\n`;
+                xmlString += `      <plsm>${g.plsm || 0}</plsm>\n`;
                 xmlString += `    </giocatore>\n`;
             }
         });

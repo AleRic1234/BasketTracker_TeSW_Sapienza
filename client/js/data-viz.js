@@ -58,6 +58,7 @@ const DataViz = {
     },
 
     // 3. PARSING DEL DOM XML (Slide 15 - Requisito da 30 e lode)
+    // 3. PARSING DEL DOM XML (Slide 15 - Requisito da 30 e lode)
     anteprimaXML: function(nomeFile) {
         fetch('http://localhost:3000/referti/' + nomeFile)
             .then(res => res.text())
@@ -65,20 +66,19 @@ const DataViz = {
                 let parser = new DOMParser();
                 let xmlDoc = parser.parseFromString(str, "text/xml");
 
-                // Estrazione dati (Allineati alla vera struttura dell'XML)
+                // Estrazione ID
                 let garaId = xmlDoc.getElementsByTagName("referto_partita")[0].getAttribute("id");
                 
-                // Estraiamo i nomi
-                let squadraCasa = xmlDoc.getElementsByTagName("squadra_casa")[0].childNodes[0].nodeValue;
-                let squadraOspite = xmlDoc.getElementsByTagName("squadra_ospite")[0].childNodes[0].nodeValue;
+                // Peschiamo i nodi corretti dell'XML: <casa> e <ospiti>
+                let nodoCasa = xmlDoc.getElementsByTagName("casa")[0];
+                let nodoOspiti = xmlDoc.getElementsByTagName("ospiti")[0];
                 
-                // Estraiamo il punteggio finale
-                let punteggioFinale = xmlDoc.getElementsByTagName("punteggio_finale")[0].childNodes[0].nodeValue;
+                // Estraiamo il nome dall'attributo e i punti dal valore testuale
+                let squadraCasa = nodoCasa.getAttribute("nome");
+                let puntiCasa = nodoCasa.childNodes[0].nodeValue;
                 
-                // Dividiamo il punteggio
-                let punti = punteggioFinale.split("-");
-                let puntiCasa = punti[0].trim();
-                let puntiOspite = punti[1].trim();
+                let squadraOspite = nodoOspiti.getAttribute("nome");
+                let puntiOspite = nodoOspiti.childNodes[0].nodeValue;
 
                 // Creazione e lancio della notifica jQuery
                 let msg = `<strong>Gara #${garaId}</strong><br>${squadraCasa} <strong>${puntiCasa}</strong> - <strong>${puntiOspite}</strong> ${squadraOspite}`;

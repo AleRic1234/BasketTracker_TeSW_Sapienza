@@ -77,10 +77,10 @@ const app = createApp({
             } else { alert("Inserisci almeno un giocatore!"); }
         },
 
-        entraInPartitaEsistente() {
+         async entraInPartitaEsistente() {
             if (this.idRicerca.trim() !== '') {
                 const idCercato = this.idRicerca.padStart(4, '0');
-                // Cerca nello storico locale
+                // Cerca la partita dal server
                 const match = await api.ottieniPartita(idCercato);
                 
                 if (match) {
