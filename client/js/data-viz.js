@@ -2,8 +2,10 @@
 
 const DataViz = {
 
+    // Variabile interna per il grafico (sostituisce la variabile globale esterna)
+    myRadarChart: null,
+
     // 1. NOTIFICHE JQUERY (Sostituisce i brutti alert di base)
-    // Mostra un "Toast" elegante in basso a destra
     mostraNotifica: function(messaggio) {
         $("<div class='toast-msg'></div>")
             .html(messaggio)
@@ -20,7 +22,7 @@ const DataViz = {
             .fadeOut(400, function() { $(this).remove(); });
     },
 
-    // 2. RECUPERO E VISUALIZZAZIONE ARCHIVIO (Chiamata alla tua API)
+    // 2. RECUPERO E VISUALIZZAZIONE ARCHIVIO (Chiamata API)
     caricaArchivio: function() {
         const container = document.getElementById('archivio-container');
         if (!container) return; // Se il div non esiste nella vista attuale, esce
@@ -56,30 +58,39 @@ const DataViz = {
     },
 
     // 3. PARSING DEL DOM XML (Slide 15 - Requisito da 30 e lode)
-    // Legge il file XML grezzo, naviga l'albero DOM e ne estrae i dati per la notifica
     anteprimaXML: function(nomeFile) {
         fetch('http://localhost:3000/referti/' + nomeFile)
             .then(res => res.text())
             .then(str => {
-                // Parsing della stringa in un oggetto DOM XML
                 let parser = new DOMParser();
                 let xmlDoc = parser.parseFromString(str, "text/xml");
 
-                // Estrazione dati tramite le funzioni del DOM XML
+                // Estrazione dati (Allineati alla vera struttura dell'XML)
                 let garaId = xmlDoc.getElementsByTagName("referto_partita")[0].getAttribute("id");
-                let squadraCasa = xmlDoc.getElementsByTagName("casa")[0].getAttribute("nome");
-                let puntiCasa = xmlDoc.getElementsByTagName("casa")[0].childNodes[0].nodeValue;
-                let squadraOspite = xmlDoc.getElementsByTagName("ospiti")[0].getAttribute("nome");
-                let puntiOspite = xmlDoc.getElementsByTagName("ospiti")[0].childNodes[0].nodeValue;
+                
+                // Estraiamo i nomi
+                let squadraCasa = xmlDoc.getElementsByTagName("squadra_casa")[0].childNodes[0].nodeValue;
+                let squadraOspite = xmlDoc.getElementsByTagName("squadra_ospite")[0].childNodes[0].nodeValue;
+                
+                // Estraiamo il punteggio finale
+                let punteggioFinale = xmlDoc.getElementsByTagName("punteggio_finale")[0].childNodes[0].nodeValue;
+                
+                // Dividiamo il punteggio
+                let punti = punteggioFinale.split("-");
+                let puntiCasa = punti[0].trim();
+                let puntiOspite = punti[1].trim();
 
-                // Creazione e lancio della notifica
+                // Creazione e lancio della notifica jQuery
                 let msg = `<strong>Gara #${garaId}</strong><br>${squadraCasa} <strong>${puntiCasa}</strong> - <strong>${puntiOspite}</strong> ${squadraOspite}`;
                 this.mostraNotifica(msg);
             })
-            .catch(err => console.error("Errore parse XML", err));
+            .catch(err => {
+                console.error("Errore parse XML", err);
+                this.mostraNotifica("Errore nella lettura dell'anteprima XML.");
+            });
     },
 
-    // 4. RICHIESTA MVP (Chiamata alla query SQL complessa che hai creato)
+    // 4. RICHIESTA MVP
     mostraMVP: function(idPartita) {
         fetch(`http://localhost:3000/api/mvp/${idPartita}`)
             .then(res => {
@@ -91,5 +102,70 @@ const DataViz = {
                 this.mostraNotifica(msg);
             })
             .catch(err => console.error(err));
+    },
+
+    // 5. RENDERING GRAFICO RADAR (Integrato nell'oggetto)
+    renderRadarChart: function(playerA, playerB) {
+        const canvas = document.getElementById('radarChart');
+        if (!canvas) return; // Controllo di sicurezza se la canvas non esiste
+
+        const ctx = canvas.getContext('2d');
+        
+        // Se il grafico esiste già, lo distruggiamo per evitare sovrapposizioni usando 'this'
+        if (this.myRadarChart) { 
+            this.myRadarChart.destroy(); 
+        }
+
+        this.myRadarChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Punti', 'Rimbalzi', 'Assist', 'Rubate', 'Stoppate'],
+                datasets: [
+                    {
+                        label: playerA.nome,
+                        data: [playerA.punti, playerA.rimbalzi, playerA.assist, playerA.rubate, playerA.stoppate],
+                        fill: true,
+                        backgroundColor: 'rgba(26, 42, 108, 0.2)', // Blu Sapienza Bulls
+                        borderColor: '#1a2a6c',
+                        pointBackgroundColor: '#1a2a6c',
+                    },
+                    {
+                        label: playerB.nome,
+                        data: [playerB.punti, playerB.rimbalzi, playerB.assist, playerB.rubate, playerB.stoppate],
+                        fill: true,
+                        backgroundColor: 'rgba(178, 31, 31, 0.2)', // Rosso Torvergata Griffins
+                        borderColor: '#b21f1f',
+                        pointBackgroundColor: '#b21f1f',
+                    }
+                ]
+            },
+            options: {
+                elements: { line: { borderWidth: 3 } },
+                scales: {
+                    r: {
+                        angleLines: { display: true },
+                        suggestedMin: 0,
+                        suggestedMax: 30
+                    }
+                }
+            }
+        });
+    },
+
+    // 6. CONFRONTO AUTOMATICO GIOCATORI
+    creaConfrontoAutomatico: function(idPartita) {
+        fetch(`http://localhost:3000/api/partita/${idPartita}`)
+            .then(res => res.json())
+            .then(data => {
+                const p1 = data.tabellino[0];
+                const p2 = data.tabellino[1];
+                
+                if (p1 && p2) {
+                    this.renderRadarChart(p1, p2); // Chiama la funzione usando 'this'
+                    this.mostraNotifica(`Grafico generato: Confronto tra ${p1.nome} e ${p2.nome}`);
+                }
+            })
+            .catch(err => console.error("Errore generazione grafico", err));
     }
-};
+
+}; // <-- CHIUSURA DEFINITIVA DELL'OGGETTO
