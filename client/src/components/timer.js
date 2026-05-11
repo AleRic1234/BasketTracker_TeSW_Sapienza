@@ -26,9 +26,15 @@ export default {
                 this.interval = setInterval(() => { 
                     if (this.timer > 0) {
                         this.timer--;
+                        this.$emit('tick');
                     } else {
+                        // IL TEMPO È FINITO!
                         clearInterval(this.interval);
                         this.timerRunning = false;
+                        this.timer = 600; // Resetta automaticamente a 10:00
+                        
+                        // Avvisa l'app principale di mostrare il popup
+                        this.$emit('time-up');
                     }
                 }, 1000); 
             }
