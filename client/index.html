@@ -6,6 +6,8 @@
     <title>BasketTracker</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
+    <script src="js/data-viz.js"></script>
 </head>
 <body>
     <div id="app" v-cloak>
@@ -65,77 +67,89 @@
             </section>
 
             <!-- VISTA STORICO -->
+  
+
             <section v-if="currentView === 'history'" class="view-container">
-                <h2>Storico Partite Salvate</h2>
-                <table class="box-table" v-if="storicoPartite.length > 0">
-                    <thead>
-                        <tr><th>ID</th><th>Data</th><th>Match</th><th>Risultato</th><th>Azioni</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="match in storicoPartite" :key="match.info.id_partita">
-                            <td><strong>{{ match.info.id_partita }}</strong></td>
-                            <td>{{ match.info.data_salvataggio }}</td>
-                            <td>{{ match.info.squadra_casa }} vs {{ match.info.squadra_ospite }}</td>
-                            <td><strong>{{ match.info.punti_casa }} - {{ match.info.punti_ospite }}</strong></td>
-                            <td><button @click="caricaDaStorico(match)" class="btn-primary" style="margin: 0; padding: 6px 12px; width: auto;">Apri</button></td>
-                        </tr>
-                    </tbody>
-                </table>
-                <p v-else style="margin-top: 30px; font-style: italic; color: #666;">Nessuna partita salvata nello storico.</p>
+                <div class="header-archivio">
+                    <h2>Archivio Referti Ufficiali</h2>
+                    <button @click="eseguiBackhome" class="btn-back">Torna alla Home</button>
+                </div>
+                <div id>="archivio-container"</div>
+                <div class="referti-grid" style="display:flex; gap:15px; flex-wrap:wrap; margin-top: 20px;">
+                    <div v-for="file in listaReferti" :key="file" class="referto-card" style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); width:200px; text-align:center;">
+                        <div class="referto-icon" style="font-size:3rem; margin-bottom:10px;">📄</div>
+                        <div class="referto-info">
+                            <span class="file-name" style="display:block; margin-bottom:15px; font-weight:bold;">{{ file }}</span>
+                        </div>
+                        <a :href="'http://localhost:3000/referti/' + file" target="_blank" class="btn-view" style="background:var(--primary-color); color:white; padding:8px 12px; text-decoration:none; border-radius:4px; display:inline-block;">
+                            APRI REFERTO
+                        </a>
+                    </div>
+                </div>
+
+                <p v-if="listaReferti.length === 0" style="margin-top: 20px;">Nessun referto salvato nella cartella.</p>
             </section>
 
-            <!-- VISTA SETUP SQUADRE -->
+            
+
             <section v-if="currentView === 'setup'" class="view-container">
-    <h2>Configurazione Squadre</h2>
+                <h2>Configurazione Squadre</h2>
 
-    <!-- Sezione Selezione Rapida Squadre -->
-    <div class="team-selection" style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-        <div class="select-box">
-            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Squadra Casa:</label>
-            <select v-model="squadraCasaSelezionata" @change="aggiornaNomiSquadre" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
-                <option :value="null">Manuale / Scegli...</option>
-                <option v-for="s in squadreDisponibili" :key="s.nome" :value="s">
-                    {{ s.nome }}
-                </option>
-            </select>
-            <img v-if="squadraCasaSelezionata" :src="squadraCasaSelezionata.logo" class="mini-logo" style="width: 30px; margin-left: 10px; vertical-align: middle;">
-        </div>
+                <div class="team-selection" style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <div class="select-box">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">Squadra Casa:</label>
+                        <select v-model="squadraCasaSelezionata" @change="aggiornaNomiSquadre" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                            <option :value="null">Manuale / Scegli...</option>
+                            <option v-for="s in squadreDisponibili" :key="s.nome" :value="s">
+                                {{ s.nome }}
+                            </option>
+                        </select>
+                        <img v-if="squadraCasaSelezionata" :src="squadraCasaSelezionata.logo" class="mini-logo" style="width: 30px; margin-left: 10px; vertical-align: middle;">
+                    </div>
 
-        <div class="vs-label" style="font-weight: bold; font-size: 1.2rem; color: var(--primary-color);">VS</div>
+                    <div class="vs-label" style="font-weight: bold; font-size: 1.2rem; color: var(--primary-color);">VS</div>
 
-        <div class="select-box">
-            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Squadra Ospite:</label>
-            <select v-model="squadraOspiteSelezionata" @change="aggiornaNomiSquadre" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
-                <option :value="null">Manuale / Scegli...</option>
-                <option v-for="s in squadreDisponibili" :key="s.nome" :value="s">
-                    {{ s.nome }}
-                </option>
-            </select>
-            <img v-if="squadraOspiteSelezionata" :src="squadraOspiteSelezionata.logo" class="mini-logo" style="width: 30px; margin-left: 10px; vertical-align: middle;">
-        </div>
-    </div>
+                    <div class="select-box">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">Squadra Ospite:</label>
+                        <select v-model="squadraOspiteSelezionata" @change="aggiornaNomiSquadre" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                            <option :value="null">Manuale / Scegli...</option>
+                            <option v-for="s in squadreDisponibili" :key="s.nome" :value="s">
+                                {{ s.nome }}
+                            </option>
+                        </select>
+                        <img v-if="squadraOspiteSelezionata" :src="squadraOspiteSelezionata.logo" class="mini-logo" style="width: 30px; margin-left: 10px; vertical-align: middle;">
+                    </div>
+                </div>
 
-    <!-- Dettaglio Giocatori (Editable) -->
-    <div class="setup-container">
-        <div class="setup-card">
-            <input v-model="teamA.nome" placeholder="Nome Squadra Casa" class="in-team-name">
-            <div v-for="(p, i) in teamA.giocatori" :key="'setupA-'+i" class="input-row">
-                <input v-model="p.numero" placeholder="N°" class="in-num">
-                <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
-            </div>
-        </div>
-        <div class="setup-card">
-            <input v-model="teamB.nome" placeholder="Nome Squadra Ospiti" class="in-team-name">
-            <div v-for="(p, i) in teamB.giocatori" :key="'setupB-'+i" class="input-row">
-                <input v-model="p.numero" placeholder="N°" class="in-num">
-                <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
-            </div>
-        </div>
-    </div>
+                <div class="setup-container">
+                    <div class="setup-card">
+                        <input v-model="teamA.nome" placeholder="Nome Squadra Casa" class="in-team-name">
+                        
+                        <div v-for="(p, i) in teamA.giocatori" 
+                             :key="'setupA-'+i" 
+                             class="input-row giocatore-box"
+                             :class="p.inCampo ? 'setup-titolare' : 'setup-panchina'">
+                             
+                            <input v-model="p.numero" placeholder="N°" class="in-num">
+                            <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
+                        </div>
+                    </div>
+                    
+                    <div class="setup-card">
+                        <input v-model="teamB.nome" placeholder="Nome Squadra Ospiti" class="in-team-name">
+                        
+                        <div v-for="(p, i) in teamB.giocatori" 
+                             :key="'setupB-'+i" 
+                             class="input-row giocatore-box"
+                             :class="p.inCampo ? 'setup-titolare' : 'setup-panchina'">
+                             
+                            <input v-model="p.numero" placeholder="N°" class="in-num">
+                            <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name">
+                        </div>
+                    </div>
 
-    <button class="btn-primary" style="max-width: 400px; margin-top: 30px;" @click="iniziaPartita">INIZIA PARTITA</button>
-</section>
-
+                <button class="btn-primary" style="max-width: 400px; margin-top: 30px;" @click="iniziaPartita">INIZIA PARTITA</button>
+            </section>
             <!-- VISTA CAMPO DA GIOCO -->
             <section v-if="currentView === 'court'" class="view-container" style="max-width: 1100px; margin-top: 10px;">
                 <div style="background: #333; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 578px;">
@@ -167,9 +181,16 @@
                         <div class="bench-tag team">BENCH (CASA)</div>
                         <div class="bench-tag opp">BENCH (OSPITI)</div>
 
-                        <template v-for="(p, index) in teamA.giocatori" :key="p.id">
+                       <template v-for="(p, index) in teamA.giocatori" :key="p.id">
                             <div v-if="p.nome.trim() !== ''" 
-                                 :class="['player', 'team-left', p.posClass, { 'pronto-al-cambio': panchinaroSelezionato === p }]" 
+                                 :class="[
+                                    'player', 
+                                    'team-left', 
+                                    p.posClass, 
+                                    p.inCampo ? 'bordo-verdea' : 'bordo-biancoa',
+                                    { 'pronto-al-cambio': panchinaroSelezionato === p },
+                                    { 'espulso': p.falli >= 5 }
+                                 ]" 
                                  @click="gestisciClickGiocatore(p)">
                                 {{ p.numero }}
                             </div>
@@ -177,7 +198,14 @@
 
                         <template v-for="(p, index) in teamB.giocatori" :key="p.id">
                             <div v-if="p.nome.trim() !== ''" 
-                                 :class="['player', 'team-right', p.posClass, { 'pronto-al-cambio': panchinaroSelezionato === p }]" 
+                                 :class="[
+                                    'player', 
+                                    'team-right', 
+                                    p.posClass, 
+                                    p.inCampo ? 'bordo-verdeb' : 'bordo-biancob',
+                                    { 'pronto-al-cambio': panchinaroSelezionato === p },
+                                    { 'espulso': p.falli >= 5 }
+                                 ]" 
                                  @click="gestisciClickGiocatore(p)">
                                 {{ p.numero }}
                             </div>
@@ -203,35 +231,90 @@
                     </div> 
 
                     <!-- TIMER con evento fine quarto collegato -->
-                    <game-timer></game-timer>
+                    <game-timer @tick="aggiornaMinutiGiocatori" @time-up="gestisciFineTempo"></game-timer>
                 </div>
             </section>
 
-            <!-- VISTA BOX SCORE -->
             <section v-if="currentView === 'boxscore'" class="view-container">
-                <h2>Box Score</h2>
-                <table class="box-table">
-                    <thead>
-                        <tr><th>Team</th><th>#</th><th>Name</th><th>PTS</th><th>REB</th><th>AST</th><th>BLK</th><th>STL</th><th>TOV</th><th>PF</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="p in [...teamA.giocatori, ...teamB.giocatori]" :key="p.id" v-show="p.nome.trim() !== ''">
-                            <td>{{ p.id.startsWith('A') ? 'Casa' : 'Ospiti' }}</td>
-                            <td><strong>{{ p.numero }}</strong></td>
-                            <td>{{ p.nome }}</td>
-                            <td>{{ p.punti }}</td>
-                            <td>{{ p.rimbalzi }}</td>
-                            <td>{{ p.assist }}</td>
-                            <td>{{ p.stoppate }}</td>
-                            <td>{{ p.rubate }}</td>
-                            <td>{{ p.perse }}</td>
-                            <td>{{ p.falli }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <button class="btn-primary" @click="currentView = 'court'">Torna al Campo</button>
-            </section>
+                
+                <div class="boxscore-header-nav">
+                    <h1 class="main-title">BOX SCORE</h1>
+                    <div class="tab-switcher">
+                        <button :class="['tab-btn', { active: tabellinoAttivo === 'casa' }]" 
+                                @click="tabellinoAttivo = 'casa'">
+                            CASA
+                        </button>
+                        <button :class="['tab-btn', { active: tabellinoAttivo === 'ospiti' }]" 
+                                @click="tabellinoAttivo = 'ospiti'">
+                            OSPITI
+                        </button>
+                    </div>
+                </div>
 
+                <div v-if="tabellinoAttivo === 'casa'" class="fade-in">
+                    <h3 style="margin-top: 10px; color: var(--primary-color); text-transform: uppercase;text-align: center;">
+                        🏠 {{ teamA.nome || 'Squadra Casa' }}
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="box-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th style="text-align: left;">Nome</th>
+                                    <th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>BLK</th><th>STL</th><th>TOV</th><th>PF</th><th>+/-</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="p in teamA.giocatori" :key="p.id" v-show="p.nome.trim() !== ''" :class="[p.inCampo ? 'in-campo-row' : '', { 'row-espulso': p.falli >= 5 }]">
+                                    <td><strong>{{ p.numero }}</strong></td>
+                                    <td style="text-align: left;">
+                                        {{ p.nome }}
+                                        <span v-if="p.falli >= 5" class="badge-falli">OUT</span>
+                                        <span v-else-if="p.inCampo" class="badge-starter">IN CAMPO</span>
+                                    </td>
+                                    <td>{{ formatMinuti(p.minuti) }}</td><td>{{ p.punti }}</td><td>{{ p.rimbalzi }}</td><td>{{ p.assist }}</td>
+                                    <td>{{ p.stoppate }}</td><td>{{ p.rubate }}</td><td>{{ p.perse }}</td><td>{{ p.falli }}</td>
+                                    <td :class="p.plsm >= 0 ? 'plus-stat' : 'minus-stat'">{{ p.plsm > 0 ? '+' : '' }}{{ p.plsm }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div v-if="tabellinoAttivo === 'ospiti'" class="fade-in">
+                    <h3 style="margin-top: 10px; color: var(--danger-color); text-transform: uppercase;text-align: center;">
+                        ✈️ {{ teamB.nome || 'Squadra Ospiti' }}
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="box-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th style="text-align: left;">Nome</th>
+                                    <th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>BLK</th><th>STL</th><th>TOV</th><th>PF</th><th>+/-</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="p in teamB.giocatori" :key="p.id" v-show="p.nome.trim() !== ''" :class="[p.inCampo ? 'in-campo-row' : '', { 'row-espulso': p.falli >= 5 }]">
+                                    <td><strong>{{ p.numero }}</strong></td>
+                                    <td style="text-align: left;">
+                                        {{ p.nome }}
+                                        <span v-if="p.falli >= 5" class="badge-falli">OUT</span>
+                                        <span v-else-if="p.inCampo" class="badge-starter">IN CAMPO</span>
+                                    </td>
+                                    <td>{{ formatMinuti(p.minuti) }}</td><td>{{ p.punti }}</td><td>{{ p.rimbalzi }}</td><td>{{ p.assist }}</td>
+                                    <td>{{ p.stoppate }}</td><td>{{ p.rubate }}</td><td>{{ p.perse }}</td><td>{{ p.falli }}
+                                    <td :class="p.plsm >= 0 ? 'plus-stat' : 'minus-stat'">{{ p.plsm > 0 ? '+' : '' }}{{ p.plsm }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="btn-primary" style="width: 100%; max-width: 300px;" @click="currentView = 'court'">Torna al Campo</button>
+                </div>
+            </section>
             <!-- POPUP AVANZATO: RITORNO ALLA HOME -->
             <div v-if="mostraPopupHome" class="popup-overlay">
                 <div class="popup-content" style="border-top: 8px solid var(--primary-color);">
@@ -246,7 +329,7 @@
                     </div>
                 </div>
             </div>
-
+            <script src="js/api.js"></script>
    
     <script type="module" src="js/main.js"></script>
 </body>

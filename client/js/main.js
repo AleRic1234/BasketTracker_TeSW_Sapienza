@@ -8,7 +8,9 @@ const app = createApp({
         return {
             currentView: 'login', // 'login', 'home', 'court', 'history', 'setup', 'boxscore'
             ruolo: null,
+            tabellinoAttivo: 'casa',
             password: '',
+            listaReferti: [],
             erroreLogin: false,
             idRicerca: '',
             idPartitaCorrente: '0000',
@@ -50,7 +52,7 @@ const app = createApp({
                 nome: nome,
                 giocatori: Array.from({ length: 10 }, (_, i) => ({
                     id: idPrefix + i, nome: '', numero: '', inCampo: i < 5,
-                    punti: 0, rimbalzi: 0, assist: 0, rubate: 0, stoppate: 0, perse: 0, falli: 0, plsm: 0,
+                    minuti: 0, punti: 0, rimbalzi: 0, assist: 0, rubate: 0, stoppate: 0, perse: 0, falli: 0, plsm: 0,
                     posClass: 'p' + (i + 1) + posSuffix
                 }))
             };
@@ -111,33 +113,84 @@ const app = createApp({
             this.currentView = 'court';
         },
 
-        terminaESalva() {
-            if (confirm("Salvare i dati della partita nello storico?")) {
-                const payload = {
+        async terminaESalva() {
+            if (confirm("Salvare i dati della partita nello storico e sul server?")) {
+                
+                // 1. Prepariamo i giocatori (aggiungiamo a ognuno la proprietà 'squadra' necessaria per il DB)
+                const giocatoriCasa = this.teamA.giocatori.map(g => ({ ...g, squadra: this.teamA.nome || "Casa" }));
+                const giocatoriOspiti = this.teamB.giocatori.map(g => ({ ...g, squadra: this.teamB.nome || "Ospiti" }));
+                const tuttiIGiocatori = [...giocatoriCasa, ...giocatoriOspiti];
+
+                // 2. CREIAMO IL PAYLOAD LOCALE (Per il tuo storico nel browser)
+                const payloadLocale = {
                     info: {
                         id_partita: this.idPartitaCorrente,
-                        data_salvataggio: new Date().toLocaleString('it-IT'), // Salva la data/ora attuale
+                        data_salvataggio: new Date().toLocaleString('it-IT'),
                         squadra_casa: this.teamA.nome,
                         squadra_ospite: this.teamB.nome,
                         punti_casa: this.punteggioCasa,
                         punti_ospite: this.punteggioOspite
                     },
-                    giocatori: [...this.teamA.giocatori, ...this.teamB.giocatori]
+                    giocatori: tuttiIGiocatori
                 };
                 
-                // Aggiorna se esiste già, altrimenti aggiungi
+                // 3. CREIAMO IL PAYLOAD SERVER (Strutturato esattamente come lo aspetta il tuo server.js per DB e XML)
+                const payloadServer = {
+                    info: {
+                        squadra_casa: this.teamA.nome || "Casa",
+                        squadra_ospite: this.teamB.nome || "Ospiti",
+                        punti_casa: this.punteggioCasa,
+                        punti_ospite: this.punteggioOspite
+                    },
+                    giocatori: tuttiIGiocatori,
+                    
+                    // Questi campi servono alla tua funzione generaRefertoXML nel server
+                    squadraCasa: this.teamA.nome || "Casa",
+                    squadraOspite: this.teamB.nome || "Ospiti",
+                    puntiCasa: this.punteggioCasa,
+                    puntiOspiti: this.punteggioOspite,
+                    statistiche: tuttiIGiocatori.filter(g => g.nome.trim() !== '') // Mandiamo all'XML solo i giocatori con un nome
+                };
+
+                // 4. SALVATAGGIO LOCALE (La tua logica intatta)
                 const index = this.storicoPartite.findIndex(p => p.info.id_partita === this.idPartitaCorrente);
                 if (index >= 0) {
-                    this.storicoPartite[index] = payload;
+                    this.storicoPartite[index] = payloadLocale;
                 } else {
-                    this.storicoPartite.push(payload);
+                    this.storicoPartite.push(payloadLocale);
                 }
-                
                 localStorage.setItem('basket_storico', JSON.stringify(this.storicoPartite));
-                alert("Partita salvata con successo!");
+
+                // 5. SALVATAGGIO SUL SERVER TRAMITE AJAX (Node.js + SQLite + XML)
+                try {
+                    // Assicurati di aver messo <script src="js/api.js"></script> nel tuo index.html!
+                    console.log("Inviando dati al server...", payloadServer);
+                    const successo = await api.salva(payloadServer);
+                    
+                    if (successo) {
+                        alert("Partita salvata con successo nello storico, nel Database e in XML!");
+                        this.eseguiBackhome(); // Opzionale: torna alla home dopo il salvataggio
+                    } else {
+                        alert("Salvata in locale, ma si è verificato un errore sul Server.");
+                    }
+                } catch (error) {
+                    console.error("Errore di connessione al server:", error);
+                    alert("Salvata in locale, ma il Server non è raggiungibile. Assicurati che Node.js sia avviato sulla porta 3000.");
+                }
             }
         },
 
+       async apriArchivio() {
+        // Recupera la lista dei file XML dal server
+        this.listaReferti = await api.getListaReferti();
+        // Cambia la vista per mostrare l'archivio
+        this.currentView = 'history';
+        
+        },
+        apriArchivio() {
+            this.currentView = 'history';
+            setTimeout(() => { DataViz.caricaArchivio(); }, 100); // 100ms per far renderizzare il div a Vue
+        },
         logout() {
             this.currentView = 'login'; this.password = ''; this.ruolo = null;
             this.teamA = this.getEmptyTeam("", "A", "a");
@@ -169,7 +222,11 @@ const app = createApp({
 
         gestisciClickGiocatore(p) {
             if (this.ruolo !== 'admin') return;
-
+            if (!p.inCampo && p.falli >= 5) {
+                alert("Questo giocatore ha 5 falli e non può rientrare.");
+                this.panchinaroSelezionato = null;
+                return;
+            }
             if (!p.inCampo) {
                 if (this.panchinaroSelezionato === p) this.panchinaroSelezionato = null;
                 else this.panchinaroSelezionato = p;
@@ -186,19 +243,48 @@ const app = createApp({
                 this.panchinaroSelezionato = null;
                 return;
             }
+            if (p.inCampo && p.falli >= 5) {
+                alert("Giocatore espulso per 5 falli. Effettua un cambio.");
+                return;
+            }
             if (this.ruolo === 'admin') this.giocatoreAttivo = p;
         },
 
         aggiungiStat(tipo, val) {
             if (this.giocatoreAttivo) {
+                // Assegna la statistica al giocatore (es. punti, rimbalzi, ecc.)
                 this.giocatoreAttivo[tipo] += val;
+
+                // SE LA STATISTICA SONO I PUNTI, AGGIORNA IL PLUS-MINUS
+                if (tipo === 'punti') {
+                    const isCasa = this.giocatoreAttivo.id.startsWith('A');
+                    
+                    // 1. Aggiungi il valore ai compagni in campo
+                    const compagni = isCasa ? this.teamA.giocatori : this.teamB.giocatori;
+                    compagni.forEach(p => { if(p.inCampo) p.plsm += val; });
+
+                    // 2. Sottrai il valore agli avversari in campo
+                    const avversari = isCasa ? this.teamB.giocatori : this.teamA.giocatori;
+                    avversari.forEach(p => { if(p.inCampo) p.plsm -= val; });
+                }
+
                 if (tipo === 'falli' && this.giocatoreAttivo.falli >= 5) {
                     alert(`Il giocatore numero ${this.giocatoreAttivo.numero} è uscito per 5 falli!`);
                 }
                 this.giocatoreAttivo = null;
             }
         },
+        aggiornaMinutiGiocatori() {
+    
+            this.teamA.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
+            this.teamB.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
+        },
 
+        formatMinuti(secondiTotali) {
+            const m = Math.floor(secondiTotali / 60);
+            const s = secondiTotali % 60;
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        },
         rimuoviStat(tipo, val) {
             if (this.giocatoreAttivo) {
                 this.giocatoreAttivo[tipo] -= val;

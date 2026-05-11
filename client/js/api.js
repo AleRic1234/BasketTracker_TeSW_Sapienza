@@ -23,5 +23,18 @@ const api = {
             console.error("Errore di rete:", error);
             return false;
         }
+    },
+    async getListaReferti() {
+        try {
+            const response = await fetch('http://localhost:3000/api/partita/file/lista-referti');
+            if (response.ok) {
+                return await response.json(); // Ritorna l'array dei nomi file
+            } else {
+                return [];
+            }
+        } catch (error) {
+            console.error("Errore di rete durante il recupero dei referti:", error);
+            return [];
+        }
     }
 };

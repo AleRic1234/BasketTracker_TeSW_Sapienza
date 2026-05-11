@@ -26,6 +26,7 @@ export default {
                 this.interval = setInterval(() => { 
                     if (this.timer > 0) {
                         this.timer--;
+                        this.$emit('tick');
                     } else {
                         // IL TEMPO È FINITO!
                         clearInterval(this.interval);
