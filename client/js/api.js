@@ -38,7 +38,7 @@ const api = {
             console.error("Errore di rete durante il recupero dei referti:", error);
             return [];
         }
-
+    },
     // 2. Recupera la classifica marcatori globale
     async ottieniClassifica() {
         try {
@@ -71,10 +71,7 @@ const api = {
         }
     },
 
-    // ==========================================
-    // ⬇️ NUOVE FUNZIONI PER IL PUNTO 3 (XML DOM) ⬇️
-    // ==========================================
-
+    
     // 4. NUOVA FUNZIONE: Recupera la lista di tutti i file XML dal server
     async ottieniListaReferti() {
         try {
