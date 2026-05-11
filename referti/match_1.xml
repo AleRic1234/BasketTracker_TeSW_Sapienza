@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<referto_partita id="1">
+    <info_partita>
+        <squadra_casa>Lakers</squadra_casa>
+        <squadra_ospite>Celtics</squadra_ospite>
+        <punteggio_finale>102 - 98</punteggio_finale>
+        <data>2026-05-11</data>
+    </info_partita>
+    <giocatori>
+        <giocatore nome="LeBron James" squadra="Lakers" punti="30" falli="2" />
+        <giocatore nome="Jayson Tatum" squadra="Celtics" punti="28" falli="4" />
+    </giocatori>
+</referto_partita>
