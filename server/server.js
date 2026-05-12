@@ -52,6 +52,8 @@ io.on('connection', (socket) => {
     socket.on('entra_partita', (idPartita) => {
         socket.join(idPartita);
         console.log(`Utente registrato nella stanza partita: ${idPartita}`);
+        //Annucio nuovo spettatore
+        socket.to(idPartita).emit('nuovo_spettatore');
     });
 
     // Quando l'admin aggiorna i dati, li trasmettiamo a tutti i visualizzatori nella stanza
