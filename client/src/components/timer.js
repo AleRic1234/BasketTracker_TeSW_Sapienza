@@ -5,12 +5,13 @@ export default {
                 <span id="shot-clock">{{ formatTime(timer) }}</span>
             </div>
             
-            <div class="controls">
+            <div class="controls" v-if="ruolo === 'admin'">
                 <button @click="toggleTimer">{{ timerRunning ? '❚❚' : '▶' }}</button>
                 <button @click="resetTimer">RESET</button>
             </div>
         </div>
     `,
+    props: ['ruolo'],
     data() {
         return {
             timer: 600,
@@ -49,6 +50,29 @@ export default {
             clearInterval(this.interval);
             this.timer = 600;
             this.timerRunning = false;
+        },
+        impostaDatiEsterni(nuovoTempo, inEsecuzione) {
+            this.timer = nuovoTempo;
+            
+            // Se l'admin ha messo play, ma io sono in pausa -> faccio partire
+            if (inEsecuzione && !this.timerRunning) {
+                this.timerRunning = true;
+                clearInterval(this.interval);
+                this.interval = setInterval(() => { 
+                    if (this.timer > 0) {
+                        this.timer--;
+                    } else {
+                        clearInterval(this.interval);
+                        this.timerRunning = false;
+                        this.timer = 600; 
+                    }
+                }, 1000); 
+            } 
+            // Se l'admin ha messo pausa, ma io sono in play -> fermo
+            else if (!inEsecuzione && this.timerRunning) {
+                this.timerRunning = false;
+                clearInterval(this.interval);
+            }
         }
     },
     unmounted() {

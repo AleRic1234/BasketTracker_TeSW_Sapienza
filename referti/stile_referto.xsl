@@ -83,19 +83,7 @@
                     <xsl:if test="falli >= 5"> <span class="alert">(USCITO)</span></xsl:if>
                   </td>
                   
-                  <td class="center">
-                    <xsl:choose>
-                      <xsl:when test="plsm &gt; 0">
-                        <strong style="color: green;">+<xsl:value-of select="plsm"/></strong>
-                      </xsl:when>
-                      <xsl:when test="plsm &lt; 0">
-                        <strong style="color: red;"><xsl:value-of select="plsm"/></strong>
-                      </xsl:when>
-                      <xsl:otherwise>
-                        0
-                      </xsl:otherwise>
-                    </xsl:choose>
-                  </td>
+                  <td class="center"><xsl:value-of select="plsm"/></td>
 
                 </tr>
               </xsl:for-each>
@@ -117,7 +105,7 @@
                 <th width="10%" class="center">Falli</th>
                 <th width="10%" class="center">+/-</th> 
               </tr>
-              <xsl:for-each select="referto_partita/giocatori/giocatore[@squadra='Casa']">
+              <xsl:for-each select="referto_partita/giocatori/giocatore[@squadra='Ospite']">
                 <tr>
                   <td class="center"><strong><xsl:value-of select="@maglia"/></strong></td>
                   <td><xsl:value-of select="nome"/></td>
@@ -132,19 +120,7 @@
                     <xsl:if test="falli >= 5"> <span class="alert">(USCITO)</span></xsl:if>
                   </td>
                   
-                  <td class="center">
-                    <xsl:choose>
-                      <xsl:when test="plsm &gt; 0">
-                        <strong style="color: green;">+<xsl:value-of select="plsm"/></strong>
-                      </xsl:when>
-                      <xsl:when test="plsm &lt; 0">
-                        <strong style="color: red;"><xsl:value-of select="plsm"/></strong>
-                      </xsl:when>
-                      <xsl:otherwise>
-                        0
-                      </xsl:otherwise>
-                    </xsl:choose>
-                  </td>
+                  <td class="center"><xsl:value-of select="plsm"/></td>
 
                 </tr>
               </xsl:for-each>

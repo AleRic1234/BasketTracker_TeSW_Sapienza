@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
     <script src="js/data-viz.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
     <div id="app" v-cloak>
@@ -30,38 +31,31 @@
             <!-- VISTA LOGIN -->
             <section v-if="currentView === 'login'" class="view-container">
                 <div class="login-card">
-                    <h2>Accesso Tabellone</h2>
-                    <input type="password" v-model="password" placeholder="Password (es. 1)" @keyup.enter="effettuaLogin">
+                    <h2>Accesso BasketTracker</h2>
+                    <input type="text" v-model="username" placeholder="Username (es. admin o utente)">
+                    <input type="password" v-model="password" placeholder="Password" @keyup.enter="effettuaLogin">
+                    
                     <button class="btn-primary" @click="effettuaLogin">ACCEDI</button>
-                    <p v-if="erroreLogin" class="error">Password errata!</p>
+                    <p v-if="erroreLogin" class="error">Credenziali errate!</p>
                 </div>
             </section>
 
             <!-- VISTA HOME (3 Opzioni) -->
             <section v-if="currentView === 'home'" class="view-container">
-                <h2>Benvenuto! Scegli un'azione:</h2>
-                
-                <div class="home-actions-wrapper">
-                    <!-- OPZIONE 1: CREA PARTITA -->
-                    <div class="action-card">
-                        <h3>1. Crea Partita</h3>
-                        <p>Imposta i roster per arbitrare una nuova gara.</p>
-                        <button class="btn-primary" @click="currentView = 'setup'">Configura Squadre</button>
+                <div class="home-card">   
+                    <h2>Benvenuto {{ username.toUpperCase() }}!</h2>
+                    
+                    <div v-if="ruolo === 'admin'" style="margin-bottom: 30px;">
+                        <h3>Area Gestione (Admin)</h3>
+                        <button class="btn-primary" @click="currentView = 'setup'">Configurazione Nuova Partita</button>
+                        <button class="btn-secondary" @click="mostraArchivioPersonale">Storico Partite Create</button> 
                     </div>
 
-                    <!-- OPZIONE 2: STORICO -->
-                    <div class="action-card">
-                        <h3>2. Storico Partite</h3>
-                        <p>Visualizza le partite precedentemente salvate.</p>
-                        <button class="btn-success" @click="apriArchivio">Vedi Storico</button>
-                    </div>
-
-                    <!-- OPZIONE 3: ENTRA COME SPETTATORE -->
-                    <div class="action-card">
-                        <h3>3. Guarda Partita</h3>
-                        <p>Inserisci l'ID per seguire un match.</p>
-                        <input type="text" v-model="idRicerca" placeholder="Es: 0001" class="in-team-name" style="text-align: center; margin-bottom: 15px;">
-                        <button class="btn-secondary" @click="entraInPartitaEsistente">Entra (Viewer)</button>
+                    <div class="spettatore-area" style="border-top: 1px solid #ccc; padding-top: 20px;">
+                        <h3>Area Spettatore</h3>
+                        <p>Inserisci il codice della partita per seguirla in live o vederne il referto:</p>
+                        <input type="text" v-model="codicePartitaInput" placeholder="Es. 0001" style="margin-bottom: 10px;">
+                        <button class="btn-primary" @click="accediPartitaConCodice">Accedi alla Partita</button>
                     </div>
                 </div>
             </section>
@@ -70,7 +64,7 @@
             <section v-if="currentView === 'history'" class="view-container">
                 <div class="header-archivio">
                     <h2>Archivio Referti Ufficiali</h2>
-                    <button @click="eseguiBackhome" class="btn-back">Torna alla Home</button>
+                    
                 </div>
                 <div id="archivio-container"></div>
                 <div class="referti-grid" style="display:flex; gap:15px; flex-wrap:wrap; margin-top: 20px;">
@@ -85,8 +79,7 @@
                     </div>
                 </div>
 
-                <p v-if="listaReferti.length === 0" style="margin-top: 20px;">Nessun referto salvato nella cartella.</p>
-            </section>
+                </section>
 
             
 
@@ -149,7 +142,7 @@
                 <button class="btn-primary" style="max-width: 400px; margin-top: 30px;" @click="iniziaPartita">INIZIA PARTITA</button>
             </section>
             <!-- VISTA CAMPO DA GIOCO -->
-            <section v-if="currentView === 'court'" class="view-container" style="max-width: 1100px; margin-top: 10px;">
+            <section v-show="currentView === 'court'" class="view-container" style="max-width: 1100px; margin-top: 10px;">
                 <div style="background: #333; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 578px;">
                     <span>ID Partita: <strong style="font-size: 1.2em; color: #ffeb3b;">{{ idPartitaCorrente }}</strong></span>
                     <span style="font-size: 0.9em; text-transform: uppercase;">Ruolo: <strong>{{ ruolo }}</strong></span>
@@ -229,7 +222,7 @@
                     </div> 
 
                     <!-- TIMER con evento fine quarto collegato -->
-                    <game-timer @tick="aggiornaMinutiGiocatori" @time-up="gestisciFineTempo"></game-timer>
+                    <game-timer ref="timerRef" :ruolo="ruolo" @tick="aggiornaMinutiGiocatori" @time-up="gestisciFineTempo"></game-timer>
                 </div>
             </section>
 
@@ -310,7 +303,10 @@
                 </div>
 
                 <div style="text-align: center; margin-top: 30px;">
-                    <button class="btn-primary" style="width: 100%; max-width: 300px;" @click="currentView = 'court'">Torna al Campo</button>
+                    <button v-if="!partitaTerminata" class="btn-primary" style="width: 100%; max-width: 300px;" @click="currentView = 'court'">Torna al Campo</button>
+                    
+                    <button v-if="partitaTerminata" class="btn-secondary" style="width: 100%; max-width: 300px; margin-right: 10px;" onclick="window.print()">📥 Scarica Referto PDF</button>
+                    <button v-if="partitaTerminata" class="btn-primary" style="width: 100%; max-width: 300px;" @click="backhome">Torna alla Home</button>
                 </div>
             </section>
             <!-- POPUP AVANZATO: RITORNO ALLA HOME -->
