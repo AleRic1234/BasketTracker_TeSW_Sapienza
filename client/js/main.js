@@ -15,6 +15,7 @@ const app = createApp({
             storicoPartite: [],
             listaReferti: [],
             erroreLogin: false,
+            mostraInputCodice: false,
             codicePartitaInput: '',
             idRicerca: '',
             idPartitaCorrente: '0000',

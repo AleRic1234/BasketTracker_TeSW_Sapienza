@@ -41,24 +41,34 @@
             </section>
 
             <!-- VISTA HOME (3 Opzioni) -->
-            <section v-if="currentView === 'home'" class="view-container">
-                <div class="home-card">   
-                    <h2>Benvenuto {{ username.toUpperCase() }}!</h2>
-                    
-                    <div v-if="ruolo === 'admin'" style="margin-bottom: 30px;">
-                        <h3>Area Gestione (Admin)</h3>
-                        <button class="btn-primary" @click="currentView = 'setup'">Configurazione Nuova Partita</button>
-                        <button class="btn-secondary" @click="mostraArchivioPersonale">Storico Partite Create</button> 
-                    </div>
+            <section v-if="currentView === 'home'" class="home-container">
+    <h2 class="main-title">Benvenuto, {{ username.toUpperCase() }}!</h2>
+    
+    <div class="menu-grid">
+        <div v-if="ruolo === 'admin'" class="menu-card" @click="currentView = 'setup'">
+            <div class="menu-card-icon">🏀</div>
+            <h3>Crea Nuova Partita</h3>
+            <p>Configura le squadre e i roster NBA per iniziare a tracciare le statistiche live.</p>
+        </div>
 
-                    <div class="spettatore-area" style="border-top: 1px solid #ccc; padding-top: 20px;">
-                        <h3>Area Spettatore</h3>
-                        <p>Inserisci il codice della partita per seguirla in live o vederne il referto:</p>
-                        <input type="text" v-model="codicePartitaInput" placeholder="Es. 0001" style="margin-bottom: 10px;">
-                        <button class="btn-primary" @click="accediPartitaConCodice">Accedi alla Partita</button>
-                    </div>
-                </div>
-            </section>
+        <div class="menu-card" @click="mostraInputCodice = !mostraInputCodice">
+            <div class="menu-card-icon">🔍</div>
+            <h3>Segui Live con Codice</h3>
+            <p>Inserisci il codice univoco (es: 0001) per visualizzare una partita in corso o un referto archiviato.</p>
+            
+            <div v-if="mostraInputCodice" class="input-inline-container" @click.stop>
+                <input type="text" v-model="codicePartitaInput" placeholder="Codice" @keyup.enter="accediPartitaConCodice">
+                <button @click="accediPartitaConCodice" class="btn-mini">Entra</button>
+            </div>
+        </div>
+
+        <div class="menu-card" @click="apriArchivio">
+            <div class="menu-card-icon">📂</div>
+            <h3>Archivio Referti</h3>
+            <p>Consulta lo storico delle partite, visualizza i grafici radar e scarica i file ufficiali.</p>
+        </div>
+    </div>
+</section>
 
             <!-- VISTA STORICO -->
             <section v-if="currentView === 'history'" class="view-container">

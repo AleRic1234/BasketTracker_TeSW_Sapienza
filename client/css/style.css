@@ -385,6 +385,82 @@ select {
     transition: all 0.3s ease; 
 }
 
+.home-container {
+    max-width: 1200px;
+    margin: 50px auto;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.main-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--dark-bg);
+    margin-bottom: 50px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    justify-content: center;
+}
+
+.menu-card {
+    background: #ffffff;
+    padding: 50px 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05); /* Ombra leggera come da foto */
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 2px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.menu-card:hover {
+    transform: translateY(-10px);
+    border-color: var(--primary-color);
+    box-shadow: 0 20px 40px rgba(52, 152, 219, 0.15);
+}
+
+.menu-card-icon {
+    font-size: 4rem;
+    margin-bottom: 25px;
+}
+
+.menu-card h3 {
+    font-size: 1.6rem;
+    color: var(--dark-bg);
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+.menu-card p {
+    color: #7f8c8d;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* Stile per l'input rapido dentro la card */
+.input-inline-container {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    animation: fadeIn 0.3s ease;
+}
+
+.input-inline-container input {
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    width: 100px;
+    text-align: center;
+}
+
 /* Quando il bottone è attivo */
 .tab-btn.active { 
     background-color: var(--primary-color); 
