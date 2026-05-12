@@ -85,6 +85,10 @@
 
             <section v-if="currentView === 'setup'" class="view-container">
                 <h2>Configurazione Squadre</h2>
+                <!-- TEST RAPIDO PER CARICARE SQUADRE NBA -->
+                <button @click="caricaTestNBA" class="btn-primary" style="background-color: #f39c12; margin-bottom: 20px; width: 100%;">
+                    ⚡ RIEMPIMENTO RAPIDO TEST (NBA)
+                </button>
 
                 <div class="team-selection" style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                     <div class="select-box">
@@ -222,7 +226,7 @@
                     </div> 
 
                     <!-- TIMER con evento fine quarto collegato -->
-                    <game-timer ref="timerRef" :ruolo="ruolo" @tick="aggiornaMinutiGiocatori" @time-up="gestisciFineTempo"></game-timer>
+                    <game-timer ref="timerRef" :ruolo="ruolo" @tick="aggiornaMinutiGiocatori" @time-up="gestisciFineTempo" @sync-status="trasmettiDatiLive"></game-timer>
                 </div>
             </section>
 

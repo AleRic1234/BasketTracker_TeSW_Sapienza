@@ -45,30 +45,89 @@ const app = createApp({
         punteggioCasa() { return this.teamA.giocatori.reduce((sum, p) => sum + p.punti, 0); },
         punteggioOspite() { return this.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0); }
     },
-    mounted() {
-       this.aggiornaListaReferti();
-       
-       // Inizializza la connessione WebSocket
-       if (typeof io !== 'undefined') {
-           this.socket = io('http://localhost:3000');
-           
-           // Metti in ascolto dei dati live dall'admin
-           this.socket.on('dati_live', (payload) => {
-               if (this.ruolo === 'utente') {
-                   // Aggiorna i giocatori e i punti
-                   this.teamA = payload.teamA;
-                   this.teamB = payload.teamB;
-                   
-                   // Sincronizza il timer dello spettatore con quello dell'admin
-                   if (payload.timer && this.$refs.timerRef) {
-                       // Chiamiamo il nuovo metodo del timer per aggiornarlo!
-                       this.$refs.timerRef.impostaDatiEsterni(payload.timer.tempoResiduo, payload.timer.inEsecuzione);
-                   }
-               }
-           });
-       }
+   mounted() {
+    this.aggiornaListaReferti();
+    
+    // Inizializza la connessione WebSocket
+    if (typeof io !== 'undefined') {
+        this.socket = io('http://localhost:3000');
+        
+        // 1. ASCOLTO DATI LIVE (Per chi guarda: Ruolo 'utente' o 'viewer')
+        this.socket.on('dati_live', (payload) => {
+            if (this.ruolo === 'utente' || this.ruolo === 'viewer') {
+                // Aggiorna i giocatori e i punti
+                this.teamA = payload.teamA;
+                this.teamB = payload.teamB;
+                
+                // Sincronizza il timer dello spettatore con quello dell'admin
+                if (payload.timer && this.$refs.timerRef) {
+                    this.$refs.timerRef.impostaDatiEsterni(
+                        payload.timer.tempoResiduo, 
+                        payload.timer.inEsecuzione
+                    );
+                }
+            }
+        });
+
+        // 2. ASCOLTO NUOVO SPETTATORE (Per chi gestisce: Ruolo 'admin')
+        // Questo evento viene inviato dal server quando un utente inserisce il codice
+        this.socket.on('nuovo_spettatore', () => {
+            if (this.ruolo === 'admin') {
+                console.log("Uno spettatore si è connesso. Invio dati di allineamento...");
+                // L'admin invia immediatamente i dati attuali (nomi, loghi, score) al nuovo arrivato
+                this.trasmettiDatiLive();
+            }
+        });
+        }
     },
     methods: {
+        //Generatore rapido partita NBA di prova
+        caricaTestNBA() {
+    // --- 1. LOS ANGELES LAKERS (Team A) ---
+    this.teamA.nome = "Los Angeles Lakers";
+    const rosterLakers = [
+        // Titolari
+        { nome: "L. James", num: "23" }, { nome: "A. Davis", num: "3" }, 
+        { nome: "A. Reaves", num: "15" }, { nome: "D. Russell", num: "1" }, 
+        { nome: "R. Hachimura", num: "28" },
+        // Panchina
+        { nome: "J. Vanderbilt", num: "2" }, { nome: "C. Wood", num: "35" }, 
+        { nome: "G. Vincent", num: "7" }, { nome: "J. Hayes", num: "11" }, 
+        { nome: "C. Reddish", num: "5" }
+    ];
+
+    rosterLakers.forEach((giocatore, i) => {
+        this.teamA.giocatori[i].nome = giocatore.nome;
+        this.teamA.giocatori[i].numero = giocatore.num;
+        // I primi 5 partono in campo, gli altri in panchina
+        this.teamA.giocatori[i].inCampo = i < 5; 
+    });
+
+    // --- 2. GOLDEN STATE WARRIORS (Team B) ---
+    this.teamB.nome = "Golden State Warriors";
+    const rosterWarriors = [
+        // Titolari
+        { nome: "S. Curry", num: "30" }, { nome: "K. Thompson", num: "11" }, 
+        { nome: "D. Green", num: "23" }, { nome: "A. Wiggins", num: "22" }, 
+        { nome: "K. Looney", num: "5" },
+        // Panchina
+        { nome: "C. Paul", num: "3" }, { nome: "J. Kuminga", num: "0" }, 
+        { nome: "M. Moody", num: "4" }, { nome: "D. Saric", num: "20" }, 
+        { nome: "G. Payton II", num: "00" }
+    ];
+
+    rosterWarriors.forEach((giocatore, i) => {
+        this.teamB.giocatori[i].nome = giocatore.nome;
+        this.teamB.giocatori[i].numero = giocatore.num;
+        // I primi 5 partono in campo, gli altri in panchina
+        this.teamB.giocatori[i].inCampo = i < 5;
+    });
+
+    if (typeof DataViz !== 'undefined') {
+        DataViz.mostraNotifica("🏀 Roster NBA completi (10+10) caricati!");
+    }
+},
+
         // Helper per generare un team vuoto
         getEmptyTeam(nome, idPrefix, posSuffix) {
             return {
@@ -79,6 +138,20 @@ const app = createApp({
                     posClass: 'p' + (i + 1) + posSuffix
                 }))
             };
+        },
+
+        caricaPartitaDaDB(partita) {
+            this.ruolo = 'viewer';
+            this.currentView = 'court';
+            this.partitaTerminata = true; // Impedisce modifiche ai punteggi
+
+            this.teamA.nome = partita.info.squadra_casa;
+            this.teamB.nome = partita.info.squadra_ospite;
+
+            // Distribuiamo i giocatori dal tabellino piatto dell'API nei due team di Vue
+            // Nota: Filtriamo in base al nome della squadra salvato nel DB
+            this.teamA.giocatori = partita.tabellino.filter(g => g.squadra === partita.info.squadra_casa);
+            this.teamB.giocatori = partita.tabellino.filter(g => g.squadra === partita.info.squadra_ospite);
         },
 
         effettuaLogin() {
@@ -101,86 +174,121 @@ const app = createApp({
         },
 
         // --- INIZIO PARTITA ADMIN (Entra nella stanza per trasmettere) ---
-        iniziaPartita() {
-            const casaOk = this.teamA.giocatori.some(p => p.nome.trim() !== '');
-            const ospitiOk = this.teamB.giocatori.some(p => p.nome.trim() !== '');
+        async iniziaPartita() {
+    const casaOk = this.teamA.giocatori.some(p => p.nome.trim() !== '');
+    const ospitiOk = this.teamB.giocatori.some(p => p.nome.trim() !== '');
 
-            if (casaOk || ospitiOk) {
-               // GENERA UN PIN CASUALE (es. LIVE-4921) PER LA STANZA WEBSOCKET
-               const pinCasuale = Math.floor(1000 + Math.random() * 9000);
-               this.idPartitaCorrente = "LIVE-" + pinCasuale; 
-               
-               this.ruolo = 'admin';
-               this.partitaTerminata = false;
-               this.currentView = 'court';
+    if (casaOk || ospitiOk) {
+        let nextId = 1;
+        
+        try {
+            // Chiediamo al server quanti referti esistono già usando l'API di Studente C!
+            const referti = await api.ottieniListaReferti();
+            
+            if (referti && referti.length > 0) {
+                // Estraiamo i numeri dai nomi file (es. "referto_0001.xml" -> estrae "1")
+                const ids = referti.map(file => {
+                    const strNum = file.replace('referto_', '').replace('.xml', '');
+                    return parseInt(strNum, 10);
+                }).filter(n => !isNaN(n));
+                
+                if (ids.length > 0) {
+                    // Troviamo il numero più alto e aggiungiamo 1
+                    nextId = Math.max(...ids) + 1; 
+                }
+            }
+        } catch(e) {
+            console.error("Errore nel recupero ID dal server, riparto da 1", e);
+        }
 
-               // L'admin entra nella stanza sicura
-               if (this.socket) this.socket.emit('entra_partita', this.idPartitaCorrente);
-               
-               // Aspettiamo un istante che Vue carichi il campo, poi trasmettiamo i nomi
-               setTimeout(() => {
-                   this.trasmettiDatiLive();
-               }, 500);
-            } else { alert("Inserisci almeno un giocatore!"); }
-        },
+        // Creiamo il vero ID incrementale a 4 cifre, come richiesto!
+        this.idPartitaCorrente = nextId.toString().padStart(4, '0');
+        
+        this.ruolo = 'admin';
+        this.currentView = 'court';
+
+        // Entriamo nella stanza WebSocket con l'ID pulito e sincronizzato
+        if (this.socket) {
+            this.socket.emit('entra_partita', this.idPartitaCorrente);
+        }
+    } else { 
+        alert("Inserisci almeno un giocatore per squadra!"); 
+    }
+},
 
         // --- NUOVI METODI PER LA GESTIONE RUOLI E ACCESSI ---
 
         // 1. Metodo per l'Utente (o l'Admin in modalità Spettatore)
-        async accediPartitaConCodice() {
-            if (this.codicePartitaInput.trim() !== '') {
-                const idCercato = this.codicePartitaInput;
-                const match = await api.ottieniPartita(idCercato);
-                
-                if (match) {
-                    // SCENARIO 1: LA PARTITA ESISTE NEL DB (E' TERMINATA)
-                    this.partitaTerminata = true;
-                    this.caricaPartita(match, 'utente'); 
-                    this.currentView = 'boxscore'; // Lo mandiamo dritto al boxscore!
-                    alert(`Partita Terminata. Visualizzazione Box Score Finale.`);
-                } else { 
-                    // SCENARIO 2: LA PARTITA NON E' NEL DB (PROBABILMENTE E' LIVE)
-                    this.partitaTerminata = false;
-                    this.idPartitaCorrente = idCercato;
-                    this.ruolo = 'utente';
-                    this.currentView = 'court';
-                    
-                    // Svuotiamo le squadre e mettiamo un testo di attesa
-                    this.teamA = this.getEmptyTeam("In attesa dati Admin...", "A", "a");
-                    this.teamB = this.getEmptyTeam("In attesa dati Admin...", "B", "b");
+async accediPartitaConCodice() {
+    // MODIFICA QUI: usiamo codicePartitaInput invece di idRicerca
+    if (this.codicePartitaInput.trim() === '') {
+        alert("Inserisci un codice!"); return;
+    }
+    // MODIFICA QUI: usiamo codicePartitaInput
+    const idCercato = this.codicePartitaInput.padStart(4, '0');
+    this.idPartitaCorrente = idCercato;
 
-                    // Entra nella "Stanza" segreta del WebSocket per quella partita
-                    if (this.socket) this.socket.emit('entra_partita', idCercato);
-                    
-                    alert("Connesso alla Gara Live! In attesa degli aggiornamenti dall'admin..."); 
-                }
-            } else {
-                alert("Inserisci un codice valido!");
+    try {
+        // TENTATIVO 1: Verifichiamo se la partita è già conclusa nel DB del server
+        const partitaDB = await api.ottieniPartita(idCercato);
+
+        if (partitaDB && partitaDB.info) {
+            // Caso Partita Archiviata: carichiamo i dati statici
+            this.ruolo = 'viewer';
+            this.currentView = 'court';
+            this.partitaTerminata = true; // Blocca i tasti di modifica
+            this.teamA.nome = partitaDB.info.squadra_casa;
+            this.teamB.nome = partitaDB.info.squadra_ospite;
+            // Mappiamo i giocatori dal formato DB al formato Vue
+            this.teamA.giocatori = partitaDB.tabellino.filter(g => g.squadra === partitaDB.info.squadra_casa);
+            this.teamB.giocatori = partitaDB.tabellino.filter(g => g.squadra === partitaDB.info.squadra_ospite);
+            
+            if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("Partita recuperata dall'archivio del Server.");
+        } else {
+            // Caso Partita LIVE: entriamo nella stanza WebSocket e aspettiamo i dati
+            this.ruolo = 'viewer';
+            this.currentView = 'court';
+            this.partitaTerminata = false;
+            if (this.socket) {
+                this.socket.emit('entra_partita', idCercato);
+                if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("In attesa di segnale Live dall'Admin...");
             }
-        },
+        }
+    } catch (e) {
+        alert("Errore di connessione al server.");
+    }
+},
+    
 
         // --- LA FUNZIONE CHE SPEDISCE I DATI ---
-       trasmettiDatiLive() {
-            if (this.ruolo === 'admin' && this.socket) {
-                // Leggiamo i dati dal componente Timer usando i NOMI CORRETTI
-                let timerData = null;
-                if (this.$refs.timerRef) {
-                    timerData = {
-                        tempoResiduo: this.$refs.timerRef.timer,         // Era this.timer nel componente
-                        inEsecuzione: this.$refs.timerRef.timerRunning   // Era this.timerRunning nel componente
-                    };
-                }
-
-                this.socket.emit('aggiornamento_admin', {
-                    idPartita: this.idPartitaCorrente,
-                    payload: {
-                        teamA: this.teamA,
-                        teamB: this.teamB,
-                        timer: timerData
-                    }
-                });
+    
+    trasmettiDatiLive() {
+        if (this.ruolo === 'admin' && this.socket) {
+        
+            // 1. Prepariamo l'oggetto timer prendendo i dati REALI dal componente
+            let datiTimer = null;
+            if (this.$refs.timerRef) {
+                datiTimer = {
+                    tempoResiduo: this.$refs.timerRef.timer,     // Il numero di secondi rimasti
+                    inEsecuzione: this.$refs.timerRef.isRunning  // Stato play/pausa
+                };
             }
-        },
+
+            // 2. Creiamo il pacchetto dati completo
+            const payload = {
+                teamA: this.teamA,
+                teamB: this.teamB,
+                partitaTerminata: this.partitaTerminata,
+                timer: datiTimer // Questo deve corrispondere a quello che leggi nel mounted()
+            };
+
+            // 3. Spediamo via WebSocket
+            this.socket.emit('aggiornamento_admin', {
+                idPartita: this.idPartitaCorrente,
+                payload: payload
+            });
+        }
+    },
 
         // 2. Metodo esclusivo per l'Admin
         mostraArchivioPersonale() {

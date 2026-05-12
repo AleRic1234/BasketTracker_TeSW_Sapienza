@@ -11,6 +11,7 @@ export default {
             </div>
         </div>
     `,
+    // MODIFICA 2: Aggiunto props per far comunicare timer.js con main.js
     props: ['ruolo'],
     data() {
         return {
@@ -27,19 +28,22 @@ export default {
                 this.interval = setInterval(() => { 
                     if (this.timer > 0) {
                         this.timer--;
-                        this.$emit('tick');
+                        this.$emit('tick', this.timer);
                     } else {
-                        // IL TEMPO È FINITO!
                         clearInterval(this.interval);
                         this.timerRunning = false;
-                        this.timer = 600; // Resetta automaticamente a 10:00
-                        
-                        // Avvisa l'app principale di mostrare il popup
+                        this.timer = 600; 
                         this.$emit('time-up');
                     }
                 }, 1000); 
             }
             this.timerRunning = !this.timerRunning;
+    
+            // Avvisa Vue che abbiamo messo Pausa o Play
+            this.$emit('sync-status');
+        },
+        impostaTempo(nuovoTempo) {
+            this.timer = nuovoTempo;
         },
         formatTime(s) {
             const m = Math.floor(s / 60);
@@ -50,6 +54,8 @@ export default {
             clearInterval(this.interval);
             this.timer = 600;
             this.timerRunning = false;
+            // MODIFICA 3: Corretto 'thids' in 'this'
+            this.$emit('sync-status');
         },
         impostaDatiEsterni(nuovoTempo, inEsecuzione) {
             this.timer = nuovoTempo;
@@ -68,7 +74,7 @@ export default {
                     }
                 }, 1000); 
             } 
-            // Se l'admin ha messo pausa, ma io sono in play -> fermo
+            // Se l'admin ha messo pausa (o resettato), ma io sono in play -> fermo
             else if (!inEsecuzione && this.timerRunning) {
                 this.timerRunning = false;
                 clearInterval(this.interval);
