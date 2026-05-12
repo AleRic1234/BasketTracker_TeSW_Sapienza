@@ -3,7 +3,7 @@ const api = {
     // 1. Funzione per salvare la partita (quella che avevi già)
     async salva(dati) {
         try {
-            const response = await fetch('https://basket-api-mioesame.loca.lt/api/salva_partita', {
+            const response = await fetch('http://localhost:3000/api/salva_partita', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dati) 
@@ -28,7 +28,7 @@ const api = {
     },
     async getListaReferti() {
         try {
-            const response = await fetch('https://basket-api-mioesame.loca.lt/api/partita/file/lista-referti');
+            const response = await fetch('http://localhost:3000/api/partita/file/lista-referti');
             if (response.ok) {
                 return await response.json(); // Ritorna l'array dei nomi file
             } else {
@@ -42,7 +42,7 @@ const api = {
     // 2. Recupera la classifica marcatori globale
     async ottieniClassifica() {
         try {
-            const response = await fetch('https://basket-api-mioesame.loca.lt/api/classifica');
+            const response = await fetch('http://localhost:3000/api/classifica');
             if (response.ok) {
                 return await response.json(); 
             } else {
@@ -59,7 +59,7 @@ const api = {
     // (Utile per una pagina "Storico Partite" o per rileggere i dati prima di stampare il referto)
     async ottieniPartita(id) {
         try {
-            const response = await fetch(`https://basket-api-mioesame.loca.lt/api/partita/${id}`);
+            const response = await fetch(`http://localhost:3000/api/partita/${id}`);
             if (response.ok) {
                 return await response.json(); 
             } else {
@@ -76,7 +76,7 @@ const api = {
     // 4. NUOVA FUNZIONE: Recupera la lista di tutti i file XML dal server
     async ottieniListaReferti() {
         try {
-            const response = await fetch('https://basket-api-mioesame.loca.lt/api/lista_referti');
+            const response = await fetch('http://localhost:3000/api/lista_referti');
             if (response.ok) {
                 return await response.json(); // Restituisce un array es: ["referto_1.xml", "referto_2.xml"]
             } else {
@@ -93,7 +93,7 @@ const api = {
     async leggiAnteprimaXML(nomeFileXML) {
         try {
             // Scarica il file XML dalla cartella pubblica
-            const response = await fetch(`https://basket-api-mioesame.loca.lt/referti/${nomeFileXML}`);
+            const response = await fetch(`http://localhost:3000/referti/${nomeFileXML}`);
             
             if (!response.ok) throw new Error("Errore nel download dell'XML");
             

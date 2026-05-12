@@ -48,22 +48,18 @@ const app = createApp({
     mounted() {
        this.aggiornaListaReferti();
        
-       // 1. Inizializza la connessione WebSocket
+       // Inizializza la connessione WebSocket
        if (typeof io !== 'undefined') {
-           this.socket = io('https://basket-api-esame.loca.lt', {
-                extraHeaders: {
-                    "Bypass-Tunnel-Reminder": "true"
-                }
-            });
+           this.socket = io('http://localhost:3000');
            
-           // 2. Mettiti in ascolto dei dati live dall'admin
+           // Metti in ascolto dei dati live dall'admin
            this.socket.on('dati_live', (payload) => {
                if (this.ruolo === 'utente') {
-                   // 1. Aggiorna i giocatori e i punti
+                   // Aggiorna i giocatori e i punti
                    this.teamA = payload.teamA;
                    this.teamB = payload.teamB;
                    
-                   // 2. Sincronizza il timer dello spettatore
+                   // Sincronizza il timer dello spettatore con quello dell'admin
                    if (payload.timer && this.$refs.timerRef) {
                        // Chiamiamo il nuovo metodo del timer per aggiornarlo!
                        this.$refs.timerRef.impostaDatiEsterni(payload.timer.tempoResiduo, payload.timer.inEsecuzione);
