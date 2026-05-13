@@ -221,6 +221,33 @@ input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
 
 /* --- 6. POPUP E MODALI --- */
 
+/* --- STILE PER IL POPUP DELLE STATISTICHE SUI GIOCATORI --- */
+.floating-stat {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.75);
+    color: #00ff00; /* Verde brillante */
+    font-weight: bold;
+    font-size: 14px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    pointer-events: none; /* Evita che blocchi i click sul giocatore */
+    white-space: nowrap;
+    z-index: 1000;
+    animation: floatUpFade 1.2s ease-out forwards;
+}
+
+.floating-stat.negativo {
+    color: #ff4444; /* Rosso brillante */
+}
+
+@keyframes floatUpFade {
+    0% { opacity: 1; top: -10px; }
+    100% { opacity: 0; top: -45px; } 
+}
+/* --- STILE PER IL POPUP DELLE STATISTICHE SUI GIOCATORI --- */
+
 /* Sfondo scuro a tutto schermo che blocca i click dietro */
 .popup-overlay {
     position: fixed; /* Lo stacca dalla pagina */
@@ -319,6 +346,7 @@ select {
     font-size: 1.1rem;
     border-radius: 5px;
 }
+/* mo vediamo +/
 /* STORICO*/
 .referti-grid {
     display: grid;

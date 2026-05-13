@@ -22,8 +22,10 @@ const app = createApp({
             // Nuove variabili per il Live e lo Stato Partita
             socket: null,
             partitaTerminata: false,
-           
+           // Popup
             mostraPopupHome: false,
+            mostraPopupAvviso: false,
+            messaggioAvviso: '',
 
             squadreDisponibili: [
             { nome: "Sapienza Bulls", logo: "./assets/sapienza_bulls.jpeg" },
@@ -137,7 +139,11 @@ const app = createApp({
                 giocatori: Array.from({ length: 10 }, (_, i) => ({
                     id: idPrefix + i, nome: '', numero: '', inCampo: i < 5,
                     minuti: 0, punti: 0, rimbalzi: 0, assist: 0, rubate: 0, stoppate: 0, perse: 0, falli: 0, plsm: 0,
-                    posClass: 'p' + (i + 1) + posSuffix
+                    posClass: 'p' + (i + 1) + posSuffix,
+                    // --- VARIABILI PER IL POPUP VISIVO ---
+                    popupMsg: '',
+                    showPopup: false,
+                    isNegativo: false
                 }))
             };
         },
@@ -356,9 +362,10 @@ async accediPartitaConCodice() {
             this.currentView = 'court';
         },
 
-        async terminaESalva() {
-            // 1. Prepariamo l'oggetto con tutti i dati della partita
-            const nuovaPartita = {
+async terminaESalva() {
+            if (!confirm("Salvare la partita e vedere il Box Score?")) return;
+
+            const payload = {
                 id: this.idPartitaCorrente,
                 data: new Date().toISOString(),
                 squadraCasa: this.teamA,
@@ -367,18 +374,20 @@ async accediPartitaConCodice() {
                 punteggioOspite: this.punteggioOspite
             };
 
-            // 2. Chiamata al server tramite l'API
-            const successo = await api.salva(nuovaPartita);
-
-            if (successo) {
-                // Se il salvataggio sul server va a buon fine, procediamo localmente
-                await this.aggiornaListaReferti();
-                
-                // Passiamo alla vista del Box Score finale
-                this.currentView = 'boxscore';
-            } else {
-                // Gestione errore (già gestita con alert nell'api.js, ma qui puoi aggiungere logica)
-                console.error("Salvataggio non riuscito.");
+            try {
+                const risposta = await api.salva(payload);
+                if (risposta) {
+                    // 1. Aggiorna la lista referti silenziosamente
+                    await this.aggiornaListaReferti();
+                    
+                    // 2. CAMBIA VISTA (Senza tornare alla home!)
+                    this.currentView = 'boxscore';
+                    
+                    console.log("Transizione a Box Score riuscita.");
+                }
+            } catch (error) {
+                console.error("Errore durante il salvataggio:", error);
+                alert("Errore tecnico: controlla la console del browser.");
             }
         },
 
@@ -437,7 +446,7 @@ async accediPartitaConCodice() {
         gestisciClickGiocatore(p) {
             if (this.ruolo !== 'admin') return;
             if (!p.inCampo && p.falli >= 5) {
-                alert("Questo giocatore ha 5 falli e non può rientrare.");
+                this.mostraMessaggio("Questo giocatore ha 5 falli e non può rientrare in campo.");
                 this.panchinaroSelezionato = null;
                 return;
             }
@@ -458,7 +467,7 @@ async accediPartitaConCodice() {
                 return;
             }
             if (p.inCampo && p.falli >= 5) {
-                alert("Giocatore espulso per 5 falli. Effettua un cambio.");
+                this.mostraMessaggio("Giocatore espulso per 5 falli. Effettua un cambio.");
                 return;
             }
             if (this.ruolo === 'admin') this.giocatoreAttivo = p;
@@ -483,13 +492,40 @@ async accediPartitaConCodice() {
                 }
 
                 if (tipo === 'falli' && this.giocatoreAttivo.falli >= 5) {
-                    alert(`Il giocatore numero ${this.giocatoreAttivo.numero} è uscito per 5 falli!`);
+                    this.mostraMessaggio(`Il giocatore numero ${this.giocatoreAttivo.numero} è uscito per 5 falli!`);
                 }
+                // --- LOGICA ANIMAZIONE POPUP ---
+                const abbreviazioni = {
+                    punti: 'PTS', rimbalzi: 'REB', assist: 'AST', rubate: 'STL', 
+                    stoppate: 'BLK', perse: 'TOV', falli: 'FLS'
+                };
+                const sigla = abbreviazioni[tipo] || tipo.toUpperCase();
+                
+                // Salviamo una referenza al giocatore per il setTimeout
+                const playerToAnimate = this.giocatoreAttivo;
+                
+                playerToAnimate.popupMsg = `+${val} ${sigla}`;
+                playerToAnimate.isNegativo = false; 
+                playerToAnimate.showPopup = true;
+
+                // Spegne il popup dopo che l'animazione CSS (1.2s) è finita
+                setTimeout(() => {
+                    playerToAnimate.showPopup = false;
+                }, 1200);
                 this.giocatoreAttivo = null;
 
                 this.trasmettiDatiLive();
             }
         },
+
+        mostraMessaggio(testo) {
+            this.messaggioAvviso = testo;
+            this.mostraPopupAvviso = true;
+        },
+        chiudiPopupAvviso() {
+            this.mostraPopupAvviso = false;
+        },
+
         aggiornaMinutiGiocatori() {
             this.teamA.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
             this.teamB.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
@@ -506,6 +542,24 @@ async accediPartitaConCodice() {
         rimuoviStat(tipo, val) {
             if (this.giocatoreAttivo) {
                 this.giocatoreAttivo[tipo] -= val;
+                
+                if (tipo === 'falli' && this.giocatoreAttivo.falli >= 5) {
+                    this.mostraMessaggio(`Il giocatore numero ${this.giocatoreAttivo.numero} è uscito per 5 falli!`);
+                }
+
+                // --- LOGICA ANIMAZIONE POPUP NEGATIVO ---
+                const abbreviazioni = {
+                    punti: 'PTS', rimbalzi: 'REB', assist: 'AST', rubate: 'STL', 
+                    stoppate: 'BLK', perse: 'TOV', falli: 'FLS'
+                };
+                const sigla = abbreviazioni[tipo] || tipo.toUpperCase();
+                const playerToAnimate = this.giocatoreAttivo;
+                
+                playerToAnimate.popupMsg = `-${val} ${sigla}`;
+                playerToAnimate.isNegativo = true; 
+                playerToAnimate.showPopup = true;
+
+                setTimeout(() => { playerToAnimate.showPopup = false; }, 1200);
                 this.giocatoreAttivo = null;
             }
         }
