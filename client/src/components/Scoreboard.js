@@ -1,26 +1,34 @@
 export default {
-    props: ['puntiCasa', 'puntiOspiti', 'nomeCasa', 'nomeOspiti'],
+    props: ['puntiCasa', 'puntiOspiti', 'nomeCasa', 'nomeOspiti', 'logoCasa', 'logoOspiti'],
     template: `
-        <div style="position: absolute; top: -65px; left: 50%; transform: translateX(-50%); width: 100%; max-width: 450px; display: flex; justify-content: center; gap: 80px; background: #2c3e50; color: white; padding: 10px 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 50;">
+        <div style="position: absolute; top: -65px; left: 50%; transform: translateX(-50%); width: 100%; max-width: 550px; display: flex; justify-content: center; align-items: center; gap: 30px; background: #2c3e50; color: white; padding: 10px 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 50;">
             
-            <div style="text-align: center; min-width: 120px;">
-                <div style="font-size: 12px; font-weight: bold; letter-spacing: 1px; color: #ecf0f1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; margin: 0 auto;">
-                    {{ nomeCasa || 'CASA' }}
-                </div>
-                <div style="font-size: 28px; font-weight: bold; color: #3498db; line-height: 1; margin-top: 5px;">
-                    {{ puntiCasa }}
+            <div style="display: flex; align-items: center; gap: 15px; text-align: right; width: 45%; justify-content: flex-end;">
+                <img v-if="logoCasa" :src="logoCasa" style="width: 45px; height: 45px; object-fit: cover; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);">
+                <div>
+                    <div style="font-size: 12px; font-weight: bold; letter-spacing: 1px; color: #ecf0f1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                        {{ nomeCasa || 'CASA' }}
+                    </div>
+                    <div style="font-size: 32px; font-weight: bold; color: #3498db; line-height: 1; margin-top: 5px;">
+                        {{ puntiCasa }}
+                    </div>
                 </div>
             </div>
 
-            <div style="text-align: center; min-width: 120px;">
-                <div style="font-size: 12px; font-weight: bold; letter-spacing: 1px; color: #ecf0f1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; margin: 0 auto;">
-                    {{ nomeOspiti || 'OSPITI' }}
-                </div>
-                <div style="font-size: 28px; font-weight: bold; color: #e74c3c; line-height: 1; margin-top: 5px;">
-                    {{ puntiOspiti }}
+            <div style="font-size: 20px; font-weight: bold; color: #7f8c8d;">-</div>
+
+            <div style="display: flex; align-items: center; gap: 15px; text-align: left; flex-direction: row-reverse; width: 45%; justify-content: flex-end;">
+                <img v-if="logoOspiti" :src="logoOspiti" style="width: 45px; height: 45px; object-fit: cover; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);">
+                <div>
+                    <div style="font-size: 12px; font-weight: bold; letter-spacing: 1px; color: #ecf0f1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                        {{ nomeOspiti || 'OSPITI' }}
+                    </div>
+                    <div style="font-size: 32px; font-weight: bold; color: #e74c3c; line-height: 1; margin-top: 5px;">
+                        {{ puntiOspiti }}
+                    </div>
                 </div>
             </div>
-            
+
         </div>
     `
 };

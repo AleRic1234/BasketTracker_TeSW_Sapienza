@@ -28,10 +28,13 @@ const api = {
     },
     async getListaReferti() {
         try {
-            const response = await fetch('http://localhost:3000/api/partita/file/lista-referti');
+            // URL corretto derivato dal tuo server.js
+            const response = await fetch('http://localhost:3000/api/lista_referti');
+            
             if (response.ok) {
                 return await response.json(); // Ritorna l'array dei nomi file
             } else {
+                console.error("Il server ha risposto con un errore nel recupero lista referti. Status:", response.status);
                 return [];
             }
         } catch (error) {
@@ -72,24 +75,7 @@ const api = {
         }
     },
 
-    
-    // 4. NUOVA FUNZIONE: Recupera la lista di tutti i file XML dal server
-    async ottieniListaReferti() {
-        try {
-            const response = await fetch('http://localhost:3000/api/lista_referti');
-            if (response.ok) {
-                return await response.json(); // Restituisce un array es: ["referto_1.xml", "referto_2.xml"]
-            } else {
-                console.error("Errore nel recupero della lista referti");
-                return [];
-            }
-        } catch (error) {
-            console.error("Errore di rete durante il fetch della lista referti:", error);
-            return [];
-        }
-    },
-
-    // 5. NUOVA FUNZIONE: Scarica un XML e ne fa il parse con il DOMParser
+    // FUNZIONE: Scarica un XML e ne fa il parse con il DOMParser
     async leggiAnteprimaXML(nomeFileXML) {
         try {
             // Scarica il file XML dalla cartella pubblica

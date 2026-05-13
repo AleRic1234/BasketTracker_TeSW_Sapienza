@@ -133,6 +133,7 @@ const app = createApp({
         getEmptyTeam(nome, idPrefix, posSuffix) {
             return {
                 nome: nome,
+                logo: null,
                 giocatori: Array.from({ length: 10 }, (_, i) => ({
                     id: idPrefix + i, nome: '', numero: '', inCampo: i < 5,
                     minuti: 0, punti: 0, rimbalzi: 0, assist: 0, rubate: 0, stoppate: 0, perse: 0, falli: 0, plsm: 0,
@@ -180,21 +181,28 @@ const app = createApp({
     const ospitiOk = this.teamB.giocatori.some(p => p.nome.trim() !== '');
 
     if (casaOk || ospitiOk) {
+        // --- 1. ASSEGNAZIONE NOMI E LOGHI ---
+        // Prendiamo i dati dagli oggetti selezionati nelle select box (squadraCasaSelezionata e squadraOspiteSelezionata)
+        this.teamA.nome = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.nome : this.teamA.nome;
+        this.teamB.nome = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.nome : this.teamB.nome;
+        
+        // Copiamo i loghi negli oggetti teamA e teamB che verranno passati allo Scoreboard
+        this.teamA.logo = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.logo : null;
+        this.teamB.logo = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.logo : null;
+
         let nextId = 1;
         
         try {
-            // Chiediamo al server quanti referti esistono già usando l'API di Studente C!
-            const referti = await api.ottieniListaReferti();
+            // Nota: verifica se nel tuo api.js la funzione si chiama 'getListaReferti' o 'ottieniListaReferti'
+            const referti = await api.getListaReferti(); 
             
             if (referti && referti.length > 0) {
-                // Estraiamo i numeri dai nomi file (es. "referto_0001.xml" -> estrae "1")
                 const ids = referti.map(file => {
                     const strNum = file.replace('referto_', '').replace('.xml', '');
                     return parseInt(strNum, 10);
                 }).filter(n => !isNaN(n));
                 
                 if (ids.length > 0) {
-                    // Troviamo il numero più alto e aggiungiamo 1
                     nextId = Math.max(...ids) + 1; 
                 }
             }
@@ -202,15 +210,18 @@ const app = createApp({
             console.error("Errore nel recupero ID dal server, riparto da 1", e);
         }
 
-        // Creiamo il vero ID incrementale a 4 cifre, come richiesto!
         this.idPartitaCorrente = nextId.toString().padStart(4, '0');
         
         this.ruolo = 'admin';
         this.currentView = 'court';
 
-        // Entriamo nella stanza WebSocket con l'ID pulito e sincronizzato
+        // Entriamo nella stanza WebSocket
         if (this.socket) {
             this.socket.emit('entra_partita', this.idPartitaCorrente);
+            
+            // --- 2. TRASMISSIONE IMMEDIATA ---
+            // Inviamo subito il primo pacchetto dati che include i loghi appena impostati
+            this.trasmettiDatiLive();
         }
     } else { 
         alert("Inserisci almeno un giocatore per squadra!"); 
@@ -263,33 +274,31 @@ async accediPartitaConCodice() {
 
         // --- LA FUNZIONE CHE SPEDISCE I DATI ---
     
-    trasmettiDatiLive() {
-        if (this.ruolo === 'admin' && this.socket) {
+   trasmettiDatiLive() {
+    if (this.ruolo === 'admin' && this.socket) {
         
-            // 1. Prepariamo l'oggetto timer prendendo i dati REALI dal componente
-            let datiTimer = null;
-            if (this.$refs.timerRef) {
-                datiTimer = {
-                    tempoResiduo: this.$refs.timerRef.timer,     // Il numero di secondi rimasti
-                    inEsecuzione: this.$refs.timerRef.isRunning  // Stato play/pausa
-                };
-            }
-
-            // 2. Creiamo il pacchetto dati completo
-            const payload = {
-                teamA: this.teamA,
-                teamB: this.teamB,
-                partitaTerminata: this.partitaTerminata,
-                timer: datiTimer // Questo deve corrispondere a quello che leggi nel mounted()
+        let datiTimer = null;
+        if (this.$refs.timerRef) {
+            datiTimer = {
+                tempoResiduo: this.$refs.timerRef.timer,
+                // CORREZIONE: usiamo timerRunning (come definito in timer.js)
+                inEsecuzione: this.$refs.timerRef.timerRunning 
             };
-
-            // 3. Spediamo via WebSocket
-            this.socket.emit('aggiornamento_admin', {
-                idPartita: this.idPartitaCorrente,
-                payload: payload
-            });
         }
-    },
+
+        const payload = {
+            teamA: this.teamA,
+            teamB: this.teamB,
+            partitaTerminata: this.partitaTerminata,
+            timer: datiTimer 
+        };
+
+        this.socket.emit('aggiornamento_admin', {
+            idPartita: this.idPartitaCorrente,
+            payload: payload
+        });
+    }
+},
 
         // 2. Metodo esclusivo per l'Admin
         mostraArchivioPersonale() {

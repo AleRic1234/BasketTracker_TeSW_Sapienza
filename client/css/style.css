@@ -461,6 +461,62 @@ select {
     text-align: center;
 }
 
+/* Loghi squadre */
+/* Stile per i loghi nel Setup */
+.logo-setup {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Stile per il logo nel Tabellino (Box Score) */
+.logo-tabellino {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* --- NUOVO STILE HEADER SQUADRE Orizzontale --- */
+.team-header-horizontal {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centra il blocco sopra la tabella */
+    gap: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 12px 12px 0 0; /* Arrotonda solo gli angoli superiori */
+    border-bottom: 3px solid var(--primary-color);
+    margin-bottom: 0; /* Si attacca alla tabella sotto */
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+}
+
+.team-header-horizontal.ospiti {
+    border-bottom-color: var(--danger-color);
+}
+
+.logo-grande {
+    width: 80px;  /* Ingrandito come richiesto */
+    height: 80px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    background: #f9f9f9;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.nome-squadra-header {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--dark-bg);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
 /* Quando il bottone è attivo */
 .tab-btn.active { 
     background-color: var(--primary-color); 
