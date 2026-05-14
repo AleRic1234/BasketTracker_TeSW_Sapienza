@@ -37,6 +37,7 @@ const app = createApp({
             socket: null,
             partitaTerminata: false,
             periodo: 1,
+            attesaLiveTimeout: null, // <-- AGGIUNTO: Timer per bloccare l'accesso al viewer
             mostraPopupHome: false,
             mostraPopupSalvataggio: false,
             mostraPopupAvviso: false,
@@ -80,10 +81,19 @@ const app = createApp({
             
             this.socket.on('dati_live', (payload) => {
                 if (this.ruolo === 'utente' || this.ruolo === 'viewer') {
+                    
+                    // --- INIZIO SBLOCCO VIEW: Se riceve dati fa entrare l'utente nel campo ---
+                    if (this.currentView !== 'court') {
+                        this.currentView = 'court';
+                        if (this.attesaLiveTimeout) clearTimeout(this.attesaLiveTimeout);
+                        if (this.DataViz) this.DataViz.mostraNotifica("📡 Segnale Live stabilito!", "success");
+                    }
+                    // --- FINE SBLOCCO VIEW ---
+
                     this.teamA = payload.teamA;
                     this.teamB = payload.teamB;
                     this.partitaTerminata = payload.partitaTerminata;   
-                        this.periodo = payload.periodo;     
+                    this.periodo = payload.periodo;     
                     if (payload.timer && this.$refs.timerRef) {
                         this.$refs.timerRef.impostaDatiEsterni(
                             payload.timer.tempoResiduo, 
@@ -211,7 +221,7 @@ const app = createApp({
             });
 
             if (typeof DataViz !== 'undefined') {
-                DataViz.mostraNotifica("🏀 Roster NBA completi caricati!");
+                DataViz.mostraNotifica("🏀 Roster NBA completi caricati!", "success");
             }
         },
 
@@ -279,13 +289,15 @@ const app = createApp({
                     this.trasmettiDatiLive();
                 }
             } else { 
-                alert("Inserisci almeno un giocatore per squadra!"); 
+                if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Inserisci almeno un giocatore per squadra!", "warning");
             }
         },
 
+        // --- BLOCCO E TOAST IN FASE DI ACCESSO SPETTATORE ---
         async accediPartitaConCodice() {
             if (this.codicePartitaInput.trim() === '') {
-                alert("Inserisci un codice!"); return;
+                if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Inserisci un codice!", "warning");
+                return;
             }
             const idCercato = this.codicePartitaInput.padStart(4, '0');
             this.idPartitaCorrente = idCercato;
@@ -293,6 +305,7 @@ const app = createApp({
             try {
                 const partitaDB = await api.ottieniPartita(idCercato);
                 if (partitaDB && partitaDB.info) {
+                    // SE PARTITA E' IN ARCHIVIO
                     this.ruolo = 'viewer';
                     this.currentView = 'court';
                     this.partitaTerminata = true; 
@@ -301,18 +314,28 @@ const app = createApp({
                     this.teamA.giocatori = partitaDB.tabellino.filter(g => g.squadra === partitaDB.info.squadra_casa);
                     this.teamB.giocatori = partitaDB.tabellino.filter(g => g.squadra === partitaDB.info.squadra_ospite);
                     
-                    if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("Partita recuperata dall'archivio.");
+                    if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("📂 Partita recuperata dall'archivio.", "success");
                 } else {
+                    // SE PARTITA DOVREBBE ESSERE IN LIVE -> RESTIAMO NELLA HOME
                     this.ruolo = 'viewer';
-                    this.currentView = 'court';
                     this.partitaTerminata = false;
+                    
                     if (this.socket) {
                         this.socket.emit('entra_partita', idCercato);
-                        if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("In attesa di segnale Live...");
+                        if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("⏳ Ricerca segnale Live in corso...", "info");
+                        
+                        // Imposta timeout di 3 secondi per disdire l'attesa se non arriva nulla
+                        if (this.attesaLiveTimeout) clearTimeout(this.attesaLiveTimeout);
+                        this.attesaLiveTimeout = setTimeout(() => {
+                            if (this.currentView !== 'court') {
+                                if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("❌ Partita non in diretta o codice errato.", "error");
+                                this.idPartitaCorrente = '0000'; // Resettiamo l'ID fasullo
+                            }
+                        }, 3000);
                     }
                 }
             } catch (e) {
-                alert("Errore di connessione al server.");
+                if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("⚠️ Errore di connessione al server.", "error");
             }
         },
 
