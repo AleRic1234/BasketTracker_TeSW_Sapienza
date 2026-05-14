@@ -1,4 +1,4 @@
-
+// Percorso: client/js/api.js
 const api = {
     // 1. Funzione per salvare la partita (quella che avevi già)
     async salva(dati) {

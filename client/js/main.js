@@ -1,11 +1,10 @@
-//Percorso: client/js/main.js
 import Timer from '../src/components/Timer.js';
 import Scoreboard from '../src/components/Scoreboard.js';
 import api from './api.js';
 
 const { createApp } = Vue;
 
-// 1. SPOSTATO QUI FUORI: Ora Vue può leggerlo all'avvio senza crashare!
+// 1. SPOSTIAMO LA FUNZIONE QUI FUORI! Così Vue non andrà MAI PIÙ in crash all'avvio
 const generaSquadraVuota = (nome, idPrefix, posSuffix) => {
     return {
         nome: nome,
@@ -37,8 +36,6 @@ const app = createApp({
             idPartitaCorrente: '0000',
             socket: null,
             partitaTerminata: false,
-            
-            // Popup
             mostraPopupHome: false,
             mostraPopupSalvataggio: false,
             mostraPopupAvviso: false,
@@ -55,7 +52,7 @@ const app = createApp({
             giocatoreAttivo: null,
             panchinaroSelezionato: null,
             
-            // 2. RISOLTO: Ora usa la funzione esterna, nessun crash!
+            // Usiamo la funzione sicura che non fa crashare l'app!
             teamA: generaSquadraVuota("", "A", "a"),
             teamB: generaSquadraVuota("", "B", "b")
         }
@@ -92,6 +89,57 @@ const app = createApp({
         }
     },
     methods: {
+        // --- FUNZIONI DI NAVIGAZIONE E SALVATAGGIO REINSERITE ---
+        apriBoxScore() {
+            this.currentView = 'boxscore';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        
+        tornaAlCampo() {
+            this.currentView = 'court';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        chiediConfermaSalvataggio() {
+            this.mostraPopupSalvataggio = true;
+        },
+
+        async confermaESalva() {
+            this.mostraPopupSalvataggio = false;
+            this.partitaTerminata = true;
+            if (this.trasmettiDatiLive) this.trasmettiDatiLive();
+
+            const payload = {
+                id: this.idPartitaCorrente,
+                data: new Date().toISOString(),
+                squadraCasa: this.teamA,
+                squadraOspite: this.teamB,
+                punteggioCasa: this.punteggioCasa,
+                punteggioOspite: this.punteggioOspite
+            };
+
+            try {
+                const risposta = await api.salva(payload);
+                if (risposta) {
+                    await this.aggiornaListaReferti();
+                    this.apriBoxScore();
+                }
+            } catch (error) {
+                console.error("Errore salvataggio:", error);
+                if (this.DataViz) this.DataViz.mostraNotifica("❌ Errore tecnico.", "error");
+            }
+        },
+
+        async aggiornaListaReferti() {
+            try {
+                const files = await api.getListaReferti();
+                this.listaReferti = files || [];
+            } catch (error) {
+                console.error("Errore lista referti:", error);
+            }
+        },
+        // --------------------------------------------------------
+
         caricaTestNBA() {
             this.teamA.nome = "Los Angeles Lakers";
             const rosterLakers = [
@@ -125,12 +173,23 @@ const app = createApp({
                 this.teamB.giocatori[i].inCampo = i < 5;
             });
 
-            if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("🏀 Roster NBA completi caricati!");
+            if (typeof DataViz !== 'undefined') {
+                DataViz.mostraNotifica("🏀 Roster NBA completi caricati!");
+            }
         },
 
-        // Manteniamo questa per compatibilità con il resto del tuo codice
         getEmptyTeam(nome, idPrefix, posSuffix) {
             return generaSquadraVuota(nome, idPrefix, posSuffix);
+        },
+
+        caricaPartitaDaDB(partita) {
+            this.ruolo = 'viewer';
+            this.currentView = 'court';
+            this.partitaTerminata = true;
+            this.teamA.nome = partita.info.squadra_casa;
+            this.teamB.nome = partita.info.squadra_ospite;
+            this.teamA.giocatori = partita.tabellino.filter(g => g.squadra === partita.info.squadra_casa);
+            this.teamB.giocatori = partita.tabellino.filter(g => g.squadra === partita.info.squadra_ospite);
         },
 
         effettuaLogin() {
@@ -156,12 +215,10 @@ const app = createApp({
             if (casaOk || ospitiOk) {
                 this.teamA.nome = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.nome : this.teamA.nome;
                 this.teamB.nome = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.nome : this.teamB.nome;
-                
                 this.teamA.logo = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.logo : null;
                 this.teamB.logo = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.logo : null;
 
                 let nextId = 1;
-                
                 try {
                     const referti = await api.getListaReferti(); 
                     if (referti && referti.length > 0) {
@@ -198,7 +255,6 @@ const app = createApp({
 
             try {
                 const partitaDB = await api.ottieniPartita(idCercato);
-
                 if (partitaDB && partitaDB.info) {
                     this.ruolo = 'viewer';
                     this.currentView = 'court';
@@ -241,20 +297,24 @@ const app = createApp({
                 };
 
                 this.socket.emit('aggiornamento_admin', {
-                    idPartita: this.idPartitaCorrente, payload: payload
+                    idPartita: this.idPartitaCorrente,
+                    payload: payload
                 });
             }
         },
 
-        apriArchivio() {
-            this.aggiornaListaReferti();
+        async apriArchivio() {
+            this.listaReferti = await api.getListaReferti();
             this.currentView = 'history';
+            setTimeout(() => { 
+                if (typeof DataViz !== 'undefined') DataViz.caricaArchivio(); 
+            }, 100); 
         },
 
         logout() {
             this.currentView = 'login'; this.password = ''; this.ruolo = null; this.username = '';
-            this.teamA = this.getEmptyTeam("", "A", "a");
-            this.teamB = this.getEmptyTeam("", "B", "b");
+            this.teamA = generaSquadraVuota("", "A", "a");
+            this.teamB = generaSquadraVuota("", "B", "b");
         },
 
         backhome() { 
@@ -268,51 +328,11 @@ const app = createApp({
             this.mostraPopupHome = false;
             this.currentView = 'home'; 
             this.codicePartitaInput = '';
-            this.teamA = this.getEmptyTeam("", "A", "a");
-            this.teamB = this.getEmptyTeam("", "B", "b");
+            this.teamA = generaSquadraVuota("", "A", "a");
+            this.teamB = generaSquadraVuota("", "B", "b");
         },
         annullaBackhome() {
             this.mostraPopupHome = false;
-        },
-
-        chiediConfermaSalvataggio() {
-            this.mostraPopupSalvataggio = true;
-        },
-
-        async confermaESalva() {
-            this.mostraPopupSalvataggio = false;
-            this.partitaTerminata = true;
-
-            if (this.trasmettiDatiLive) this.trasmettiDatiLive();
-
-            const payload = {
-                id: this.idPartitaCorrente,
-                data: new Date().toISOString(),
-                squadraCasa: this.teamA,
-                squadraOspite: this.teamB,
-                punteggioCasa: this.punteggioCasa,
-                punteggioOspite: this.punteggioOspite
-            };
-
-            try {
-                const risposta = await api.salva(payload);
-                if (risposta) {
-                    await this.aggiornaListaReferti();
-                    this.currentView = 'boxscore';
-                }
-            } catch (error) {
-                console.error("Errore salvataggio:", error);
-                if (this.DataViz) this.DataViz.mostraNotifica("❌ Errore tecnico.", "error");
-            }
-        },
-
-        async aggiornaListaReferti() {
-            try {
-                const files = await api.getListaReferti();
-                this.listaReferti = files || [];
-            } catch (error) {
-                console.error("Errore lista:", error);
-            }
         },
 
         gestisciClickGiocatore(p) {
@@ -394,9 +414,15 @@ const app = createApp({
             this.trasmettiDatiLive();
         },
 
+        formatMinuti(secondiTotali) {
+            const m = Math.floor(secondiTotali / 60);
+            const s = secondiTotali % 60;
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        },
         rimuoviStat(tipo, val) {
             if (this.giocatoreAttivo) {
                 this.giocatoreAttivo[tipo] -= val;
+                
                 if (tipo === 'falli' && this.giocatoreAttivo.falli >= 5) {
                     this.mostraMessaggio(`Il giocatore numero ${this.giocatoreAttivo.numero} è uscito per 5 falli!`);
                 }

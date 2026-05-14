@@ -1,3 +1,4 @@
+//Percorso: client/src/components/Scoreboard.js
 export default {
     props: ['puntiCasa', 'puntiOspiti', 'nomeCasa', 'nomeOspiti', 'logoCasa', 'logoOspiti'],
     template: `
