@@ -1,18 +1,20 @@
+// Percorso: client/src/components/timer.js
 export default {
     template: `
         <div class="timer-component">
             <div class="scoreboard-timer">
-                <span id="shot-clock">{{ formatTime(timer) }}</span>
+                <span id="shot-clock" v-if="terminata" style="font-size: 0.6em; letter-spacing: 2px; color: #ffeb3b;">TERMINATA</span>
+                <span id="shot-clock" v-else>{{ formatTime(timer) }}</span>
             </div>
             
-            <div class="controls" v-if="ruolo === 'admin'">
+            <div class="controls" v-if="ruolo === 'admin' && !terminata">
                 <button @click="toggleTimer">{{ timerRunning ? '❚❚' : '▶' }}</button>
                 <button @click="resetTimer">RESET</button>
             </div>
         </div>
     `,
     // MODIFICA 2: Aggiunto props per far comunicare timer.js con main.js
-    props: ['ruolo'],
+    props: ['ruolo', 'terminata'],
     data() {
         return {
             timer: 600,

@@ -69,6 +69,7 @@
                 <th width="10%" class="center">+/-</th> 
               </tr>
               <xsl:for-each select="referto_partita/giocatori/giocatore[@squadra='Casa']">
+                <xsl:sort select="@maglia" data-type="number" order="ascending"/>
                 <tr>
                   <td class="center"><strong><xsl:value-of select="@maglia"/></strong></td>
                   <td><xsl:value-of select="nome"/></td>
@@ -106,6 +107,7 @@
                 <th width="10%" class="center">+/-</th> 
               </tr>
               <xsl:for-each select="referto_partita/giocatori/giocatore[@squadra='Ospite']">
+                <xsl:sort select="@maglia" data-type="number" order="ascending"/>
                 <tr>
                   <td class="center"><strong><xsl:value-of select="@maglia"/></strong></td>
                   <td><xsl:value-of select="nome"/></td>
@@ -137,7 +139,7 @@
               <div class="sign-line"></div>
             </div>
             <div class="sign-box">
-              Ufficiale di Campo (Segnapunti)
+              Ufficiale di Campo
               <div class="sign-line"></div>
             </div>
           </div>

@@ -10,22 +10,29 @@ const api = {
             });
 
             if (response.ok) {
-                const result = await response.json();
-                console.log("Risposta dal server:", result);
-                // Mostra il messaggio all'utente 
-                alert("Partita Archiviata! " + result.message);
+                // MODIFICA CHIAVE: Usiamo .text() perché il server restituisce una stringa, non un JSON!
+                const testoRisposta = await response.text();
+                console.log("Risposta dal server:", testoRisposta);
+                
+                // SOSTITUITO: Inseriamo direttamente il 'testoRisposta' nel pop-up
+                window.DataViz.mostraNotifica(`🏆 Partita Archiviata!<br><small>${testoRisposta}</small>`, "success");
                 return true;
             } else {
                 console.error("Errore nel salvataggio. Status:", response.status);
-                alert("Errore durante l'archiviazione della partita.");
+                
+                // SOSTITUITO: Alert con Toast di Errore (Rosso)
+                window.DataViz.mostraNotifica("❌ Errore durante l'archiviazione della partita.", "error");
                 return false;
             }
         } catch (error) {
             console.error("Errore di rete (Server probabilmente spento):", error);
-            alert("Impossibile connettersi al server. Verifica che Node.js sia in esecuzione.");
+            
+            // SOSTITUITO: Alert con Toast di Avviso (Arancione)
+            window.DataViz.mostraNotifica("⚠️ Impossibile connettersi al server.<br><small>Verifica che Node.js sia in esecuzione.</small>", "warning");
             return false;
         }
     },
+    
     async getListaReferti() {
         try {
             // URL corretto derivato dal tuo server.js
