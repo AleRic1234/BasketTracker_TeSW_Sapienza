@@ -102,6 +102,9 @@ const app = createApp({
 
         chiediConfermaSalvataggio() {
             this.mostraPopupSalvataggio = true;
+            if (this.$refs.timerRef && this.$refs.timerRef.timerRunning) {
+                this.$refs.timerRef.toggleTimer(); 
+            }
         },
 
         async confermaESalva() {
@@ -332,6 +335,7 @@ const app = createApp({
             this.mostraPopupHome = false;
             this.currentView = 'home'; 
             this.codicePartitaInput = '';
+            this.partitaTerminata = false;
             this.teamA = generaSquadraVuota("", "A", "a");
             this.teamB = generaSquadraVuota("", "B", "b");
         },

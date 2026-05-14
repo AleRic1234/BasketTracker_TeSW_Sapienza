@@ -13,7 +13,6 @@ export default {
             </div>
         </div>
     `,
-    // MODIFICA 2: Aggiunto props per far comunicare timer.js con main.js
     props: ['ruolo', 'terminata'],
     data() {
         return {
@@ -22,11 +21,28 @@ export default {
             interval: null,
         }
     },
+    watch: {
+        // IL TRUCCO MAGICO: Se la variabile 'terminata' diventa vera, il timer si "uccide" da solo
+        terminata(newVal) {
+            if (newVal) {
+                this.timerRunning = false;
+                clearInterval(this.interval);
+            }
+        }
+    },
     methods: {
+        formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = s % 60;
+            return `${m}:${sec < 10 ? '0' : ''}${sec}`;
+        },
         toggleTimer() {
             if (this.timerRunning) { 
+                this.timerRunning = false; // ORA SI IMPOSTA CORRETTAMENTE
                 clearInterval(this.interval); 
+                this.$emit('sync-status');
             } else { 
+                this.timerRunning = true; // ORA SI IMPOSTA CORRETTAMENTE
                 this.interval = setInterval(() => { 
                     if (this.timer > 0) {
                         this.timer--;
@@ -38,31 +54,18 @@ export default {
                         this.$emit('time-up');
                     }
                 }, 1000); 
+                this.$emit('sync-status');
             }
-            this.timerRunning = !this.timerRunning;
-    
-            // Avvisa Vue che abbiamo messo Pausa o Play
-            this.$emit('sync-status');
-        },
-        impostaTempo(nuovoTempo) {
-            this.timer = nuovoTempo;
-        },
-        formatTime(s) {
-            const m = Math.floor(s / 60);
-            const sec = s % 60;
-            return `${m}:${sec < 10 ? '0' : ''}${sec}`;
         },
         resetTimer() {
             clearInterval(this.interval);
             this.timer = 600;
             this.timerRunning = false;
-            // MODIFICA 3: Corretto 'thids' in 'this'
             this.$emit('sync-status');
         },
         impostaDatiEsterni(nuovoTempo, inEsecuzione) {
             this.timer = nuovoTempo;
             
-            // Se l'admin ha messo play, ma io sono in pausa -> faccio partire
             if (inEsecuzione && !this.timerRunning) {
                 this.timerRunning = true;
                 clearInterval(this.interval);
@@ -76,16 +79,10 @@ export default {
                     }
                 }, 1000); 
             } 
-            // Se l'admin ha messo pausa (o resettato), ma io sono in play -> fermo
             else if (!inEsecuzione && this.timerRunning) {
                 this.timerRunning = false;
                 clearInterval(this.interval);
             }
-        }
-    },
-    unmounted() {
-        if (this.interval) {
-            clearInterval(this.interval);
         }
     }
 };
