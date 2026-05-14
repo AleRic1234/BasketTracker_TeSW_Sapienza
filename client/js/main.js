@@ -36,6 +36,7 @@ const app = createApp({
             idPartitaCorrente: '0000',
             socket: null,
             partitaTerminata: false,
+            periodo: 1,
             mostraPopupHome: false,
             mostraPopupSalvataggio: false,
             mostraPopupAvviso: false,
@@ -59,7 +60,17 @@ const app = createApp({
     },
     computed: {
         punteggioCasa() { return this.teamA.giocatori.reduce((sum, p) => sum + p.punti, 0); },
-        punteggioOspite() { return this.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0); }
+        punteggioOspite() { return this.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0); },
+
+        testoPeriodo() {
+            if (this.periodo <= 4) return `QUARTO ${this.periodo}`;
+            if (this.periodo === 5) return `OVERTIME`;
+            return `OT ${this.periodo - 4}`; // Es. OT 2, OT 3...
+        },
+        durataPeriodo() {
+            // Ritorna 600 secondi (10 min) per i primi 4 quarti, 300 (5 min) per gli Overtime
+            return this.periodo <= 4 ? 600 : 300;
+        }
     },
     mounted() {
         this.aggiornaListaReferti();
@@ -71,7 +82,8 @@ const app = createApp({
                 if (this.ruolo === 'utente' || this.ruolo === 'viewer') {
                     this.teamA = payload.teamA;
                     this.teamB = payload.teamB;
-                    this.partitaTerminata = payload.partitaTerminata;        
+                    this.partitaTerminata = payload.partitaTerminata;   
+                        this.periodo = payload.periodo;     
                     if (payload.timer && this.$refs.timerRef) {
                         this.$refs.timerRef.impostaDatiEsterni(
                             payload.timer.tempoResiduo, 
@@ -136,6 +148,24 @@ const app = createApp({
                 if (this.DataViz) this.DataViz.mostraNotifica("❌ Errore tecnico.", "error");
             }
         },
+
+        //CONTROLLA AVANZAMENTO QUARTI E OVERTIME
+        avanzaPeriodo() {
+            if (this.periodo >= 4) {
+                // Fine del 4° quarto: controllo se sono in pareggio
+                if (this.punteggioCasa === this.punteggioOspite) {
+                    this.periodo++;
+                    if (this.DataViz) this.DataViz.mostraNotifica("🏀 Parità! Si va all'OVERTIME (5 Minuti)!", "warning");
+                } else {
+                    if (this.DataViz) this.DataViz.mostraNotifica("🏆 Partita conclusa! Ora puoi premere Salva Partita.", "success");
+                }
+            } else {
+                // Quarti normali
+                this.periodo++;
+                if (this.DataViz) this.DataViz.mostraNotifica(`Inizia il Quarto ${this.periodo}`, "info");
+            }
+            this.trasmettiDatiLive();
+        },        
 
         async aggiornaListaReferti() {
             try {
@@ -300,6 +330,7 @@ const app = createApp({
                     teamA: this.teamA,
                     teamB: this.teamB,
                     partitaTerminata: this.partitaTerminata,
+                    periodo: this.periodo,
                     timer: datiTimer 
                 };
 
@@ -336,6 +367,7 @@ const app = createApp({
             this.currentView = 'home'; 
             this.codicePartitaInput = '';
             this.partitaTerminata = false;
+            this.periodo = 1;
             this.teamA = generaSquadraVuota("", "A", "a");
             this.teamB = generaSquadraVuota("", "B", "b");
         },

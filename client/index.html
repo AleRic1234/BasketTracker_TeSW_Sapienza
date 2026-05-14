@@ -264,7 +264,16 @@
                         </div>
                     </div> 
 
-                    <game-timer ref="timerRef" :ruolo="ruolo" :terminata="partitaTerminata" @tick="aggiornaMinutiGiocatori" @time-up="gestisciFineTempo" @sync-status="trasmettiDatiLive"></game-timer>
+                    <game-timer 
+                        ref="timerRef" 
+                        :ruolo="ruolo" 
+                        :terminata="partitaTerminata" 
+                        :periodo-testo="testoPeriodo"
+                        :durata-default="durataPeriodo"
+                        @tick="aggiornaMinutiGiocatori" 
+                        @sync-status="trasmettiDatiLive"
+                        @avanza-periodo="avanzaPeriodo">
+                    </game-timer>
                 </div>
             </section>
 
