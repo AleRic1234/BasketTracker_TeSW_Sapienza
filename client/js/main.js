@@ -107,6 +107,10 @@ const app = createApp({
         async confermaESalva() {
             this.mostraPopupSalvataggio = false;
             this.partitaTerminata = true;
+            if (this.$refs.timerRef) {
+                this.$refs.timerRef.timerRunning = false;
+                clearInterval(this.$refs.timerRef.interval);
+            }
             if (this.trasmettiDatiLive) this.trasmettiDatiLive();
 
             const payload = {
@@ -336,7 +340,7 @@ const app = createApp({
         },
 
         gestisciClickGiocatore(p) {
-            if (this.ruolo !== 'admin') return;
+            if (this.ruolo !== 'admin' || this.partitaTerminata) return;
             if (!p.inCampo && p.falli >= 5) {
                 this.mostraMessaggio("Questo giocatore ha 5 falli e non può rientrare in campo.");
                 this.panchinaroSelezionato = null;
@@ -362,10 +366,12 @@ const app = createApp({
                 this.mostraMessaggio("Giocatore espulso per 5 falli. Effettua un cambio.");
                 return;
             }
-            if (this.ruolo === 'admin') this.giocatoreAttivo = p;
+            if (this.ruolo === 'admin' && !this.partitaTerminata) this.giocatoreAttivo = p;
         },
 
         aggiungiStat(tipo, val) {
+            if (this.partitaTerminata) return;
+            
             if (this.giocatoreAttivo) {
                 this.giocatoreAttivo[tipo] += val;
 
@@ -409,6 +415,7 @@ const app = createApp({
         },
 
         aggiornaMinutiGiocatori() {
+            if (this.partitaTerminata) return;
             this.teamA.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
             this.teamB.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
             this.trasmettiDatiLive();
@@ -420,6 +427,8 @@ const app = createApp({
             return `${m}:${s < 10 ? '0' : ''}${s}`;
         },
         rimuoviStat(tipo, val) {
+            if (this.partitaTerminata) return;
+            
             if (this.giocatoreAttivo) {
                 this.giocatoreAttivo[tipo] -= val;
                 

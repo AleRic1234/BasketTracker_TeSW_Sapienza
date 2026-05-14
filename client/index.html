@@ -246,7 +246,7 @@
                             </div>
                         </template>
 
-                        <div v-if="giocatoreAttivo && ruolo === 'admin'" class="stat-popup">
+                        <div v-if="giocatoreAttivo && ruolo === 'admin' && !partitaTerminata" class="stat-popup">
                             <h4>{{ giocatoreAttivo.nome }} (#{{ giocatoreAttivo.numero }})</h4>
                             <div class="actions">
                                 <button @click="aggiungiStat('punti', 1)">+1pt</button>
