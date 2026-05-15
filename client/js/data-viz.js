@@ -1,19 +1,35 @@
 // Percorso: client/js/data-viz.js
 
-const DataViz = {
+window.DataViz = {
 
     // Variabile interna per il grafico (sostituisce la variabile globale esterna)
     myRadarChart: null,
 
     // 1. NOTIFICHE JQUERY (Sostituisce i brutti alert di base)
-    mostraNotifica: function(messaggio) {
+    mostraNotifica: function(messaggio, tipo = 'info') {
+        let bgColor = "#1a2a6c"; // Default blu (info)
+        let borderColor = "#d4af37"; // Oro
+        
+        // Imposta i colori in base al tipo di notifica
+        if (tipo === 'success') {
+            bgColor = "#27ae60"; // Verde successo
+            borderColor = "#2ecc71";
+        } else if (tipo === 'error') {
+            bgColor = "#c0392b"; // Rosso errore
+            borderColor = "#e74c3c";
+        } else if (tipo === 'warning') {
+            bgColor = "#f39c12"; // Arancione avviso
+            borderColor = "#f1c40f";
+        }
+
         $("<div class='toast-msg'></div>")
             .html(messaggio)
             .css({
                 position: "fixed", bottom: "20px", right: "20px",
-                background: "#1a2a6c", color: "white", padding: "15px",
-                borderRadius: "8px", zIndex: 1000, boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-                fontFamily: "sans-serif", borderLeft: "5px solid #d4af37"
+                background: bgColor, color: "white", padding: "15px",
+                borderRadius: "8px", zIndex: 1000, boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+                fontFamily: "sans-serif", borderLeft: "6px solid " + borderColor,
+                maxWidth: "320px", fontSize: "1rem", lineHeight: "1.4"
             })
             .appendTo("body")
             .hide()
@@ -22,42 +38,7 @@ const DataViz = {
             .fadeOut(400, function() { $(this).remove(); });
     },
 
-    // 2. RECUPERO E VISUALIZZAZIONE ARCHIVIO (Chiamata API)
-    caricaArchivio: function() {
-        const container = document.getElementById('archivio-container');
-        if (!container) return; // Se il div non esiste nella vista attuale, esce
-
-        container.innerHTML = "<p>Caricamento referti in corso...</p>";
-
-        fetch('http://localhost:3000/api/lista_referti')
-            .then(res => res.json())
-            .then(files => {
-                if (files.length === 0) {
-                    container.innerHTML = "<p>Nessun referto disponibile nel database.</p>";
-                    return;
-                }
-
-                // Costruisce la griglia dei referti
-                let html = '<div class="referti-grid" style="display: flex; gap: 15px; flex-wrap: wrap;">';
-                files.forEach(file => {
-                    html += `
-                        <div class="referto-card" style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #fff; text-align: center;">
-                            <h3 style="margin-top:0;">📄 ${file}</h3>
-                            <button onclick="DataViz.anteprimaXML('${file}')" style="margin-bottom: 10px; cursor: pointer;">🔍 Anteprima Rapida</button><br>
-                            <a href="http://localhost:3000/referti/${file}" target="_blank" style="color: #1a2a6c; font-weight: bold; text-decoration: none;">Apri Referto FIP</a>
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                container.innerHTML = html;
-            })
-            .catch(err => {
-                container.innerHTML = "<p style='color:red;'>Errore di connessione al server.</p>";
-                console.error("Errore Archivio:", err);
-            });
-    },
-
-    // 3. PARSING DEL DOM XML (Slide 15 - Requisito da 30 e lode)
+    //Carica anteprima XML referti
     anteprimaXML: function(nomeFile) {
         fetch('http://localhost:3000/referti/' + nomeFile)
             .then(res => res.text())
@@ -65,28 +46,29 @@ const DataViz = {
                 let parser = new DOMParser();
                 let xmlDoc = parser.parseFromString(str, "text/xml");
 
-                // Estrazione dati (Allineati alla vera struttura dell'XML)
-                let garaId = xmlDoc.getElementsByTagName("referto_partita")[0].getAttribute("id");
+                // Navigazione del DOM XML per estrarre i dati
+                let radice = xmlDoc.getElementsByTagName("referto_partita")[0];
+                let garaId = radice.getAttribute("id");
                 
-                // Estraiamo i nomi
-                let squadraCasa = xmlDoc.getElementsByTagName("squadra_casa")[0].childNodes[0].nodeValue;
-                let squadraOspite = xmlDoc.getElementsByTagName("squadra_ospite")[0].childNodes[0].nodeValue;
+                let nodoCasa = xmlDoc.getElementsByTagName("casa")[0];
+                let nodoOspiti = xmlDoc.getElementsByTagName("ospiti")[0];
                 
-                // Estraiamo il punteggio finale
-                let punteggioFinale = xmlDoc.getElementsByTagName("punteggio_finale")[0].childNodes[0].nodeValue;
+                let squadraCasa = nodoCasa.getAttribute("nome");
+                let puntiCasa = nodoCasa.childNodes[0].nodeValue;
                 
-                // Dividiamo il punteggio
-                let punti = punteggioFinale.split("-");
-                let puntiCasa = punti[0].trim();
-                let puntiOspite = punti[1].trim();
+                let squadraOspite = nodoOspiti.getAttribute("nome");
+                let puntiOspite = nodoOspiti.childNodes[0].nodeValue;
 
-                // Creazione e lancio della notifica jQuery
-                let msg = `<strong>Gara #${garaId}</strong><br>${squadraCasa} <strong>${puntiCasa}</strong> - <strong>${puntiOspite}</strong> ${squadraOspite}`;
+                // Mostriamo il risultato con la notifica jQuery
+                let msg = `<div style='text-align:center'>
+                            <small>ANTEPRIMA GARA #${garaId}</small><br>
+                            <span style='font-size:1.2rem'>${squadraCasa} <b>${puntiCasa}</b> - <b>${puntiOspite}</b> ${squadraOspite}</span>
+                           </div>`;
                 this.mostraNotifica(msg);
             })
             .catch(err => {
                 console.error("Errore parse XML", err);
-                this.mostraNotifica("Errore nella lettura dell'anteprima XML.");
+                this.mostraNotifica("⚠️ Errore nella lettura dell'anteprima XML.");
             });
     },
 
