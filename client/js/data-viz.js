@@ -3,6 +3,7 @@
 window.DataViz = {
 
     myRadarChart: null,
+    myBarChart: null,
 
     // 1. NOTIFICHE JQUERY
    mostraNotifica: function(messaggio, tipo = 'info') {
@@ -208,6 +209,50 @@ window.DataViz = {
                 console.error("Errore generazione grafico:", err);
                 this.mostraNotifica("Errore nel caricamento dei dati per il grafico.", "error");
             });
+    },
+
+    // 7. GRAFICO A BARRE: TOP 5 SCORERS (LEADERBOARD)
+    renderTopScorersChart: function(giocatori) {
+        const canvas = document.getElementById('topScorersChart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        
+        if (DataViz.myBarChart) { DataViz.myBarChart.destroy(); }
+
+        // Prendiamo solo i primi 5 (il backend li ha già ordinati in modo decrescente!)
+        const top5 = giocatori.slice(0, 5);
+        
+        // Creiamo le etichette "Nome (Squadra)" e i valori
+        const nomi = top5.map(g => `${g.nome} (${g.squadra})`);
+        const punti = top5.map(g => g.punti_totali); // Corrisponde al nome generato nel tuo classifica.js
+
+        DataViz.myBarChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: nomi,
+                datasets: [{
+                    label: 'Punti Totali nel Torneo',
+                    data: punti,
+                    backgroundColor: 'rgba(243, 156, 18, 0.8)', // Arancione
+                    borderColor: '#f39c12',
+                    borderWidth: 1,
+                    borderRadius: 6 // Arrotonda le colonne
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 } // Solo numeri interi
+                    }
+                },
+                plugins: {
+                    legend: { display: false } // Nascondiamo la legenda perché è ovvia
+                }
+            }
+        });
     }
 
 };
