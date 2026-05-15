@@ -79,6 +79,12 @@
                         <h3>Archivio Referti</h3>
                         <p>Consulta lo storico delle partite, visualizza i grafici radar e scarica i file ufficiali.</p>
                     </div>
+
+                    <div class="menu-card" @click="apriLeaderboard">
+                        <div class="menu-card-icon">🏆</div>
+                        <h3>Statistiche Globali</h3>
+                        <p>Scopri i migliori marcatori del torneo tramite query SQL di aggregazione.</p>
+                    </div>
                 </div>
             </section>
 
@@ -88,7 +94,6 @@
                 </div>
                 
                 <div class="referti-grid" style="display:flex; gap:20px; flex-wrap:wrap; margin-top: 20px; justify-content: center;">
-                    
                     <div v-for="file in listaReferti" :key="file" class="referto-card" style="background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.05); width:220px; text-align:center; transition: transform 0.3s ease;">
                         
                         <div class="referto-icon" style="font-size:3.5rem; margin-bottom:10px;">📄</div>
@@ -112,8 +117,23 @@
                                 📊 Confronto
                             </button>
                         </div>
-
                     </div>
+                </div>
+            </section>
+
+            <section v-if="currentView === 'leaderboard'" class="view-container">
+                <div class="header-archivio" style="text-align: center;">
+                    <h2>Top 5 Marcatori del Torneo</h2>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 800px; margin: 20px auto;">
+                    <canvas id="topScorersChart"></canvas>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button @click="backhome" class="btn-primary" style="max-width: 250px;">
+                        🏠 Torna alla Home
+                    </button>
                 </div>
             </section>
 

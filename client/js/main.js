@@ -111,7 +111,7 @@ const app = createApp({
         }
     },
     methods: {
-        // --- FUNZIONI DI NAVIGAZIONE E SALVATAGGIO REINSERITE ---
+        // --- FUNZIONI DI NAVIGAZIONE E SALVATAGGIO  ---
         apriBoxScore() {
             this.currentView = 'boxscore';
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -376,6 +376,28 @@ const app = createApp({
             setTimeout(() => { 
                 if (typeof DataViz !== 'undefined') DataViz.caricaArchivio(); 
             }, 100); 
+        },
+
+        async apriLeaderboard() {
+            try {
+                // Chiama la TUA api scritta in classifica.js!
+                const response = await fetch('http://localhost:3000/api/classifica');
+                const classificaDati = await response.json();
+                
+                this.currentView = 'leaderboard';
+                
+                // Aspettiamo che Vue renderizzi il canvas, poi disegniamo il grafico
+                setTimeout(() => {
+                    if (typeof DataViz !== 'undefined') {
+                        DataViz.renderTopScorersChart(classificaDati);
+                        DataViz.mostraNotifica("Dati aggregati caricati con successo!", "success");
+                    }
+                }, 100);
+                
+            } catch (error) {
+                console.error("Errore caricamento classifica:", error);
+                if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("Errore di connessione al database.", "error");
+            }
         },
 
         logout() {
