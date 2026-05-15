@@ -116,40 +116,38 @@ window.DataViz = {
             .catch(err => console.error(err));
     },
 
-    // 5. RENDERING GRAFICO RADAR
+    // 5. RENDERING GRAFICO RADAR (Con creazione Modale)
     renderRadarChart: function(playerA, playerB) {
-        // 5a. CREIAMO IL MODALE DINAMICAMENTE CON IL CANVAS AL SUO INTERNO
-        $("#radar-modal").remove(); // Rimuove modali vecchi
-        
+        // Rimuove eventuali modali precedenti per non sovrapporle
+        $("#radar-modal").remove();
+
+        // Crea dinamicamente la modale scura e la inietta nell'HTML
         let modaleHTML = `
-            <div id="radar-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; justify-content: center; align-items: center;">
+            <div id="radar-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
                 <div style="background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; text-align: center; position: relative;">
                     <button id="close-radar-btn" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer;">❌</button>
-                    <h3 style="margin-bottom: 15px; color: var(--dark-bg);">Confronto Diretto: ${playerA.nome} vs ${playerB.nome}</h3>
-                    
-                    <canvas id="radarChart"></canvas>
+                    <h3 style="margin-bottom: 15px; color: var(--dark-bg);">Confronto: ${playerA.nome} vs ${playerB.nome}</h3>
+                    <canvas id="radarChart"></canvas> 
                 </div>
             </div>
         `;
         $("body").append(modaleHTML);
-        
-        // Logica di chiusura del popup
-        $("#close-radar-btn").on("click", function() {
-            $("#radar-modal").fadeOut(200, function() { $(this).remove(); });
-            if (DataViz.myRadarChart) { 
-                DataViz.myRadarChart.destroy(); // Distrugge il grafico per liberare la memoria
-            }
-        });
-        
-        $("#radar-modal").hide().fadeIn(300);
 
-        // 5b. ORA CHE IL CANVAS ESISTE, DISEGNIAMO IL GRAFICO
+        // Funzione per chiudere la modale e distruggere il grafico
+        $("#close-radar-btn").on("click", () => {
+            $("#radar-modal").fadeOut(200, function() { $(this).remove(); });
+            if (this.myRadarChart) { this.myRadarChart.destroy(); }
+        });
+
         const canvas = document.getElementById('radarChart');
         const ctx = canvas.getContext('2d');
-        
-        if (DataViz.myRadarChart) { DataViz.myRadarChart.destroy(); }
 
-        DataViz.myRadarChart = new Chart(ctx, { 
+        if (this.myRadarChart) {
+            this.myRadarChart.destroy();
+        }
+
+        // Creazione del grafico Chart.js
+        this.myRadarChart = new Chart(ctx, {
             type: 'radar',
             data: {
                 labels: ['Punti', 'Rimbalzi', 'Assist', 'Rubate', 'Stoppate'],
@@ -166,7 +164,7 @@ window.DataViz = {
                         label: playerB.nome,
                         data: [playerB.punti, playerB.rimbalzi, playerB.assist, playerB.rubate, playerB.stoppate],
                         fill: true,
-                        backgroundColor: 'rgba(178, 31, 31, 0.2)', 
+                        backgroundColor: 'rgba(178, 31, 31, 0.2)',
                         borderColor: '#b21f1f',
                         pointBackgroundColor: '#b21f1f',
                     }
@@ -174,13 +172,7 @@ window.DataViz = {
             },
             options: {
                 elements: { line: { borderWidth: 3 } },
-                scales: {
-                    r: {
-                        angleLines: { display: true },
-                        suggestedMin: 0,
-                        suggestedMax: 30
-                    }
-                }
+                scales: { r: { suggestedMin: 0, suggestedMax: 30 } }
             }
         });
     },
@@ -188,28 +180,33 @@ window.DataViz = {
     // 6. CONFRONTO AUTOMATICO GIOCATORI
     creaConfrontoAutomatico: function(idPartita) {
         fetch(`http://localhost:3000/api/partita/${idPartita}`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error("Partita non trovata nel database");
+                return res.json();
+            })
             .then(data => {
-                // Recuperiamo il tabellino dal database. 
-                // Filtriamo solo i giocatori che hanno effettivamente giocato (es. punti > 0 o almeno sono entrati in campo)
-                const giocatoriAttivi = data.tabellino.filter(g => g.nome.trim() !== '' && g.minuti > 0);
+                // Legge i giocatori usando il nome corretto dal backend
+                const listaGiocatori = data.giocatori;
+
+                if (!listaGiocatori || listaGiocatori.length < 2) {
+                    this.mostraNotifica("⚠️ Statistiche insufficienti nel database per il confronto.", "warning");
+                    return;
+                }
+
+                // Ordina i giocatori per punti decrescenti
+                listaGiocatori.sort((a, b) => b.punti - a.punti);
                 
-                // Prendiamo i due giocatori con più punti per un bel confronto
-                giocatoriAttivi.sort((a, b) => b.punti - a.punti);
-                
-                const p1 = giocatoriAttivi[0];
-                const p2 = giocatoriAttivi[1];
+                const p1 = listaGiocatori[0];
+                const p2 = listaGiocatori[1];
                 
                 if (p1 && p2) {
-                    DataViz.renderRadarChart(p1, p2); 
-                    DataViz.mostraNotifica(`Grafico generato!`, 'success'); 
-                } else {
-                    DataViz.mostraNotifica(`Dati insufficienti per il confronto in questa partita.`, 'warning'); 
+                    this.renderRadarChart(p1, p2);
+                    this.mostraNotifica(`📊 Grafico generato: ${p1.nome} vs ${p2.nome}`, "success");
                 }
             })
             .catch(err => {
-                console.error("Errore generazione grafico", err);
-                DataViz.mostraNotifica(`Errore nel caricamento dei dati per il grafico.`, 'error');
+                console.error("Errore generazione grafico:", err);
+                this.mostraNotifica("Errore nel caricamento dei dati per il grafico.", "error");
             });
     }
 

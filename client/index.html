@@ -42,14 +42,41 @@
         </header>
 
         <main>
-            <section v-if="currentView === 'login'" class="view-container">
+            <section v-if="currentView === 'login'" class="view-container login-section">
                 <div class="login-card">
-                    <h2>Accesso BasketTracker</h2>
-                    <input type="text" v-model="username" placeholder="Username (es. admin o utente)">
-                    <input type="password" v-model="password" placeholder="Password" @keyup.enter="effettuaLogin">
+                    <div class="login-header">
+                        <h2>🏀 BasketTracker</h2>
+                        <p>Effettua l'accesso per continuare</p>
+                    </div>
                     
-                    <button class="btn-primary" @click="effettuaLogin">ACCEDI</button>
-                    <p v-if="erroreLogin" class="error">Credenziali errate!</p>
+                    <div class="login-body">
+                        <div class="input-group">
+                            <label for="username">Username</label>
+                            <input 
+                                type="text" 
+                                id="username" 
+                                v-model="username" 
+                                placeholder="es. admin o utente"
+                            >
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="password">Password</label>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                v-model="password" 
+                                placeholder="Inserisci la tua password" 
+                                @keyup.enter="effettuaLogin"
+                            >
+                        </div>
+                        
+                        <div v-if="erroreLogin" class="error-msg">
+                            ⚠️ Credenziali non valide. Riprova.
+                        </div>
+                        
+                        <button @click="effettuaLogin" class="btn-login">ACCEDI</button>
+                    </div>
                 </div>
             </section>
 
@@ -147,8 +174,24 @@
                              :class="p.inCampo ? 'setup-titolare' : 'setup-panchina'"
                              style="display: flex; gap: 10px; margin-bottom: 8px;">
                              
-                            <input v-model="p.numero" placeholder="N°" class="in-num" style="width: 50px; text-align: center; border-radius: 5px; border: 1px solid #ccc;">
-                            <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name" style="flex: 1; border-radius: 5px; border: 1px solid #ccc; padding: 8px;">
+                            <input 
+                                type="number" 
+                                v-model="p.numero" 
+                                min="0" 
+                                max="99" 
+                                oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);"
+                                placeholder="N°" 
+                                class="in-num" 
+                                style="width: 50px; text-align: center; border-radius: 5px; border: 1px solid #ccc;"
+                            >
+                            <input 
+                                type="text" 
+                                v-model="p.nome" 
+                                oninput="this.value = this.value.replace(/[^a-zA-ZÀ-ÿ.\s']/g, '');"
+                                placeholder="Nome Giocatore" 
+                                class="in-nome"
+                                style="width: 100%; border-radius: 5px; border: 1px solid #ccc; padding: 5px;"
+                            >
                         </div>
                     </div>
 
@@ -173,8 +216,24 @@
                              :class="p.inCampo ? 'setup-titolare' : 'setup-panchina'"
                              style="display: flex; gap: 10px; margin-bottom: 8px;">
                              
-                            <input v-model="p.numero" placeholder="N°" class="in-num" style="width: 50px; text-align: center; border-radius: 5px; border: 1px solid #ccc;">
-                            <input v-model="p.nome" placeholder="Nome Giocatore" class="in-name" style="flex: 1; border-radius: 5px; border: 1px solid #ccc; padding: 8px;">
+                            <input 
+                               type="number" 
+                               v-model="p.numero" 
+                               min="0" 
+                               max="99" 
+                               oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);"
+                               placeholder="N°" 
+                               class="in-num" 
+                               style="width: 50px; text-align: center; border-radius: 5px; border: 1px solid #ccc;"
+                            >
+                            <input 
+                                type="text" 
+                                v-model="p.nome" 
+                                oninput="this.value = this.value.replace(/[^a-zA-ZÀ-ÿ.\s']/g, '');"
+                                placeholder="Nome Giocatore" 
+                                class="in-nome"
+                                style="width: 100%; border-radius: 5px; border: 1px solid #ccc; padding: 5px;"
+                            >
                         </div>
                     </div>
 
@@ -219,37 +278,19 @@
                         <div class="bench-tag team">BENCH (CASA)</div>
                         <div class="bench-tag opp">BENCH (OSPITI)</div>
 
-                       <template v-for="(p, index) in teamA.giocatori" :key="p.id">
-                            <div v-if="p.nome.trim() !== ''" 
-                                 :class="[
-                                    'player', 
-                                    'team-left', 
-                                    p.posClass, 
-                                    p.inCampo ? 'bordo-verdea' : 'bordo-biancoa',
-                                    { 'pronto-al-cambio': panchinaroSelezionato === p },
-                                    { 'espulso': p.falli >= 5 }
-                                 ]" 
-                                 @click="gestisciClickGiocatore(p)">
-                                {{ p.numero }}
-                                <div v-if="p.showPopup" class="floating-stat" :class="{ negativo: p.isNegativo }">{{ p.popupMsg }}</div>
-                            </div>
-                        </template>
+                        <div v-for="p in giocatoriValidiA" :key="p.id" 
+                            :class="getClasseGiocatore(p, 'A')" 
+                            @click="gestisciClickGiocatore(p)">
+                            {{ p.numero }}
+                            <div v-if="p.showPopup" class="floating-stat" :class="{ negativo: p.isNegativo }">{{ p.popupMsg }}</div>
+                        </div>
 
-                        <template v-for="(p, index) in teamB.giocatori" :key="p.id">
-                            <div v-if="p.nome.trim() !== ''" 
-                                 :class="[
-                                    'player', 
-                                    'team-right', 
-                                    p.posClass, 
-                                    p.inCampo ? 'bordo-verdeb' : 'bordo-biancob',
-                                    { 'pronto-al-cambio': panchinaroSelezionato === p },
-                                    { 'espulso': p.falli >= 5 }
-                                 ]" 
-                                 @click="gestisciClickGiocatore(p)">
-                                {{ p.numero }}
-                                <div v-if="p.showPopup" class="floating-stat" :class="{ negativo: p.isNegativo }">{{ p.popupMsg }}</div>
-                            </div>
-                        </template>
+                        <div v-for="p in giocatoriValidiB" :key="p.id" 
+                            :class="getClasseGiocatore(p, 'B')" 
+                            @click="gestisciClickGiocatore(p)">
+                            {{ p.numero }}
+                            <div v-if="p.showPopup" class="floating-stat" :class="{ negativo: p.isNegativo }">{{ p.popupMsg }}</div>
+                        </div>
 
                         <div v-if="giocatoreAttivo && ruolo === 'admin' && !partitaTerminata" class="stat-popup">
                             <h4>{{ giocatoreAttivo.nome }} (#{{ giocatoreAttivo.numero }})</h4>

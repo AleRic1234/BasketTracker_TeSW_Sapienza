@@ -71,7 +71,13 @@ const app = createApp({
         durataPeriodo() {
             // Ritorna 600 secondi (10 min) per i primi 4 quarti, 300 (5 min) per gli Overtime
             return this.periodo <= 4 ? 600 : 300;
-        }
+        },
+        giocatoriValidiA() {
+            return this.teamA.giocatori.filter(p => p.nome.trim() !== '');
+        },
+        giocatoriValidiB() {
+            return this.teamB.giocatori.filter(p => p.nome.trim() !== '');
+        },
     },
     mounted() {
         this.aggiornaListaReferti();
@@ -191,6 +197,19 @@ const app = createApp({
                 console.error("Errore lista referti:", error);
             }
         },
+
+        // --- FUNZIONI DI GESTIONE PARTITA E INTERAZIONE REINSERITE ---
+        getClasseGiocatore(p, teamId) {
+            const isCasa = teamId === 'A';
+            return [
+                'player', 
+                isCasa ? 'team-left' : 'team-right', 
+                p.posClass, 
+                p.inCampo ? (isCasa ? 'bordo-verdea' : 'bordo-verdeb') : (isCasa ? 'bordo-biancoa' : 'bordo-biancob'),
+                { 'pronto-al-cambio': this.panchinaroSelezionato === p },
+                { 'espulso': p.falli >= 5 }
+            ];
+        },
         // --------------------------------------------------------
 
         caricaTestNBA() {
@@ -262,40 +281,57 @@ const app = createApp({
         },
 
         async iniziaPartita() {
-            const casaOk = this.teamA.giocatori.some(p => p.nome.trim() !== '');
-            const ospitiOk = this.teamB.giocatori.some(p => p.nome.trim() !== '');
+            // 1. Estrae solo i giocatori che hanno un nome e un numero di maglia compilati
+            const getValidi = (team) => team.giocatori.filter(p => p.nome.trim() !== '' && p.numero !== '');
+            const vA = getValidi(this.teamA);
+            const vB = getValidi(this.teamB);
 
-            if (casaOk || ospitiOk) {
-                this.teamA.nome = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.nome : this.teamA.nome;
-                this.teamB.nome = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.nome : this.teamB.nome;
-                this.teamA.logo = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.logo : null;
-                this.teamB.logo = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.logo : null;
+            // 2. Controllo numero minimo (5 per squadra)
+            if (vA.length < 5 || vB.length < 5) {
+                if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Almeno 5 giocatori con nome e numero per squadra!", "warning");
+                return; // Ferma l'esecuzione della funzione
+            }
 
-                let nextId = 1;
-                try {
-                    const referti = await api.getListaReferti(); 
-                    if (referti && referti.length > 0) {
-                        const ids = referti.map(file => {
-                            const strNum = file.replace('referto_', '').replace('.xml', '');
-                            return parseInt(strNum, 10);
-                        }).filter(n => !isNaN(n));
-                        
-                        if (ids.length > 0) nextId = Math.max(...ids) + 1; 
-                    }
-                } catch(e) {
-                    console.error("Errore nel recupero ID", e);
+            // 3. Controllo numeri duplicati
+            const hasDup = (list) => new Set(list.map(g => g.numero.toString())).size !== list.length;
+            if (hasDup(vA) || hasDup(vB)) {
+                if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Numeri duplicati rilevati nella stessa squadra!", "error");
+                return; // Ferma l'esecuzione della funzione
+            }
+
+            // --- SE SUPERA TUTTI I CONTROLLI, LA PARTITA VIENE CREATA ---
+            
+            // Assegnazione nomi e loghi
+            this.teamA.nome = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.nome : this.teamA.nome;
+            this.teamB.nome = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.nome : this.teamB.nome;
+            this.teamA.logo = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.logo : null;
+            this.teamB.logo = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.logo : null;
+
+            // Generazione automatica ID progressivo
+            let nextId = 1;
+            try {
+                const referti = await api.getListaReferti(); 
+                if (referti && referti.length > 0) {
+                    const ids = referti.map(file => {
+                        const strNum = file.replace('referto_', '').replace('.xml', '');
+                        return parseInt(strNum, 10);
+                    }).filter(n => !isNaN(n));
+                    
+                    if (ids.length > 0) nextId = Math.max(...ids) + 1; 
                 }
+            } catch(e) {
+                console.error("Errore nel recupero ID", e);
+            }
 
-                this.idPartitaCorrente = nextId.toString().padStart(4, '0');
-                this.ruolo = 'admin';
-                this.currentView = 'court';
+            // Imposta lo stato della partita e cambia vista
+            this.idPartitaCorrente = nextId.toString().padStart(4, '0');
+            this.ruolo = 'admin';
+            this.currentView = 'court';
 
-                if (this.socket) {
-                    this.socket.emit('entra_partita', this.idPartitaCorrente);
-                    this.trasmettiDatiLive();
-                }
-            } else { 
-                if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Inserisci almeno un giocatore per squadra!", "warning");
+            // Attiva la trasmissione Live
+            if (this.socket) {
+                this.socket.emit('entra_partita', this.idPartitaCorrente);
+                this.trasmettiDatiLive();
             }
         },
 
@@ -379,9 +415,29 @@ const app = createApp({
         },
 
         logout() {
-            this.currentView = 'login'; this.password = ''; this.ruolo = null; this.username = '';
-            this.teamA = generaSquadraVuota("", "A", "a");
-            this.teamB = generaSquadraVuota("", "B", "b");
+            // Pulizia del timer anche al logout
+            if (this.$refs.timerRef) {
+                this.$refs.timerRef.timerRunning = false;
+                clearInterval(this.$refs.timerRef.interval);
+                this.$refs.timerRef.timer = 600;
+            }
+
+            this.currentView = 'login'; 
+            this.password = ''; 
+            this.ruolo = null;
+            this.username = '';
+
+            // Svuotiamo tutta la memoria residua
+            this.codicePartitaInput = '';
+            this.partitaTerminata = false;
+            this.idPartitaCorrente = '0000';
+            this.squadraCasaSelezionata = null;
+            this.squadraOspiteSelezionata = null;
+            this.giocatoreAttivo = null;
+            this.panchinaroSelezionato = null;
+
+            this.teamA = this.getEmptyTeam("", "A", "a");
+            this.teamB = this.getEmptyTeam("", "B", "b");
         },
 
 
@@ -394,13 +450,36 @@ const app = createApp({
         },
         eseguiBackhome() {
             this.mostraPopupHome = false;
+            
+            // 1. FORZIAMO IL RESET DEL TIMER!
+            if (this.$refs.timerRef) {
+                this.$refs.timerRef.timerRunning = false;
+                clearInterval(this.$refs.timerRef.interval);
+                this.$refs.timerRef.timer = 600; // Riporta l'orologio a 10:00
+            }
+
+            // 2. Avvisa gli spettatori che la partita è finita/interrotta
+            if (this.socket && this.ruolo === 'admin' && this.currentView === 'court') {
+                this.partitaTerminata = true;
+                this.trasmettiDatiLive();
+            }
+
             this.currentView = 'home'; 
             this.codicePartitaInput = '';
             this.partitaTerminata = false;
-            this.periodo = 1;
-            this.teamA = generaSquadraVuota("", "A", "a");
-            this.teamB = generaSquadraVuota("", "B", "b");
+            
+            // 3. AZZERIAMO I DATI IN MEMORIA ("Stato Sporco")
+            this.idPartitaCorrente = '0000';
+            this.squadraCasaSelezionata = null;
+            this.squadraOspiteSelezionata = null;
+            this.giocatoreAttivo = null;
+            this.panchinaroSelezionato = null;
+            
+            // Resetta i team per crearne una nuova pulita
+            this.teamA = this.getEmptyTeam("", "A", "a");
+            this.teamB = this.getEmptyTeam("", "B", "b");
         },
+
         annullaBackhome() {
             this.mostraPopupHome = false;
         },
