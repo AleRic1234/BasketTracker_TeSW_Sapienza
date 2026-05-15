@@ -368,8 +368,8 @@
                         🏀 Torna al Campo
                     </button>
                     
-                    <button v-if="partitaTerminata" class="btn-secondary" style="width: 100%; max-width: 250px;" onclick="window.print()">
-                        📥 Scarica Referto
+                    <button v-if="partitaTerminata" class="btn-secondary" style="width: 100%; max-width: 250px;" @click="stampaRefertoUfficiale">
+                        📥 Stampa Referto Ufficiale
                     </button>
                     
                     <button v-if="partitaTerminata" class="btn-primary" style="width: 100%; max-width: 250px;" @click="mostraPopupHome = true">

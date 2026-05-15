@@ -122,6 +122,12 @@ const app = createApp({
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
 
+        // Apre il file XML appena generato in una nuova scheda.
+        stampaRefertoUfficiale() {
+            const urlReferto = `http://localhost:3000/referti/referto_${this.idPartitaCorrente}.xml`;
+            window.open(urlReferto, '_blank');
+        },
+
         chiediConfermaSalvataggio() {
             this.mostraPopupSalvataggio = true;
             if (this.$refs.timerRef && this.$refs.timerRef.timerRunning) {
@@ -377,6 +383,7 @@ const app = createApp({
             this.teamA = generaSquadraVuota("", "A", "a");
             this.teamB = generaSquadraVuota("", "B", "b");
         },
+
 
         backhome() { 
             if (this.currentView === 'court' || this.currentView === 'setup') {
