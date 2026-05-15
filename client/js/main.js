@@ -36,6 +36,8 @@ const app = createApp({
             idPartitaCorrente: '0000',
             socket: null,
             partitaTerminata: false,
+            periodo: 1,
+            attesaLiveTimeout: null, // <-- AGGIUNTO: Timer per bloccare l'accesso al viewer
             mostraPopupHome: false,
             mostraPopupSalvataggio: false,
             mostraPopupAvviso: false,
@@ -59,7 +61,23 @@ const app = createApp({
     },
     computed: {
         punteggioCasa() { return this.teamA.giocatori.reduce((sum, p) => sum + p.punti, 0); },
-        punteggioOspite() { return this.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0); }
+        punteggioOspite() { return this.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0); },
+
+        testoPeriodo() {
+            if (this.periodo <= 4) return `QUARTO ${this.periodo}`;
+            if (this.periodo === 5) return `OVERTIME`;
+            return `OT ${this.periodo - 4}`; // Es. OT 2, OT 3...
+        },
+        durataPeriodo() {
+            // Ritorna 600 secondi (10 min) per i primi 4 quarti, 300 (5 min) per gli Overtime
+            return this.periodo <= 4 ? 600 : 300;
+        },
+        giocatoriValidiA() {
+            return this.teamA.giocatori.filter(p => p.nome.trim() !== '');
+        },
+        giocatoriValidiB() {
+            return this.teamB.giocatori.filter(p => p.nome.trim() !== '');
+        },
     },
     mounted() {
         this.aggiornaListaReferti();
@@ -69,9 +87,19 @@ const app = createApp({
             
             this.socket.on('dati_live', (payload) => {
                 if (this.ruolo === 'utente' || this.ruolo === 'viewer') {
+                    
+                    // --- INIZIO SBLOCCO VIEW: Se riceve dati fa entrare l'utente nel campo ---
+                    if (this.currentView !== 'court') {
+                        this.currentView = 'court';
+                        if (this.attesaLiveTimeout) clearTimeout(this.attesaLiveTimeout);
+                        if (this.DataViz) this.DataViz.mostraNotifica("📡 Segnale Live stabilito!", "success");
+                    }
+                    // --- FINE SBLOCCO VIEW ---
+
                     this.teamA = payload.teamA;
                     this.teamB = payload.teamB;
-                    this.partitaTerminata = payload.partitaTerminata;        
+                    this.partitaTerminata = payload.partitaTerminata;   
+                    this.periodo = payload.periodo;     
                     if (payload.timer && this.$refs.timerRef) {
                         this.$refs.timerRef.impostaDatiEsterni(
                             payload.timer.tempoResiduo, 
@@ -98,6 +126,12 @@ const app = createApp({
         tornaAlCampo() {
             this.currentView = 'court';
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        // Apre il file XML appena generato in una nuova scheda.
+        stampaRefertoUfficiale() {
+            const urlReferto = `http://localhost:3000/referti/referto_${this.idPartitaCorrente}.xml`;
+            window.open(urlReferto, '_blank');
         },
 
         chiediConfermaSalvataggio() {
@@ -137,6 +171,24 @@ const app = createApp({
             }
         },
 
+        //CONTROLLA AVANZAMENTO QUARTI E OVERTIME
+        avanzaPeriodo() {
+            if (this.periodo >= 4) {
+                // Fine del 4° quarto: controllo se sono in pareggio
+                if (this.punteggioCasa === this.punteggioOspite) {
+                    this.periodo++;
+                    if (this.DataViz) this.DataViz.mostraNotifica("🏀 Parità! Si va all'OVERTIME (5 Minuti)!", "warning");
+                } else {
+                    if (this.DataViz) this.DataViz.mostraNotifica("🏆 Partita conclusa! Ora puoi premere Salva Partita.", "success");
+                }
+            } else {
+                // Quarti normali
+                this.periodo++;
+                if (this.DataViz) this.DataViz.mostraNotifica(`Inizia il Quarto ${this.periodo}`, "info");
+            }
+            this.trasmettiDatiLive();
+        },        
+
         async aggiornaListaReferti() {
             try {
                 const files = await api.getListaReferti();
@@ -144,6 +196,19 @@ const app = createApp({
             } catch (error) {
                 console.error("Errore lista referti:", error);
             }
+        },
+
+        // --- FUNZIONI DI GESTIONE PARTITA E INTERAZIONE REINSERITE ---
+        getClasseGiocatore(p, teamId) {
+            const isCasa = teamId === 'A';
+            return [
+                'player', 
+                isCasa ? 'team-left' : 'team-right', 
+                p.posClass, 
+                p.inCampo ? (isCasa ? 'bordo-verdea' : 'bordo-verdeb') : (isCasa ? 'bordo-biancoa' : 'bordo-biancob'),
+                { 'pronto-al-cambio': this.panchinaroSelezionato === p },
+                { 'espulso': p.falli >= 5 }
+            ];
         },
         // --------------------------------------------------------
 
@@ -181,7 +246,7 @@ const app = createApp({
             });
 
             if (typeof DataViz !== 'undefined') {
-                DataViz.mostraNotifica("🏀 Roster NBA completi caricati!");
+                DataViz.mostraNotifica("🏀 Roster NBA completi caricati!", "success");
             }
         },
 
@@ -216,46 +281,65 @@ const app = createApp({
         },
 
         async iniziaPartita() {
-            const casaOk = this.teamA.giocatori.some(p => p.nome.trim() !== '');
-            const ospitiOk = this.teamB.giocatori.some(p => p.nome.trim() !== '');
+            // 1. Estrae solo i giocatori che hanno un nome e un numero di maglia compilati
+            const getValidi = (team) => team.giocatori.filter(p => p.nome.trim() !== '' && p.numero !== '');
+            const vA = getValidi(this.teamA);
+            const vB = getValidi(this.teamB);
 
-            if (casaOk || ospitiOk) {
-                this.teamA.nome = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.nome : this.teamA.nome;
-                this.teamB.nome = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.nome : this.teamB.nome;
-                this.teamA.logo = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.logo : null;
-                this.teamB.logo = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.logo : null;
+            // 2. Controllo numero minimo (5 per squadra)
+            if (vA.length < 5 || vB.length < 5) {
+                if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Almeno 5 giocatori con nome e numero per squadra!", "warning");
+                return; // Ferma l'esecuzione della funzione
+            }
 
-                let nextId = 1;
-                try {
-                    const referti = await api.getListaReferti(); 
-                    if (referti && referti.length > 0) {
-                        const ids = referti.map(file => {
-                            const strNum = file.replace('referto_', '').replace('.xml', '');
-                            return parseInt(strNum, 10);
-                        }).filter(n => !isNaN(n));
-                        
-                        if (ids.length > 0) nextId = Math.max(...ids) + 1; 
-                    }
-                } catch(e) {
-                    console.error("Errore nel recupero ID", e);
+            // 3. Controllo numeri duplicati
+            const hasDup = (list) => new Set(list.map(g => g.numero.toString())).size !== list.length;
+            if (hasDup(vA) || hasDup(vB)) {
+                if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Numeri duplicati rilevati nella stessa squadra!", "error");
+                return; // Ferma l'esecuzione della funzione
+            }
+
+            // --- SE SUPERA TUTTI I CONTROLLI, LA PARTITA VIENE CREATA ---
+            
+            // Assegnazione nomi e loghi
+            this.teamA.nome = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.nome : this.teamA.nome;
+            this.teamB.nome = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.nome : this.teamB.nome;
+            this.teamA.logo = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.logo : null;
+            this.teamB.logo = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.logo : null;
+
+            // Generazione automatica ID progressivo
+            let nextId = 1;
+            try {
+                const referti = await api.getListaReferti(); 
+                if (referti && referti.length > 0) {
+                    const ids = referti.map(file => {
+                        const strNum = file.replace('referto_', '').replace('.xml', '');
+                        return parseInt(strNum, 10);
+                    }).filter(n => !isNaN(n));
+                    
+                    if (ids.length > 0) nextId = Math.max(...ids) + 1; 
                 }
+            } catch(e) {
+                console.error("Errore nel recupero ID", e);
+            }
 
-                this.idPartitaCorrente = nextId.toString().padStart(4, '0');
-                this.ruolo = 'admin';
-                this.currentView = 'court';
+            // Imposta lo stato della partita e cambia vista
+            this.idPartitaCorrente = nextId.toString().padStart(4, '0');
+            this.ruolo = 'admin';
+            this.currentView = 'court';
 
-                if (this.socket) {
-                    this.socket.emit('entra_partita', this.idPartitaCorrente);
-                    this.trasmettiDatiLive();
-                }
-            } else { 
-                alert("Inserisci almeno un giocatore per squadra!"); 
+            // Attiva la trasmissione Live
+            if (this.socket) {
+                this.socket.emit('entra_partita', this.idPartitaCorrente);
+                this.trasmettiDatiLive();
             }
         },
 
+        // --- BLOCCO E TOAST IN FASE DI ACCESSO SPETTATORE ---
         async accediPartitaConCodice() {
             if (this.codicePartitaInput.trim() === '') {
-                alert("Inserisci un codice!"); return;
+                if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Inserisci un codice!", "warning");
+                return;
             }
             const idCercato = this.codicePartitaInput.padStart(4, '0');
             this.idPartitaCorrente = idCercato;
@@ -263,6 +347,7 @@ const app = createApp({
             try {
                 const partitaDB = await api.ottieniPartita(idCercato);
                 if (partitaDB && partitaDB.info) {
+                    // SE PARTITA E' IN ARCHIVIO
                     this.ruolo = 'viewer';
                     this.currentView = 'court';
                     this.partitaTerminata = true; 
@@ -271,18 +356,28 @@ const app = createApp({
                     this.teamA.giocatori = partitaDB.tabellino.filter(g => g.squadra === partitaDB.info.squadra_casa);
                     this.teamB.giocatori = partitaDB.tabellino.filter(g => g.squadra === partitaDB.info.squadra_ospite);
                     
-                    if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("Partita recuperata dall'archivio.");
+                    if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("📂 Partita recuperata dall'archivio.", "success");
                 } else {
+                    // SE PARTITA DOVREBBE ESSERE IN LIVE -> RESTIAMO NELLA HOME
                     this.ruolo = 'viewer';
-                    this.currentView = 'court';
                     this.partitaTerminata = false;
+                    
                     if (this.socket) {
                         this.socket.emit('entra_partita', idCercato);
-                        if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("In attesa di segnale Live...");
+                        if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("⏳ Ricerca segnale Live in corso...", "info");
+                        
+                        // Imposta timeout di 3 secondi per disdire l'attesa se non arriva nulla
+                        if (this.attesaLiveTimeout) clearTimeout(this.attesaLiveTimeout);
+                        this.attesaLiveTimeout = setTimeout(() => {
+                            if (this.currentView !== 'court') {
+                                if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("❌ Partita non in diretta o codice errato.", "error");
+                                this.idPartitaCorrente = '0000'; // Resettiamo l'ID fasullo
+                            }
+                        }, 3000);
                     }
                 }
             } catch (e) {
-                alert("Errore di connessione al server.");
+                if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("⚠️ Errore di connessione al server.", "error");
             }
         },
 
@@ -300,6 +395,7 @@ const app = createApp({
                     teamA: this.teamA,
                     teamB: this.teamB,
                     partitaTerminata: this.partitaTerminata,
+                    periodo: this.periodo,
                     timer: datiTimer 
                 };
 
@@ -319,10 +415,31 @@ const app = createApp({
         },
 
         logout() {
-            this.currentView = 'login'; this.password = ''; this.ruolo = null; this.username = '';
-            this.teamA = generaSquadraVuota("", "A", "a");
-            this.teamB = generaSquadraVuota("", "B", "b");
+            // Pulizia del timer anche al logout
+            if (this.$refs.timerRef) {
+                this.$refs.timerRef.timerRunning = false;
+                clearInterval(this.$refs.timerRef.interval);
+                this.$refs.timerRef.timer = 600;
+            }
+
+            this.currentView = 'login'; 
+            this.password = ''; 
+            this.ruolo = null;
+            this.username = '';
+
+            // Svuotiamo tutta la memoria residua
+            this.codicePartitaInput = '';
+            this.partitaTerminata = false;
+            this.idPartitaCorrente = '0000';
+            this.squadraCasaSelezionata = null;
+            this.squadraOspiteSelezionata = null;
+            this.giocatoreAttivo = null;
+            this.panchinaroSelezionato = null;
+
+            this.teamA = this.getEmptyTeam("", "A", "a");
+            this.teamB = this.getEmptyTeam("", "B", "b");
         },
+
 
         backhome() { 
             if (this.currentView === 'court' || this.currentView === 'setup') {
@@ -333,12 +450,36 @@ const app = createApp({
         },
         eseguiBackhome() {
             this.mostraPopupHome = false;
+            
+            // 1. FORZIAMO IL RESET DEL TIMER!
+            if (this.$refs.timerRef) {
+                this.$refs.timerRef.timerRunning = false;
+                clearInterval(this.$refs.timerRef.interval);
+                this.$refs.timerRef.timer = 600; // Riporta l'orologio a 10:00
+            }
+
+            // 2. Avvisa gli spettatori che la partita è finita/interrotta
+            if (this.socket && this.ruolo === 'admin' && this.currentView === 'court') {
+                this.partitaTerminata = true;
+                this.trasmettiDatiLive();
+            }
+
             this.currentView = 'home'; 
             this.codicePartitaInput = '';
             this.partitaTerminata = false;
-            this.teamA = generaSquadraVuota("", "A", "a");
-            this.teamB = generaSquadraVuota("", "B", "b");
+            
+            // 3. AZZERIAMO I DATI IN MEMORIA ("Stato Sporco")
+            this.idPartitaCorrente = '0000';
+            this.squadraCasaSelezionata = null;
+            this.squadraOspiteSelezionata = null;
+            this.giocatoreAttivo = null;
+            this.panchinaroSelezionato = null;
+            
+            // Resetta i team per crearne una nuova pulita
+            this.teamA = this.getEmptyTeam("", "A", "a");
+            this.teamB = this.getEmptyTeam("", "B", "b");
         },
+
         annullaBackhome() {
             this.mostraPopupHome = false;
         },

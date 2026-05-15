@@ -6,7 +6,6 @@ module.exports = function(db) {
     router.get('/:idPartita', (req, res) => {
         const idPartita = req.params.idPartita;
 
-        // La Super Query da Lode: calcola la valutazione al volo!
         const sqlMVP = `
             SELECT 
                 g.nome, 
