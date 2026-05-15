@@ -1,19 +1,33 @@
 // Percorso: client/js/data-viz.js
 
-const DataViz = {
+window.DataViz = {
 
-    // Variabile interna per il grafico (sostituisce la variabile globale esterna)
     myRadarChart: null,
 
-    // 1. NOTIFICHE JQUERY (Sostituisce i brutti alert di base)
-    mostraNotifica: function(messaggio) {
+    // 1. NOTIFICHE JQUERY
+   mostraNotifica: function(messaggio, tipo = 'info') {
+        let bgColor = "#1a2a6c"; 
+        let borderColor = "#d4af37"; 
+        
+        if (tipo === 'success') {
+            bgColor = "#27ae60"; 
+            borderColor = "#2ecc71";
+        } else if (tipo === 'error') {
+            bgColor = "#c0392b"; 
+            borderColor = "#e74c3c";
+        } else if (tipo === 'warning') {
+            bgColor = "#f39c12"; 
+            borderColor = "#f1c40f";
+        }
+
         $("<div class='toast-msg'></div>")
             .html(messaggio)
             .css({
                 position: "fixed", bottom: "20px", right: "20px",
-                background: "#1a2a6c", color: "white", padding: "15px",
-                borderRadius: "8px", zIndex: 1000, boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-                fontFamily: "sans-serif", borderLeft: "5px solid #d4af37"
+                background: bgColor, color: "white", padding: "15px",
+                borderRadius: "8px", zIndex: 3000, boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+                fontFamily: "sans-serif", borderLeft: "6px solid " + borderColor,
+                maxWidth: "320px", fontSize: "1rem", lineHeight: "1.4"
             })
             .appendTo("body")
             .hide()
@@ -22,42 +36,43 @@ const DataViz = {
             .fadeOut(400, function() { $(this).remove(); });
     },
 
-    // 2. RECUPERO E VISUALIZZAZIONE ARCHIVIO (Chiamata API)
-    caricaArchivio: function() {
-        const container = document.getElementById('archivio-container');
-        if (!container) return; // Se il div non esiste nella vista attuale, esce
+    // 2. POPUP MODALE PER L'ANTEPRIMA XML
+    mostraModaleAnteprima: function(garaId, squadraCasa, puntiCasa, puntiOspite, squadraOspite) {
+        // Rimuove eventuali modali precedenti
+        $("#xml-preview-modal").remove();
+        
+        let modaleHTML = `
+            <div id="xml-preview-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+                <div style="background: white; padding: 35px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); text-align: center; max-width: 450px; width: 90%; border-top: 8px solid #1a2a6c;">
+                    
+                    <small style="color: #7f8c8d; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">Anteprima Gara #${garaId}</small>
+                    
+                    <div style="font-size: 1.5rem; color: #34495e; font-weight: 700; margin: 25px 0 15px 0;">
+                        ${squadraCasa} <span style="color: #bdc3c7; font-size: 1rem; margin: 0 10px; font-weight: normal;">VS</span> ${squadraOspite}
+                    </div>
 
-        container.innerHTML = "<p>Caricamento referti in corso...</p>";
+                    <div style="font-size: 5rem; font-weight: 900; color: #1a2a6c; margin-bottom: 30px; letter-spacing: -2px; line-height: 1;">
+                        ${puntiCasa} - ${puntiOspite}
+                    </div>
 
-        fetch('http://localhost:3000/api/lista_referti')
-            .then(res => res.json())
-            .then(files => {
-                if (files.length === 0) {
-                    container.innerHTML = "<p>Nessun referto disponibile nel database.</p>";
-                    return;
-                }
-
-                // Costruisce la griglia dei referti
-                let html = '<div class="referti-grid" style="display: flex; gap: 15px; flex-wrap: wrap;">';
-                files.forEach(file => {
-                    html += `
-                        <div class="referto-card" style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: #fff; text-align: center;">
-                            <h3 style="margin-top:0;">📄 ${file}</h3>
-                            <button onclick="DataViz.anteprimaXML('${file}')" style="margin-bottom: 10px; cursor: pointer;">🔍 Anteprima Rapida</button><br>
-                            <a href="http://localhost:3000/referti/${file}" target="_blank" style="color: #1a2a6c; font-weight: bold; text-decoration: none;">Apri Referto FIP</a>
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                container.innerHTML = html;
-            })
-            .catch(err => {
-                container.innerHTML = "<p style='color:red;'>Errore di connessione al server.</p>";
-                console.error("Errore Archivio:", err);
-            });
+                    <button id="close-preview-btn" style="background: #1a2a6c; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 1rem; width: 100%; transition: background 0.2s;">
+                        CHIUDI ANTEPRIMA
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        $("body").append(modaleHTML);
+        
+        // Cliccando il pulsante, si chiude
+        $("#close-preview-btn").on("click", function() {
+            $("#xml-preview-modal").fadeOut(200, function() { $(this).remove(); });
+        });
+        
+        $("#xml-preview-modal").hide().fadeIn(300);
     },
 
-    // 3. PARSING DEL DOM XML (Slide 15 - Requisito da 30 e lode)
+    // 3. ANTEPRIMA XML 
     anteprimaXML: function(nomeFile) {
         fetch('http://localhost:3000/referti/' + nomeFile)
             .then(res => res.text())
@@ -65,28 +80,25 @@ const DataViz = {
                 let parser = new DOMParser();
                 let xmlDoc = parser.parseFromString(str, "text/xml");
 
-                // Estrazione dati (Allineati alla vera struttura dell'XML)
-                let garaId = xmlDoc.getElementsByTagName("referto_partita")[0].getAttribute("id");
+                let radice = xmlDoc.getElementsByTagName("referto_partita")[0];
+                let garaId = radice.getAttribute("id");
                 
-                // Estraiamo i nomi
-                let squadraCasa = xmlDoc.getElementsByTagName("squadra_casa")[0].childNodes[0].nodeValue;
-                let squadraOspite = xmlDoc.getElementsByTagName("squadra_ospite")[0].childNodes[0].nodeValue;
+                let nodoCasa = xmlDoc.getElementsByTagName("squadra_casa")[0] || xmlDoc.getElementsByTagName("casa")[0];
+                let nodoOspiti = xmlDoc.getElementsByTagName("squadra_ospite")[0] || xmlDoc.getElementsByTagName("ospiti")[0];
                 
-                // Estraiamo il punteggio finale
-                let punteggioFinale = xmlDoc.getElementsByTagName("punteggio_finale")[0].childNodes[0].nodeValue;
+                // RIPRISTINATA LA TUA LOGICA ORIGINALE!
+                let squadraCasa = nodoCasa ? nodoCasa.getAttribute("nome") : "Team A";
+                let puntiCasa = nodoCasa ? nodoCasa.childNodes[0].nodeValue : "0";
                 
-                // Dividiamo il punteggio
-                let punti = punteggioFinale.split("-");
-                let puntiCasa = punti[0].trim();
-                let puntiOspite = punti[1].trim();
+                let squadraOspite = nodoOspiti ? nodoOspiti.getAttribute("nome") : "Team B";
+                let puntiOspite = nodoOspiti ? nodoOspiti.childNodes[0].nodeValue : "0";
 
-                // Creazione e lancio della notifica jQuery
-                let msg = `<strong>Gara #${garaId}</strong><br>${squadraCasa} <strong>${puntiCasa}</strong> - <strong>${puntiOspite}</strong> ${squadraOspite}`;
-                this.mostraNotifica(msg);
+                // Chiamata sicura usando l'oggetto globale
+                DataViz.mostraModaleAnteprima(garaId, squadraCasa, puntiCasa, puntiOspite, squadraOspite);
             })
             .catch(err => {
                 console.error("Errore parse XML", err);
-                this.mostraNotifica("Errore nella lettura dell'anteprima XML.");
+                DataViz.mostraNotifica("⚠️ Errore nella lettura dell'anteprima XML.", "error");
             });
     },
 
@@ -99,24 +111,45 @@ const DataViz = {
             })
             .then(data => {
                 let msg = `🏆 <strong>MVP del Match</strong> 🏆<br>${data.nome} (${data.squadra})<br>Valutazione PIR: <strong>${data.valutazione}</strong>`;
-                this.mostraNotifica(msg);
+                DataViz.mostraNotifica(msg, "success"); // <--- CORRETTO
             })
             .catch(err => console.error(err));
     },
 
-    // 5. RENDERING GRAFICO RADAR (Integrato nell'oggetto)
+    // 5. RENDERING GRAFICO RADAR
     renderRadarChart: function(playerA, playerB) {
-        const canvas = document.getElementById('radarChart');
-        if (!canvas) return; // Controllo di sicurezza se la canvas non esiste
+        // 5a. CREIAMO IL MODALE DINAMICAMENTE CON IL CANVAS AL SUO INTERNO
+        $("#radar-modal").remove(); // Rimuove modali vecchi
+        
+        let modaleHTML = `
+            <div id="radar-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; justify-content: center; align-items: center;">
+                <div style="background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; text-align: center; position: relative;">
+                    <button id="close-radar-btn" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer;">❌</button>
+                    <h3 style="margin-bottom: 15px; color: var(--dark-bg);">Confronto Diretto: ${playerA.nome} vs ${playerB.nome}</h3>
+                    
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+        `;
+        $("body").append(modaleHTML);
+        
+        // Logica di chiusura del popup
+        $("#close-radar-btn").on("click", function() {
+            $("#radar-modal").fadeOut(200, function() { $(this).remove(); });
+            if (DataViz.myRadarChart) { 
+                DataViz.myRadarChart.destroy(); // Distrugge il grafico per liberare la memoria
+            }
+        });
+        
+        $("#radar-modal").hide().fadeIn(300);
 
+        // 5b. ORA CHE IL CANVAS ESISTE, DISEGNIAMO IL GRAFICO
+        const canvas = document.getElementById('radarChart');
         const ctx = canvas.getContext('2d');
         
-        // Se il grafico esiste già, lo distruggiamo per evitare sovrapposizioni usando 'this'
-        if (this.myRadarChart) { 
-            this.myRadarChart.destroy(); 
-        }
+        if (DataViz.myRadarChart) { DataViz.myRadarChart.destroy(); }
 
-        this.myRadarChart = new Chart(ctx, {
+        DataViz.myRadarChart = new Chart(ctx, { 
             type: 'radar',
             data: {
                 labels: ['Punti', 'Rimbalzi', 'Assist', 'Rubate', 'Stoppate'],
@@ -125,7 +158,7 @@ const DataViz = {
                         label: playerA.nome,
                         data: [playerA.punti, playerA.rimbalzi, playerA.assist, playerA.rubate, playerA.stoppate],
                         fill: true,
-                        backgroundColor: 'rgba(26, 42, 108, 0.2)', // Blu Sapienza Bulls
+                        backgroundColor: 'rgba(26, 42, 108, 0.2)',
                         borderColor: '#1a2a6c',
                         pointBackgroundColor: '#1a2a6c',
                     },
@@ -133,7 +166,7 @@ const DataViz = {
                         label: playerB.nome,
                         data: [playerB.punti, playerB.rimbalzi, playerB.assist, playerB.rubate, playerB.stoppate],
                         fill: true,
-                        backgroundColor: 'rgba(178, 31, 31, 0.2)', // Rosso Torvergata Griffins
+                        backgroundColor: 'rgba(178, 31, 31, 0.2)', 
                         borderColor: '#b21f1f',
                         pointBackgroundColor: '#b21f1f',
                     }
@@ -157,15 +190,27 @@ const DataViz = {
         fetch(`http://localhost:3000/api/partita/${idPartita}`)
             .then(res => res.json())
             .then(data => {
-                const p1 = data.tabellino[0];
-                const p2 = data.tabellino[1];
+                // Recuperiamo il tabellino dal database. 
+                // Filtriamo solo i giocatori che hanno effettivamente giocato (es. punti > 0 o almeno sono entrati in campo)
+                const giocatoriAttivi = data.tabellino.filter(g => g.nome.trim() !== '' && g.minuti > 0);
+                
+                // Prendiamo i due giocatori con più punti per un bel confronto
+                giocatoriAttivi.sort((a, b) => b.punti - a.punti);
+                
+                const p1 = giocatoriAttivi[0];
+                const p2 = giocatoriAttivi[1];
                 
                 if (p1 && p2) {
-                    this.renderRadarChart(p1, p2); // Chiama la funzione usando 'this'
-                    this.mostraNotifica(`Grafico generato: Confronto tra ${p1.nome} e ${p2.nome}`);
+                    DataViz.renderRadarChart(p1, p2); 
+                    DataViz.mostraNotifica(`Grafico generato!`, 'success'); 
+                } else {
+                    DataViz.mostraNotifica(`Dati insufficienti per il confronto in questa partita.`, 'warning'); 
                 }
             })
-            .catch(err => console.error("Errore generazione grafico", err));
+            .catch(err => {
+                console.error("Errore generazione grafico", err);
+                DataViz.mostraNotifica(`Errore nel caricamento dei dati per il grafico.`, 'error');
+            });
     }
 
-}; // <-- CHIUSURA DEFINITIVA DELL'OGGETTO
+};

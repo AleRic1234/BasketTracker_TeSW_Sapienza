@@ -1,3 +1,4 @@
+/*Percorso: client/css/style.css*/
 /* --- 1. VARIABILI E RESET --- */
 :root {
     --primary-color: #3498db;     
@@ -221,6 +222,33 @@ input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
 
 /* --- 6. POPUP E MODALI --- */
 
+/* --- STILE PER IL POPUP DELLE STATISTICHE SUI GIOCATORI --- */
+.floating-stat {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.75);
+    color: #00ff00; /* Verde brillante */
+    font-weight: bold;
+    font-size: 14px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    pointer-events: none; /* Evita che blocchi i click sul giocatore */
+    white-space: nowrap;
+    z-index: 1000;
+    animation: floatUpFade 1.2s ease-out forwards;
+}
+
+.floating-stat.negativo {
+    color: #ff4444; /* Rosso brillante */
+}
+
+@keyframes floatUpFade {
+    0% { opacity: 1; top: -10px; }
+    100% { opacity: 0; top: -45px; } 
+}
+/* --- STILE PER IL POPUP DELLE STATISTICHE SUI GIOCATORI --- */
+
 /* Sfondo scuro a tutto schermo che blocca i click dietro */
 .popup-overlay {
     position: fixed; /* Lo stacca dalla pagina */
@@ -319,6 +347,7 @@ select {
     font-size: 1.1rem;
     border-radius: 5px;
 }
+/* mo vediamo +/
 /* STORICO*/
 .referti-grid {
     display: grid;
@@ -385,6 +414,138 @@ select {
     transition: all 0.3s ease; 
 }
 
+.home-container {
+    max-width: 1200px;
+    margin: 50px auto;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.main-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--dark-bg);
+    margin-bottom: 50px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    justify-content: center;
+}
+
+.menu-card {
+    background: #ffffff;
+    padding: 50px 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05); /* Ombra leggera come da foto */
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 2px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.menu-card:hover {
+    transform: translateY(-10px);
+    border-color: var(--primary-color);
+    box-shadow: 0 20px 40px rgba(52, 152, 219, 0.15);
+}
+
+.menu-card-icon {
+    font-size: 4rem;
+    margin-bottom: 25px;
+}
+
+.menu-card h3 {
+    font-size: 1.6rem;
+    color: var(--dark-bg);
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+.menu-card p {
+    color: #7f8c8d;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* Stile per l'input rapido dentro la card */
+.input-inline-container {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    animation: fadeIn 0.3s ease;
+}
+
+.input-inline-container input {
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    width: 100px;
+    text-align: center;
+}
+
+/* Loghi squadre */
+/* Stile per i loghi nel Setup */
+.logo-setup {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Stile per il logo nel Tabellino (Box Score) */
+.logo-tabellino {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* --- NUOVO STILE HEADER SQUADRE Orizzontale --- */
+.team-header-horizontal {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centra il blocco sopra la tabella */
+    gap: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 12px 12px 0 0; /* Arrotonda solo gli angoli superiori */
+    border-bottom: 3px solid var(--primary-color);
+    margin-bottom: 0; /* Si attacca alla tabella sotto */
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+}
+
+.team-header-horizontal.ospiti {
+    border-bottom-color: var(--danger-color);
+}
+
+.logo-grande {
+    width: 80px;  /* Ingrandito come richiesto */
+    height: 80px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    background: #f9f9f9;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.nome-squadra-header {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--dark-bg);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
 /* Quando il bottone è attivo */
 .tab-btn.active { 
     background-color: var(--primary-color); 
@@ -400,4 +561,49 @@ select {
 @keyframes fadeIn { 
     from { opacity: 0; transform: translateY(5px); } 
     to { opacity: 1; transform: translateY(0); } 
+}
+
+/* --- RESPONSIVE DESIGN --- */
+
+@media (max-width: 768px) {
+    /* 1. Rimpicciolisce l'intestazione */
+    header h1 {
+        font-size: 1.5rem;
+    }
+    
+    /* 2. Dispone il campo in verticale invece che affiancato */
+    .court-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 60px; /* Lascia spazio per il tabellone */
+    }
+
+    /* 3. Adatta i pannelli delle squadre (tabelle) */
+    .team-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    table {
+        font-size: 12px; /* Riduce il testo delle statistiche */
+    }
+
+    th, td {
+        padding: 5px; /* Restringe le celle per farle entrare nello schermo */
+    }
+
+    /* 4. Aggiusta la Scoreboard (sovrascrive in parte gli stili inline) */
+    div[style*="top: -65px"] {
+        top: -10px !important;
+        position: relative !important;
+        gap: 20px !important;
+        padding: 10px !important;
+        transform: translateX(0) !important;
+        left: 0 !important;
+        margin-bottom: 20px;
+    }
+    
+    div[style*="font-size: 28px"] {
+        font-size: 22px !important;
+    }
 }

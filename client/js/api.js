@@ -1,5 +1,4 @@
-// client/js/api.js
-
+// Percorso: client/js/api.js
 const api = {
     // 1. Funzione per salvare la partita (quella che avevi già)
     async salva(dati) {
@@ -11,27 +10,38 @@ const api = {
             });
 
             if (response.ok) {
-                const result = await response.json();
-                console.log("Risposta dal server:", result);
-                alert("Partita Archiviata! " + result.message);
+                // MODIFICA CHIAVE: Usiamo .text() perché il server restituisce una stringa, non un JSON!
+                const testoRisposta = await response.text();
+                console.log("Risposta dal server:", testoRisposta);
+                
+                // SOSTITUITO: Inseriamo direttamente il 'testoRisposta' nel pop-up
+                window.DataViz.mostraNotifica(`🏆 Partita Archiviata!<br><small>${testoRisposta}</small>`, "success");
                 return true;
             } else {
                 console.error("Errore nel salvataggio. Status:", response.status);
-                alert("Errore durante l'archiviazione della partita.");
+                
+                // SOSTITUITO: Alert con Toast di Errore (Rosso)
+                window.DataViz.mostraNotifica("❌ Errore durante l'archiviazione della partita.", "error");
                 return false;
             }
         } catch (error) {
             console.error("Errore di rete (Server probabilmente spento):", error);
-            alert("Impossibile connettersi al server. Verifica che Node.js sia in esecuzione.");
+            
+            // SOSTITUITO: Alert con Toast di Avviso (Arancione)
+            window.DataViz.mostraNotifica("⚠️ Impossibile connettersi al server.<br><small>Verifica che Node.js sia in esecuzione.</small>", "warning");
             return false;
         }
     },
+    
     async getListaReferti() {
         try {
-            const response = await fetch('http://localhost:3000/api/partita/file/lista-referti');
+            // URL corretto derivato dal tuo server.js
+            const response = await fetch('http://localhost:3000/api/lista_referti');
+            
             if (response.ok) {
                 return await response.json(); // Ritorna l'array dei nomi file
             } else {
+                console.error("Il server ha risposto con un errore nel recupero lista referti. Status:", response.status);
                 return [];
             }
         } catch (error) {
@@ -55,7 +65,8 @@ const api = {
         }
     },
 
-    // 3. Recupera il tabellino di una singola partita
+    // Recupera il tabellino di una singola partita dato il suo ID
+    // (Utile per una pagina "Storico Partite" o per rileggere i dati prima di stampare il referto)
     async ottieniPartita(id) {
         try {
             const response = await fetch(`http://localhost:3000/api/partita/${id}`);
@@ -71,24 +82,7 @@ const api = {
         }
     },
 
-    
-    // 4. NUOVA FUNZIONE: Recupera la lista di tutti i file XML dal server
-    async ottieniListaReferti() {
-        try {
-            const response = await fetch('http://localhost:3000/api/lista_referti');
-            if (response.ok) {
-                return await response.json(); // Restituisce un array es: ["referto_1.xml", "referto_2.xml"]
-            } else {
-                console.error("Errore nel recupero della lista referti");
-                return [];
-            }
-        } catch (error) {
-            console.error("Errore di rete durante il fetch della lista referti:", error);
-            return [];
-        }
-    },
-
-    // 5. NUOVA FUNZIONE: Scarica un XML e ne fa il parse con il DOMParser
+    // FUNZIONE: Scarica un XML e ne fa il parse con il DOMParser
     async leggiAnteprimaXML(nomeFileXML) {
         try {
             // Scarica il file XML dalla cartella pubblica
@@ -129,4 +123,4 @@ const api = {
             return null;
         }
     }
-};
+};export default api;
