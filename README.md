@@ -10,7 +10,6 @@ $: node server.js --> node server/server.js
 AVVIO CLIENT: 
 $: cd client
 $: npx http-server -c-1
-aprire link: http://127.0.0.1:8080
-per testare su dispositivo mobile (stessa connessione di rete): http://192.168.1.167:8080
+aprire link: http://192.168.1.167:3000 --> anche per dispositivi mobile
 
 SPEGNERE I TERMINALI CON: CTRL+C

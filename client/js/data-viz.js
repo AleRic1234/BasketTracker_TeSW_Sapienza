@@ -6,7 +6,7 @@ window.DataViz = {
     myBarChart: null,
 
     // 1. NOTIFICHE JQUERY
-   mostraNotifica: function(messaggio, tipo = 'info') {
+    mostraNotifica: function(messaggio, tipo = 'info') {
         let bgColor = "#1a2a6c"; 
         let borderColor = "#d4af37"; 
         
@@ -21,20 +21,46 @@ window.DataViz = {
             borderColor = "#f1c40f";
         }
 
-        $("<div class='toast-msg'></div>")
+        // 1. Creiamo il "contenitore" delle notifiche se non esiste ancora
+        if ($("#toast-container").length === 0) {
+            $("<div id='toast-container'></div>").css({
+                position: "fixed",
+                bottom: "20px",
+                right: "20px",
+                zIndex: 3000,
+                display: "flex",
+                flexDirection: "column", // Incolonna gli elementi
+                gap: "10px",             // Spazio di 10px tra una notifica e l'altra
+                alignItems: "flex-end",  // Allinea tutto a destra
+                pointerEvents: "none"    // Permette di cliccare lo schermo "attraverso" lo spazio vuoto
+            }).appendTo("body");
+        }
+
+        // 2. Creiamo la singola notifica (senza position fixed, ci pensa il contenitore ora!)
+        let $toast = $("<div class='toast-msg'></div>")
             .html(messaggio)
             .css({
-                position: "fixed", bottom: "20px", right: "20px",
                 background: bgColor, color: "white", padding: "15px",
-                borderRadius: "8px", zIndex: 3000, boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+                borderRadius: "8px", boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
                 fontFamily: "sans-serif", borderLeft: "6px solid " + borderColor,
-                maxWidth: "320px", fontSize: "1rem", lineHeight: "1.4"
-            })
-            .appendTo("body")
-            .hide()
-            .fadeIn(400)
-            .delay(4000)
-            .fadeOut(400, function() { $(this).remove(); });
+                maxWidth: "320px", fontSize: "1rem", lineHeight: "1.4",
+                pointerEvents: "auto" // Riabilita il click sulla notifica stessa
+            });
+
+        // 3. Aggiungiamo la notifica in fondo al contenitore (le vecchie saliranno!)
+        $("#toast-container").append($toast);
+
+        // 4. Animazione di entrata e uscita (4 secondi)
+        $toast.hide().fadeIn(300).delay(4000).fadeOut(400, function() { 
+            $(this).remove(); 
+        });
+
+        // 5. LIMITE A 5 NOTIFICHE: Se ce ne sono più di 5, cancelliamo la più vecchia in alto
+        let $toastsAttuali = $("#toast-container .toast-msg");
+        if ($toastsAttuali.length > 5) {
+            // .first() prende la prima della lista (la più in alto/vecchia) e la distrugge all'istante
+            $toastsAttuali.first().remove(); 
+        }
     },
 
     // 2. POPUP MODALE PER L'ANTEPRIMA XML
