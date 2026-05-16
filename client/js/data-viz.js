@@ -220,36 +220,80 @@ window.DataViz = {
         
         if (DataViz.myBarChart) { DataViz.myBarChart.destroy(); }
 
-        // Prendiamo solo i primi 5 (il backend li ha già ordinati in modo decrescente!)
         const top5 = giocatori.slice(0, 5);
         
-        // Creiamo le etichette "Nome (Squadra)" e i valori
-        const nomi = top5.map(g => `${g.nome} (${g.squadra})`);
-        const punti = top5.map(g => g.punti_totali); // Corrisponde al nome generato nel tuo classifica.js
+        // TRUCCO 1: Mettiamo Nome e Squadra in un Array così Chart.js li scrive su due righe separate!
+        const nomi = top5.map(g => [g.nome, `(${g.squadra})`]); 
+        const punti = top5.map(g => g.punti_totali);
+
+        // TRUCCO 2: Colori Stile Podio (Oro, Argento, Bronzo, Blu e Azzurro)
+        const backgroundColors = [
+            'rgba(255, 215, 0, 0.85)',   // 1° Oro
+            'rgba(192, 192, 192, 0.85)', // 2° Argento
+            'rgba(205, 127, 50, 0.85)',  // 3° Bronzo
+            'rgba(26, 42, 108, 0.85)',   // 4° Blu 
+            'rgba(52, 152, 219, 0.85)'   // 5° Azzurro
+        ];
+        
+        const borderColors = ['#e6c200', '#a6a6a6', '#a66a28', '#1a2a6c', '#2980b9'];
 
         DataViz.myBarChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: nomi,
                 datasets: [{
-                    label: 'Punti Totali nel Torneo',
+                    label: 'Punti Totali',
                     data: punti,
-                    backgroundColor: 'rgba(243, 156, 18, 0.8)', // Arancione
-                    borderColor: '#f39c12',
-                    borderWidth: 1,
-                    borderRadius: 6 // Arrotonda le colonne
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 2,
+                    borderRadius: 8, // Angoli smussati più pronunciati
+                    barPercentage: 0.5 // Rende le barre più snelle ed eleganti
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false, // Permette al grafico di riempire l'altezza di 600px
+                layout: {
+                    padding: { top: 20 }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: { stepSize: 1 } // Solo numeri interi
+                        grid: {
+                            color: 'rgba(0,0,0,0.06)',
+                            drawBorder: false,
+                            borderDash: [5, 5] // Linee orizzontali tratteggiate
+                        },
+                        ticks: { 
+                            stepSize: 1, 
+                            font: { size: 16 }, // Numeri Y più grandi
+                            color: '#7f8c8d'
+                        }
+                    },
+                    x: {
+                        grid: { 
+                            display: false // Nasconde le brutte linee verticali
+                        }, 
+                        ticks: {
+                            font: { size: 15, weight: 'bold' }, // Testo X più grande
+                            color: '#2c3e50'
+                        }
                     }
                 },
                 plugins: {
-                    legend: { display: false } // Nascondiamo la legenda perché è ovvia
+                    legend: { display: false },
+                    tooltip: {
+                        titleFont: { size: 18 },
+                        bodyFont: { size: 16 },
+                        padding: 15,
+                        displayColors: false, // Nasconde il quadratino nel tooltip
+                        callbacks: {
+                            label: function(context) {
+                                return context.raw + ' Punti Segnati';
+                            }
+                        }
+                    }
                 }
             }
         });

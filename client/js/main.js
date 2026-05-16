@@ -4,7 +4,7 @@ import api from './api.js';
 
 const { createApp } = Vue;
 
-// 1. SPOSTIAMO LA FUNZIONE QUI FUORI! Così Vue non andrà MAI PIÙ in crash all'avvio
+// Spostata fuori per fare iun modo che Vue non vada MAI PIÙ in crash all'avvio
 const generaSquadraVuota = (nome, idPrefix, posSuffix) => {
     return {
         nome: nome,
@@ -23,6 +23,8 @@ const app = createApp({
         return {
             DataViz: window.DataViz, 
             currentView: 'login', 
+            leaderboardView: 'teams',
+            classificaSquadre: [],
             ruolo: null,
             tabellinoAttivo: 'casa',
             username: '',
@@ -37,9 +39,10 @@ const app = createApp({
             socket: null,
             partitaTerminata: false,
             periodo: 1,
-            attesaLiveTimeout: null, // <-- AGGIUNTO: Timer per bloccare l'accesso al viewer
+            attesaLiveTimeout: null, // Timer per bloccare l'accesso al viewer
             mostraPopupHome: false,
             mostraPopupSalvataggio: false,
+            mostraPopupLogout: false,
             mostraPopupAvviso: false,
             messaggioAvviso: '',
 
@@ -416,16 +419,22 @@ const app = createApp({
 
         async apriLeaderboard() {
             try {
-                // Chiama la TUA api scritta in classifica.js!
+                // Chiamata all'api in classifica.js
                 const response = await fetch('http://localhost:3000/api/classifica');
-                const classificaDati = await response.json();
+                const data = await response.json();
                 
+                // Salviamo le statistiche delle squadre nelle nuove variabili Vue
+                this.classificaSquadre = data.standings;
+                
+                // Cambiamo schermata e impostiamo la vista di default sulla tabella
                 this.currentView = 'leaderboard';
+                this.leaderboardView = 'teams'; 
                 
                 // Aspettiamo che Vue renderizzi il canvas, poi disegniamo il grafico
                 setTimeout(() => {
                     if (typeof DataViz !== 'undefined') {
-                        DataViz.renderTopScorersChart(classificaDati);
+                        // Al grafico passiamo SOLO la parte dei marcatori
+                        DataViz.renderTopScorersChart(data.topScorers);
                         DataViz.mostraNotifica("Dati aggregati caricati con successo!", "success");
                     }
                 }, 100);
@@ -436,7 +445,17 @@ const app = createApp({
             }
         },
 
-        logout() {
+        chiediConfermaLogout() {
+            this.mostraPopupLogout = true;
+        },
+
+        annullaLogout() {
+            this.mostraPopupLogout = false;
+        },
+
+        eseguiLogout() {
+            this.mostraPopupLogout = false;
+            
             // Pulizia del timer anche al logout
             if (this.$refs.timerRef) {
                 this.$refs.timerRef.timerRunning = false;
