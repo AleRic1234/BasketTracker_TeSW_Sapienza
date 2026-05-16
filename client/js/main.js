@@ -351,7 +351,7 @@ const app = createApp({
             }
         },
 
-        // --- BLOCCO E TOAST IN FASE DI ACCESSO SPETTATORE ---
+        // --- ACCESSO A PARTITA SE IN CORSO ---
         async accediPartitaConCodice() {
             if (this.codicePartitaInput.trim() === '') {
                 if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Inserisci un codice!", "warning");
@@ -388,6 +388,13 @@ const app = createApp({
                             if (this.currentView !== 'court') {
                                 if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("❌ Partita non in diretta o codice errato.", "error");
                                 this.idPartitaCorrente = '0000'; // Resettiamo l'ID fasullo
+                                
+                                // --- RIPRISTINO POTERI SE LA RICERCA FALLISCE ---
+                                if (this.username.toLowerCase() === 'admin') {
+                                    this.ruolo = 'admin';
+                                } else {
+                                    this.ruolo = 'utente';
+                                }
                             }
                         }, 3000);
                     }
@@ -532,6 +539,13 @@ const app = createApp({
             // Resetta i team per crearne una nuova pulita
             this.teamA = this.getEmptyTeam("", "A", "a");
             this.teamB = this.getEmptyTeam("", "B", "b");
+
+            // --- 4. RIPRISTINIAMO IL RUOLO ORIGINALE ALLA HOME ---
+            if (this.username.toLowerCase() === 'admin') {
+                this.ruolo = 'admin';
+            } else if (this.username.toLowerCase() === 'utente') {
+                this.ruolo = 'utente';
+            }
         },
 
         annullaBackhome() {
