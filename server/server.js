@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const http = require('http'); 
 const { Server } = require("socket.io");
+const path = require('path');
 
 const app = express();
 
@@ -11,8 +12,10 @@ const app = express();
 app.use(cors());
 app.use(express.json()); // Per leggere i dati JSON inviati da Vue
 
-// Fondamentale: Espone la cartella dei referti per visualizzare XML+XSLT nel browser
-app.use('/referti', express.static('../referti'));
+//Espone la cartella dei referti per visualizzare XML+XSLT nel browser
+app.use('/referti', express.static(path.join(__dirname, '../referti')));
+//Espone la cartella del client Vue (UI)
+app.use('/', express.static(path.join(__dirname, '../client')));
 
 // --- 2. INIZIALIZZAZIONE DATABASE ---
 const db = new sqlite3.Database('./db/basket.db');

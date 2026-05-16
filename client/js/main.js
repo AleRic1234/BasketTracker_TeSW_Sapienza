@@ -86,7 +86,20 @@ const app = createApp({
         this.aggiornaListaReferti();
         
         if (typeof io !== 'undefined') {
-            this.socket = io('http://localhost:3000');
+            this.socket = io();
+
+            // Gestione riconnessione automatica
+            this.socket.on('connect', () => {
+                if (this.idPartitaCorrente && this.idPartitaCorrente !== '0000') {
+                    // Rientra automaticamente nella stanza corretta
+                    this.socket.emit('entra_partita', this.idPartitaCorrente);
+                    
+                    // Se chi si è appena ricollegato è l'iPad (admin), forza la trasmissione dei dati al PC
+                    if (this.ruolo === 'admin') {
+                        this.trasmettiDatiLive();
+                    }
+                }
+            });
             
             this.socket.on('dati_live', (payload) => {
                 if (this.ruolo === 'utente' || this.ruolo === 'viewer') {
@@ -133,7 +146,7 @@ const app = createApp({
 
         // Apre il file XML appena generato in una nuova scheda.
         stampaRefertoUfficiale() {
-            const urlReferto = `http://localhost:3000/referti/referto_${this.idPartitaCorrente}.xml`;
+            const urlReferto = `/referti/referto_${this.idPartitaCorrente}.xml`;
             window.open(urlReferto, '_blank');
         },
 
@@ -420,7 +433,7 @@ const app = createApp({
         async apriLeaderboard() {
             try {
                 // Chiamata all'api in classifica.js
-                const response = await fetch('http://localhost:3000/api/classifica');
+                const response = await fetch('/api/classifica');
                 const data = await response.json();
                 
                 // Salviamo le statistiche delle squadre nelle nuove variabili Vue

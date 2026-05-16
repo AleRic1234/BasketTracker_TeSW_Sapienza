@@ -75,7 +75,7 @@ window.DataViz = {
 
     // 3. ANTEPRIMA XML 
     anteprimaXML: function(nomeFile) {
-        fetch('http://localhost:3000/referti/' + nomeFile)
+        fetch('/referti/' + nomeFile)
             .then(res => res.text())
             .then(str => {
                 let parser = new DOMParser();
@@ -105,7 +105,7 @@ window.DataViz = {
 
     // 4. RICHIESTA MVP
     mostraMVP: function(idPartita) {
-        fetch(`http://localhost:3000/api/mvp/${idPartita}`)
+        fetch(`/api/mvp/${idPartita}`)
             .then(res => {
                 if(!res.ok) throw new Error("Dati MVP non ancora disponibili");
                 return res.json();
@@ -180,7 +180,7 @@ window.DataViz = {
 
     // 6. CONFRONTO AUTOMATICO GIOCATORI
     creaConfrontoAutomatico: function(idPartita) {
-        fetch(`http://localhost:3000/api/partita/${idPartita}`)
+        fetch(`/api/partita/${idPartita}`)
             .then(res => {
                 if (!res.ok) throw new Error("Partita non trovata nel database");
                 return res.json();

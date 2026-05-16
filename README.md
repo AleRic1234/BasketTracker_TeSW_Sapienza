@@ -4,9 +4,10 @@ applicazione web full-stack sviluppata per la registrazione e l'analisi in tempo
 
 AVVIO SERVER:
 $: cd server
-$: node server.js
+$: node server.js --> node server/server.js
 
-AVVIO CLIENT:
+(non serve più, path integrato in server.js)
+AVVIO CLIENT: 
 $: cd client
 $: npx http-server -c-1
 aprire link: http://127.0.0.1:8080
