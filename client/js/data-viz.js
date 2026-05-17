@@ -7,20 +7,7 @@ window.DataViz = {
 
     // 1. NOTIFICHE JQUERY
     mostraNotifica: function(messaggio, tipo = 'info') {
-        let bgColor = "#1a2a6c"; 
-        let borderColor = "#d4af37"; 
         
-        if (tipo === 'success') {
-            bgColor = "#27ae60"; 
-            borderColor = "#2ecc71";
-        } else if (tipo === 'error') {
-            bgColor = "#c0392b"; 
-            borderColor = "#e74c3c";
-        } else if (tipo === 'warning') {
-            bgColor = "#f39c12"; 
-            borderColor = "#f1c40f";
-        }
-
         // 1. Creiamo il "contenitore" delle notifiche se non esiste ancora
         if ($("#toast-container").length === 0) {
             $("<div id='toast-container'></div>").css({
@@ -36,26 +23,31 @@ window.DataViz = {
             }).appendTo("body");
         }
 
-        // 2. Creiamo la singola notifica (senza position fixed, ci pensa il contenitore ora!)
-        let $toast = $("<div class='toast-msg'></div>")
-            .html(messaggio)
-            .css({
-                background: bgColor, color: "white", padding: "15px",
-                borderRadius: "8px", boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
-                fontFamily: "sans-serif", borderLeft: "6px solid " + borderColor,
-                maxWidth: "320px", fontSize: "1rem", lineHeight: "1.4",
-                pointerEvents: "auto" // Riabilita il click sulla notifica stessa
-            });
+        // 2. Scegliamo un'icona in base al tipo (Tocco estetico aggiunto)
+        let icona = "ℹ️";
+        if (tipo === 'success') icona = "✅";
+        if (tipo === 'error') icona = "❌";
+        if (tipo === 'warning') icona = "⚠️";
 
-        // 3. Aggiungiamo la notifica in fondo al contenitore (le vecchie saliranno!)
+        // 3. Creiamo la singola notifica
+        // NOTA: Manteniamo la classe originale 'toast-msg' per la logica di conteggio, 
+        // e aggiungiamo 'toast-glass' (o 'toast-pill') per la grafica avanzata del CSS.
+        let $toast = $(`
+            <div class='toast-msg toast-glass ${tipo}'> 
+                <div style="font-size:1.3rem; margin-right: 5px;">${icona}</div> 
+                <div>${messaggio}</div> 
+            </div>
+        `);
+
+        // 4. Aggiungiamo la notifica in fondo al contenitore (le vecchie saliranno!)
         $("#toast-container").append($toast);
 
-        // 4. Animazione di entrata e uscita (4 secondi)
+        // 5. Animazione di entrata e uscita (Esattamente 4 secondi come nel tuo originale)
         $toast.hide().fadeIn(300).delay(4000).fadeOut(400, function() { 
             $(this).remove(); 
         });
 
-        // 5. LIMITE A 5 NOTIFICHE: Se ce ne sono più di 5, cancelliamo la più vecchia in alto
+        // 6. LIMITE A 5 NOTIFICHE: Se ce ne sono più di 5, cancelliamo la più vecchia in alto
         let $toastsAttuali = $("#toast-container .toast-msg");
         if ($toastsAttuali.length > 5) {
             // .first() prende la prima della lista (la più in alto/vecchia) e la distrugge all'istante
