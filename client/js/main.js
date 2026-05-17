@@ -102,15 +102,18 @@ const app = createApp({
             });
             
             this.socket.on('dati_live', (payload) => {
+                
+                // --- FIX BUG HOME: Se siamo tornati alla home, ignora le vecchie trasmissioni! ---
+                if (this.idPartitaCorrente === '0000') return; 
+
                 if (this.ruolo === 'utente' || this.ruolo === 'viewer') {
                     
-                    // --- INIZIO SBLOCCO VIEW: Se riceve dati fa entrare l'utente nel campo ---
-                    if (this.currentView !== 'court') {
+                    // --- FIX BUG BOXSCORE: Riportalo in campo SOLO se non sta leggendo le statistiche ---
+                    if (this.currentView !== 'court' && this.currentView !== 'boxscore') {
                         this.currentView = 'court';
                         if (this.attesaLiveTimeout) clearTimeout(this.attesaLiveTimeout);
                         if (this.DataViz) this.DataViz.mostraNotifica("📡 Segnale Live stabilito!", "success");
                     }
-                    // --- FINE SBLOCCO VIEW ---
 
                     this.teamA = payload.teamA;
                     this.teamB = payload.teamB;

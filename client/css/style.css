@@ -890,3 +890,27 @@ select {
         margin-bottom: -190px;
     }
 }
+
+/* =========================================
+   FIX SCALING POPUP IN ORIZZONTALE
+   ========================================= */
+@media (max-height: 450px) and (orientation: landscape) {
+    .popup-content {
+        padding: 15px 20px;
+        transform: scale(0.85); /* Rimpicciolisce il popup del 15% */
+        border-width: 4px !important;
+    }
+    
+    .popup-icon { font-size: 30px; margin-bottom: 5px; }
+    
+    .popup-title { 
+        font-size: 1.6rem !important; 
+        margin-bottom: 5px; 
+    }
+    
+    .popup-subtitle { font-size: 1rem; margin-bottom: 5px; }
+    .popup-text { margin-bottom: 15px; font-size: 0.9rem; }
+    
+    .popup-actions { flex-direction: row; justify-content: center; }
+    .popup-actions button { padding: 8px 15px; font-size: 0.95rem; }
+}
