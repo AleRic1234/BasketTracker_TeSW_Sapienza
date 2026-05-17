@@ -38,6 +38,7 @@ const app = createApp({
             idPartitaCorrente: '0000',
             socket: null,
             partitaTerminata: false,
+            partitaInterrotta: false, // : Stato per la partita interrotta
             periodo: 1,
             attesaLiveTimeout: null, // Timer per bloccare l'accesso al viewer
             mostraPopupHome: false,
@@ -67,6 +68,7 @@ const app = createApp({
         punteggioOspite() { return this.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0); },
 
         testoPeriodo() {
+            if (this.partitaInterrotta) return `🛑 INTERROTTA`;
             if (this.periodo <= 4) return `QUARTO ${this.periodo}`;
             if (this.periodo === 5) return `OVERTIME`;
             return `OT ${this.periodo - 4}`; // Es. OT 2, OT 3...
@@ -118,6 +120,10 @@ const app = createApp({
                     this.teamA = payload.teamA;
                     this.teamB = payload.teamB;
                     this.partitaTerminata = payload.partitaTerminata;   
+                    
+                    //Variabile per gestire lo stato di interruzione
+                    this.partitaInterrotta = payload.partitaInterrotta; 
+                    
                     this.periodo = payload.periodo;     
                     if (payload.timer && this.$refs.timerRef) {
                         this.$refs.timerRef.impostaDatiEsterni(
@@ -125,6 +131,14 @@ const app = createApp({
                             payload.timer.inEsecuzione
                         );
                     }
+                }
+            });
+
+            // --- NUOVO: INTERCETTA IL SEGNALE DI INTERRUZIONE DAL SERVER ---
+            this.socket.on('partita_interrotta_live', () => {
+                if (this.ruolo === 'utente' || this.ruolo === 'viewer') {
+                    this.partitaInterrotta = true;
+                    if (this.DataViz) this.DataViz.mostraNotifica("🛑 L'admin ha interrotto la partita.", "warning");
                 }
             });
 
@@ -421,6 +435,7 @@ const app = createApp({
                     teamA: this.teamA,
                     teamB: this.teamB,
                     partitaTerminata: this.partitaTerminata,
+                    partitaInterrotta: this.partitaInterrotta, 
                     periodo: this.periodo,
                     timer: datiTimer 
                 };
@@ -479,11 +494,28 @@ const app = createApp({
         eseguiLogout() {
             this.mostraPopupLogout = false;
             
-            // Pulizia del timer anche al logout
+            // 1. CONTROLLO: SE STA USCENDO DA UNA PARTITA IN CORSO E NON SALVATA -> INTERROMPI
+            if (this.socket && this.ruolo === 'admin' && this.currentView === 'court' && !this.partitaTerminata) {
+                
+                // Attiva lo stato "Interrotta"
+                this.partitaInterrotta = true;
+                
+                // Congela il tempo dell'orologio prima di trasmettere i dati
+                if (this.$refs.timerRef) {
+                    this.$refs.timerRef.timerRunning = false;
+                    clearInterval(this.$refs.timerRef.interval);
+                }
+
+                // Avvisa gli spettatori inviando il fotogramma congelato
+                this.socket.emit('interrompi_partita', this.idPartitaCorrente);
+                this.trasmettiDatiLive();
+            }
+
+            // 2. PULIZIA DEL SISTEMA (Ora possiamo resettare tutto in sicurezza)
             if (this.$refs.timerRef) {
                 this.$refs.timerRef.timerRunning = false;
                 clearInterval(this.$refs.timerRef.interval);
-                this.$refs.timerRef.timer = 600;
+                this.$refs.timerRef.timer = 600; // Reset a 10:00 sicuro
             }
 
             this.currentView = 'login'; 
@@ -494,6 +526,7 @@ const app = createApp({
             // Svuotiamo tutta la memoria residua
             this.codicePartitaInput = '';
             this.partitaTerminata = false;
+            this.partitaInterrotta = false; // Pronto per un nuovo accesso
             this.idPartitaCorrente = '0000';
             this.squadraCasaSelezionata = null;
             this.squadraOspiteSelezionata = null;
@@ -512,38 +545,50 @@ const app = createApp({
                 this.eseguiBackhome();
             }
         },
+        
         eseguiBackhome() {
             this.mostraPopupHome = false;
             
-            // 1. FORZIAMO IL RESET DEL TIMER!
-            if (this.$refs.timerRef) {
-                this.$refs.timerRef.timerRunning = false;
-                clearInterval(this.$refs.timerRef.interval);
-                this.$refs.timerRef.timer = 600; // Riporta l'orologio a 10:00
-            }
+            // 1. CONTROLLO DI SICUREZZA: SE LA PARTITA NON È STATA SALVATA, ALLORA È INTERROTTA
+            if (this.socket && this.ruolo === 'admin' && this.currentView === 'court' && !this.partitaTerminata) {
+                
+                // Attiviamo lo stato di interruzione (come avevi giustamente suggerito!)
+                this.partitaInterrotta = true; 
+                
+                // Congealiamo il tempo attuale dell'orologio (SENZA azzerarlo a 600 ancora!)
+                if (this.$refs.timerRef) {
+                    this.$refs.timerRef.timerRunning = false;
+                    clearInterval(this.$refs.timerRef.interval);
+                }
 
-            // 2. Avvisa gli spettatori che la partita è finita/interrotta
-            if (this.socket && this.ruolo === 'admin' && this.currentView === 'court') {
-                this.partitaTerminata = true;
+                // Avvisa il server e spara l'ultimo fotogramma col tempo reale congelato
+                this.socket.emit('interrompi_partita', this.idPartitaCorrente);
                 this.trasmettiDatiLive();
             }
 
+            // 2. ORA CHE I DATI CORRETTI SONO STATI INVIATI, POSSIAMO PULIRE IL FRONTEND
             this.currentView = 'home'; 
             this.codicePartitaInput = '';
-            this.partitaTerminata = false;
             
+            // Adesso è sicuro riportare l'orologio a 10:00 (600s) per la prossima partita
+            if (this.$refs.timerRef) {
+                this.$refs.timerRef.timer = 600; 
+            }
+
             // 3. AZZERIAMO I DATI IN MEMORIA ("Stato Sporco")
             this.idPartitaCorrente = '0000';
+            this.partitaTerminata = false;
+            this.partitaInterrotta = false; // Ritona false, pronto per una nuova gara pulita
             this.squadraCasaSelezionata = null;
             this.squadraOspiteSelezionata = null;
             this.giocatoreAttivo = null;
             this.panchinaroSelezionato = null;
             
-            // Resetta i team per crearne una nuova pulita
+            // Svuota i roster
             this.teamA = this.getEmptyTeam("", "A", "a");
             this.teamB = this.getEmptyTeam("", "B", "b");
 
-            // --- 4. RIPRISTINIAMO IL RUOLO ORIGINALE ALLA HOME ---
+            // 4. RIPRISTINIAMO IL RUOLO ORIGINALE ALLA HOME
             if (this.username.toLowerCase() === 'admin') {
                 this.ruolo = 'admin';
             } else if (this.username.toLowerCase() === 'utente') {
