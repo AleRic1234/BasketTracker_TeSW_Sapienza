@@ -22,6 +22,7 @@ export default {
             timer: 600,
             timerRunning: false,
             interval: null,
+            wasRunningBeforePopup: false // Per ricordare se il timer era in esecuzione prima di mostrare un popup (es. fine partita)
         }
     },
     computed: {
@@ -83,20 +84,33 @@ export default {
             }, 50);
         },
         forzaAvanzamento() {
-            if (confirm("Vuoi forzare la fine di questo periodo e passare al successivo?")) {
+            // 1. Memorizziamo lo stato del timer
+            this.wasRunningBeforePopup = this.timerRunning;
+            
+            // 2. Mettiamo in pausa il tempo "simulando" il blocco del vecchio confirm()
+            if (this.timerRunning) {
+                this.timerRunning = false;
+                clearInterval(this.interval);
+                this.$emit('sync-status');
+            }
+            
+            // 3. Mostriamo il nostro popup grafico
+            this.$root.mostraPopupConfermaNextQ = true;
+        },
+
+        confermaAvanzamento(accettato) {
+            // Chiude il popup
+            this.$root.mostraPopupConfermaNextQ = false;
+            
+            if (accettato) {
+                // SE L'ADMIN CLICCA "SI, CONTINUA" -> Procediamo con la fine del quarto
                 clearInterval(this.interval);
                 this.timerRunning = false;
                 
-                // Salviamo il periodo attuale prima di inviare il comando
                 const vecchioPeriodo = this.periodo;
                 this.$emit('avanza-periodo');
                 
                 setTimeout(() => {
-                    // Controlla la differenza in main.js:
-                    // Se siamo passati dal Q3 al Q4, il vecchioPeriodo era 3 e ora è 4.
-                    // Quindi darà correttamente i 10:00!
-                    // Invece, se l'admin ha forzato la chiusura del match a metà del 4° quarto, 
-                    // incastriamo l'orologio sullo 00:00 per sfar sparire i tasti.
                     if (this.periodo === vecchioPeriodo && this.periodo >= 4) {
                         this.timer = 0;
                     } else {
@@ -104,8 +118,30 @@ export default {
                     }
                     this.$emit('sync-status');
                 }, 50);
+                
+            } else {
+                // SE L'ADMIN CLICCA "ANNULLA" -> Facciamo ripartire il tempo (se era in esecuzione)
+                if (this.wasRunningBeforePopup) {
+                    this.timerRunning = true;
+                    this.interval = setInterval(() => { 
+                        if (this.timer > 0) {
+                            this.timer--;
+                            this.$emit('tick', this.timer);
+                        } else {
+                            clearInterval(this.interval);
+                            this.timerRunning = false;
+                            this.$emit('sync-status');
+                            
+                            if (this.periodo >= 4 && this.puntiCasa !== this.puntiOspite) {
+                                this.$emit('avanza-periodo');
+                            }
+                        }
+                    }, 1000); 
+                    this.$emit('sync-status');
+                }
             }
         },
+        
         impostaDatiEsterni(nuovoTempo, inEsecuzione) {
             this.timer = nuovoTempo;
             if (inEsecuzione && !this.timerRunning) {

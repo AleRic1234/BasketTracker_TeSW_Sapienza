@@ -39,6 +39,10 @@ const app = createApp({
             socket: null,
             partitaTerminata: false,
             partitaInterrotta: false, // : Stato per la partita interrotta
+            mostraPopupInizioPartita: false, // Nuovo stato per il popup di conferma inizio partita
+            fischioInizioMostrato: false, // Per evitare che il fischio venga mostrato più volte
+            mostraPopupFinePartitaSpettatore: false, // Nuovo stato per il popup di fine partita agli spettatori
+            mostraPopupConfermaNextQ: false, // Nuovo stato per il popup di conferma avanzamento periodo
             periodo: 1,
             attesaLiveTimeout: null, // Timer per bloccare l'accesso al viewer
             mostraPopupHome: false,
@@ -117,11 +121,44 @@ const app = createApp({
                         if (this.DataViz) this.DataViz.mostraNotifica("📡 Segnale Live stabilito!", "success");
                     }
 
+                    // --- NUOVO: NOTIFICA CAMBIO QUARTO ANCHE PER LO SPETTATORE ---
+                    if (payload.periodo > this.periodo) {
+                        if (this.DataViz) {
+                            if (payload.periodo <= 4) {
+                                this.DataViz.mostraNotifica(`🏀 Inizia il Quarto ${payload.periodo}`, "info");
+                            } else if (payload.periodo === 5) {
+                                this.DataViz.mostraNotifica("🏀 Parità! Si va all'OVERTIME (5 Minuti)!", "warning");
+                            } else {
+                                this.DataViz.mostraNotifica(`🏀 Inizia l'OT ${payload.periodo - 4}`, "info");
+                            }
+                        }
+                    }
+
+                    // --- NUOVO: POPUP FISCHIO D'INIZIO AL PRIMO "PLAY" DEL MATCH ---
+                    if (payload.periodo === 1 && payload.timer && payload.timer.inEsecuzione && !this.fischioInizioMostrato) {
+                        this.mostraPopupInizioPartita = true;
+                        this.fischioInizioMostrato = true; // Blinda il fischio per non ripeterlo
+                        setTimeout(() => {
+                            this.mostraPopupInizioPartita = false;
+                        }, 3000); 
+                    }
+                    
+                    if (payload.periodo >= 4 && payload.timer && payload.timer.tempoResiduo === 0 && 
+                        (payload.teamA.giocatori.reduce((sum, p) => sum + p.punti, 0) !== payload.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0)) && 
+                        !this.mostraPopupFinePartitaSpettatore && !this.partitaTerminata) {
+                        
+                        this.mostraPopupFinePartitaSpettatore = true;
+                        setTimeout(() => {
+                            this.mostraPopupFinePartitaSpettatore = false;
+                        }, 5000); // Rimane visibile per 5 secondi
+                    }
+
+                    // --- ASSEGNAZIONE DI TUTTI I DATI ---
                     this.teamA = payload.teamA;
                     this.teamB = payload.teamB;
                     this.partitaTerminata = payload.partitaTerminata;   
                     
-                    //Variabile per gestire lo stato di interruzione
+                    // Variabile per gestire lo stato di interruzione (Integrata qui dentro!)
                     this.partitaInterrotta = payload.partitaInterrotta; 
                     
                     this.periodo = payload.periodo;     
@@ -131,14 +168,6 @@ const app = createApp({
                             payload.timer.inEsecuzione
                         );
                     }
-                }
-            });
-
-            // --- NUOVO: INTERCETTA IL SEGNALE DI INTERRUZIONE DAL SERVER ---
-            this.socket.on('partita_interrotta_live', () => {
-                if (this.ruolo === 'utente' || this.ruolo === 'viewer') {
-                    this.partitaInterrotta = true;
-                    if (this.DataViz) this.DataViz.mostraNotifica("🛑 L'admin ha interrotto la partita.", "warning");
                 }
             });
 
@@ -609,6 +638,9 @@ const app = createApp({
             this.codicePartitaInput = '';
             this.partitaTerminata = false;
             this.partitaInterrotta = false; // Pronto per un nuovo accesso
+            this.mostraPopupInizioPartita = false;
+            this.fischioInizioMostrato = false;
+            this.mostraPopupFinePartitaSpettatore = false;
             this.periodo = 1;
             this.idPartitaCorrente = '0000';
             this.squadraCasaSelezionata = null;
@@ -662,6 +694,9 @@ const app = createApp({
             this.idPartitaCorrente = '0000';
             this.partitaTerminata = false;
             this.partitaInterrotta = false; // Ritona false, pronto per una nuova gara pulita
+            this.mostraPopupInizioPartita = false;
+            this.fischioInizioMostrato = false;
+            this.mostraPopupFinePartitaSpettatore = false;
             this.periodo = 1;
             this.squadraCasaSelezionata = null;
             this.squadraOspiteSelezionata = null;
