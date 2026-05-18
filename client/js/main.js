@@ -395,12 +395,18 @@ const app = createApp({
             // Imposta lo stato della partita e cambia vista
             this.idPartitaCorrente = nextId.toString().padStart(4, '0');
             this.ruolo = 'admin';
+            this.periodo = 1; // Assicura che il periodo parta da 1
             this.currentView = 'court';
 
             // Attiva la trasmissione Live
             if (this.socket) {
                 this.socket.emit('entra_partita', this.idPartitaCorrente);
                 this.trasmettiDatiLive();
+            }
+
+            // --- NUOVO: Notifica di creazione partita avvenuta con successo ---
+            if (this.DataViz) {
+                this.DataViz.mostraNotifica(`🏀 Partita N° ${this.idPartitaCorrente} creata con successo!`, "success");
             }
         },
 
@@ -603,6 +609,7 @@ const app = createApp({
             this.codicePartitaInput = '';
             this.partitaTerminata = false;
             this.partitaInterrotta = false; // Pronto per un nuovo accesso
+            this.periodo = 1;
             this.idPartitaCorrente = '0000';
             this.squadraCasaSelezionata = null;
             this.squadraOspiteSelezionata = null;
@@ -655,6 +662,7 @@ const app = createApp({
             this.idPartitaCorrente = '0000';
             this.partitaTerminata = false;
             this.partitaInterrotta = false; // Ritona false, pronto per una nuova gara pulita
+            this.periodo = 1;
             this.squadraCasaSelezionata = null;
             this.squadraOspiteSelezionata = null;
             this.giocatoreAttivo = null;

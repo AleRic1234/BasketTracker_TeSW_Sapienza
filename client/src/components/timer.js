@@ -9,19 +9,26 @@ export default {
                 <span id="shot-clock" v-else>{{ formatTime(timer) }}</span>
             </div>
             
-            <div class="controls" v-if="ruolo === 'admin' && !terminata">
+            <div class="controls" v-if="ruolo === 'admin' && !terminata && !isPartitaFinita">
                 <button @click="toggleTimer">{{ timerRunning ? '❚❚' : '▶' }}</button>
                 <button @click="resetTimer">RESET</button>
                 <button @click="forzaAvanzamento" style="background-color: #f39c12; color: white;">⏩ NEXT Q</button>
             </div>
         </div>
     `,
-    props: ['ruolo', 'terminata', 'periodoTesto', 'durataDefault'],
+    props: ['ruolo', 'terminata', 'periodoTesto', 'durataDefault', 'periodo', 'puntiCasa', 'puntiOspite'],
     data() {
         return {
             timer: 600,
             timerRunning: false,
             interval: null,
+        }
+    },
+    computed: {
+        isPartitaFinita() {
+            // La barriera impenetrabile: i tasti spariscono SOLO se siamo oltre il 3° quarto, 
+            // il timer è a zero, e le squadre NON sono in pareggio.
+            return this.periodo >= 4 && this.timer === 0 && this.puntiCasa !== this.puntiOspite;
         }
     },
     watch: {
@@ -53,10 +60,15 @@ export default {
                         this.timer--;
                         this.$emit('tick', this.timer);
                     } else {
+                        // Il tempo è scaduto in modo naturale (00:00)
                         clearInterval(this.interval);
                         this.timerRunning = false;
-                        this.timer = 0; 
                         this.$emit('sync-status');
+                        
+                        // Spara in automatico la notifica "Partita Conclusa" solo se è la fine reale del match
+                        if (this.periodo >= 4 && this.puntiCasa !== this.puntiOspite) {
+                            this.$emit('avanza-periodo');
+                        }
                     }
                 }, 1000); 
                 this.$emit('sync-status');
@@ -64,30 +76,32 @@ export default {
         },
         resetTimer() {
             clearInterval(this.interval);
-            
-            // Avanza in automatico solo se il tempo è scaduto
-            if (this.timer === 0) {
-                this.$emit('avanza-periodo');
-            }
-            
             this.timerRunning = false;
             setTimeout(() => {
                 this.timer = this.durataDefault;
                 this.$emit('sync-status');
             }, 50);
         },
-        // --- NUOVA FUNZIONE: Salto manuale del Quarto ---
         forzaAvanzamento() {
             if (confirm("Vuoi forzare la fine di questo periodo e passare al successivo?")) {
                 clearInterval(this.interval);
                 this.timerRunning = false;
                 
-                // Comunichiamo a main.js di cambiare quarto
+                // Salviamo il periodo attuale prima di inviare il comando
+                const vecchioPeriodo = this.periodo;
                 this.$emit('avanza-periodo');
                 
-                // Resettiamo il tempo con la nuova durata (es. passa da 10 a 5 se è OT)
                 setTimeout(() => {
-                    this.timer = this.durataDefault;
+                    // Controlla la differenza in main.js:
+                    // Se siamo passati dal Q3 al Q4, il vecchioPeriodo era 3 e ora è 4.
+                    // Quindi darà correttamente i 10:00!
+                    // Invece, se l'admin ha forzato la chiusura del match a metà del 4° quarto, 
+                    // incastriamo l'orologio sullo 00:00 per sfar sparire i tasti.
+                    if (this.periodo === vecchioPeriodo && this.periodo >= 4) {
+                        this.timer = 0;
+                    } else {
+                        this.timer = this.durataDefault;
+                    }
                     this.$emit('sync-status');
                 }, 50);
             }

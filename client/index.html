@@ -384,6 +384,11 @@
                         :terminata="partitaTerminata" 
                         :periodo-testo="testoPeriodo"
                         :durata-default="durataPeriodo"
+                        
+                        :periodo="periodo"
+                        :punti-casa="punteggioCasa"
+                        :punti-ospite="punteggioOspite"
+
                         @tick="aggiornaMinutiGiocatori" 
                         @sync-status="trasmettiDatiLive"
                         @avanza-periodo="avanzaPeriodo">
