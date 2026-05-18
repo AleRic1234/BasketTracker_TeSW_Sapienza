@@ -50,6 +50,7 @@ const app = createApp({
             mostraPopupLogout: false,
             mostraPopupAvviso: false,
             messaggioAvviso: '',
+            menuAvanzatoGiocatore: false, // NUOVA VARIABILE PER IL SOTTOMENU
 
             squadreDisponibili: [
                 { nome: "Sapienza Bulls", logo: "./assets/sapienza_bulls.jpeg" },
@@ -164,7 +165,7 @@ const app = createApp({
                         this.fischioInizioMostrato = true; // Blinda il fischio per non ripeterlo
                         setTimeout(() => {
                             this.mostraPopupInizioPartita = false;
-                        }, 3000); 
+                        }, 2000); 
                     }
                     
                     if (payload.periodo >= 4 && payload.timer && payload.timer.tempoResiduo === 0 && 
@@ -174,7 +175,7 @@ const app = createApp({
                         this.mostraPopupFinePartitaSpettatore = true;
                         setTimeout(() => {
                             this.mostraPopupFinePartitaSpettatore = false;
-                        }, 5000); // Rimane visibile per 5 secondi
+                        }, 3000); // Rimane visibile per 5 secondi
                     }
 
                     // --- ASSEGNAZIONE DI TUTTI I DATI ---
@@ -732,7 +733,7 @@ const app = createApp({
 
 
         backhome() { 
-            if (this.currentView === 'court' || this.currentView === 'setup') {
+            if (this.currentView === 'court' || this.currentView === 'setup' || this.currentView === 'boxscore') {
                 this.mostraPopupHome = true;
             } else {
                 this.eseguiBackhome();
@@ -893,18 +894,6 @@ const app = createApp({
                 if (tipo === 'falli' && this.giocatoreAttivo.falli >= 5) {
                     this.mostraMessaggio(`Il giocatore numero ${this.giocatoreAttivo.numero} è uscito per 5 falli!`);
                 }
-
-                const abbreviazioni = {
-                    punti: 'PTS', rimbalzi: 'REB', assist: 'AST', rubate: 'STL', 
-                    stoppate: 'BLK', perse: 'TOV', falli: 'FLS'
-                };
-                const sigla = abbreviazioni[tipo] || tipo.toUpperCase();
-                const playerToAnimate = this.giocatoreAttivo;
-                
-                playerToAnimate.popupMsg = `-${val} ${sigla}`;
-                playerToAnimate.isNegativo = true; 
-                playerToAnimate.showPopup = true;
-
                 setTimeout(() => { playerToAnimate.showPopup = false; }, 1200);
                 this.giocatoreAttivo = null;
             }

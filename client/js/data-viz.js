@@ -137,24 +137,34 @@ window.DataViz = {
 
     // 5. RENDERING GRAFICO RADAR (Con creazione Modale)
     renderRadarChart: function(playerA, playerB) {
-        // Rimuove eventuali modali precedenti per non sovrapporle
+        // Rimuove eventuali modali precedenti
         $("#radar-modal").remove();
 
-        // Crea dinamicamente la modale scura e la inietta nell'HTML
+        // 1. MODALE ALLARGATA E RESPONSIVA: 
+        // Aumentato il max-width a 750px e aggiunto un contenitore specifico per il canvas con altezza di 450px
         let modaleHTML = `
-            <div id="radar-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-                <div style="background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; text-align: center; position: relative;">
-                    <button id="close-radar-btn" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer;">❌</button>
-                    <h3 style="margin-bottom: 15px; color: var(--dark-bg);">Confronto: ${playerA.nome} vs ${playerB.nome}</h3>
-                    <canvas id="radarChart"></canvas> 
+            <div id="radar-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 4000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+                <div style="background: white; padding: 30px; border-radius: 16px; width: 95%; max-width: 750px; text-align: center; position: relative; box-shadow: 0 15px 50px rgba(0,0,0,0.5);">
+                    <button id="close-radar-btn" style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 1.8rem; cursor: pointer; transition: transform 0.2s;">❌</button>
+                    <h2 style="margin-bottom: 20px; color: var(--dark-bg); font-size: 1.8rem; text-transform: uppercase; font-weight: 900; letter-spacing: 1px;">Scontro Diretto</h2>
+                    
+                    <div style="position: relative; height: 450px; width: 100%;">
+                        <canvas id="radarChart"></canvas> 
+                    </div>
                 </div>
             </div>
         `;
         $("body").append(modaleHTML);
 
-        // Funzione per chiudere la modale e distruggere il grafico
+        // Effetto hover sul pulsante di chiusura
+        $("#close-radar-btn").hover(
+            function() { $(this).css("transform", "scale(1.2)"); },
+            function() { $(this).css("transform", "scale(1)"); }
+        );
+
+        // Chiusura della modale
         $("#close-radar-btn").on("click", () => {
-            $("#radar-modal").fadeOut(200, function() { $(this).remove(); });
+            $("#radar-modal").fadeOut(250, function() { $(this).remove(); });
             if (this.myRadarChart) { this.myRadarChart.destroy(); }
         });
 
@@ -165,38 +175,89 @@ window.DataViz = {
             this.myRadarChart.destroy();
         }
 
-        // Creazione del grafico Chart.js
+        // 2. CONFIGURAZIONE GRAFICO MIGLIORATA
         this.myRadarChart = new Chart(ctx, {
             type: 'radar',
             data: {
-                labels: ['Punti', 'Rimbalzi', 'Assist', 'Rubate', 'Stoppate'],
+                labels: ['PUNTI', 'RIMBALZI', 'ASSIST', 'RUBATE', 'STOPPATE'],
                 datasets: [
                     {
-                        label: playerA.nome,
+                        label: `${playerA.nome} (${playerA.squadra})`,
                         data: [playerA.punti, playerA.rimbalzi, playerA.assist, playerA.rubate, playerA.stoppate],
                         fill: true,
-                        backgroundColor: 'rgba(26, 42, 108, 0.2)',
+                        backgroundColor: 'rgba(26, 42, 108, 0.3)', // Colore più visibile
                         borderColor: '#1a2a6c',
                         pointBackgroundColor: '#1a2a6c',
+                        pointRadius: 5,       // Punti di ancoraggio più grandi
+                        pointHoverRadius: 8
                     },
                     {
-                        label: playerB.nome,
+                        label: `${playerB.nome} (${playerB.squadra})`,
                         data: [playerB.punti, playerB.rimbalzi, playerB.assist, playerB.rubate, playerB.stoppate],
                         fill: true,
-                        backgroundColor: 'rgba(178, 31, 31, 0.2)',
-                        borderColor: '#b21f1f',
-                        pointBackgroundColor: '#b21f1f',
+                        backgroundColor: 'rgba(231, 76, 60, 0.3)', // Colore più visibile
+                        borderColor: '#e74c3c',
+                        pointBackgroundColor: '#e74c3c',
+                        pointRadius: 5,
+                        pointHoverRadius: 8
                     }
                 ]
             },
             options: {
-                elements: { line: { borderWidth: 3 } },
-                scales: { r: { suggestedMin: 0, suggestedMax: 30 } }
+                responsive: true,
+                maintainAspectRatio: false, // Fondamentale per far riempire il div di 450px!
+                elements: { 
+                    line: { borderWidth: 4 } // Linee più spesse
+                },
+                plugins: {
+                    // ATTIVIAMO LA LEGENDA IN ALTO
+                    legend: { 
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: { size: 16, weight: 'bold', family: "'Segoe UI', sans-serif" },
+                            color: '#2c3e50',
+                            padding: 20,
+                            usePointStyle: true // Rende i quadratini della legenda a forma di cerchio
+                        }
+                    },
+                    tooltip: {
+                        bodyFont: { size: 15 },
+                        titleFont: { size: 16 }
+                    }
+                },
+                scales: { 
+                    r: { 
+                        suggestedMin: 0, 
+                        suggestedMax: 20,
+                        // ETICHETTE ESTERNE (Punti, Rimbalzi...)
+                        pointLabels: {
+                            font: { size: 14, weight: '900', family: "'Segoe UI', sans-serif" },
+                            color: '#34495e',
+                            padding: 15 // Le allontana leggermente dal grafico
+                        },
+                        // NUMERI SULLA SCALA INTERNA
+                        ticks: {
+                            font: { size: 13, weight: 'bold' },
+                            color: '#7f8c8d',
+                            backdropColor: 'transparent', // Rimuove lo sgradevole sfondo bianco dietro ai numeri
+                            stepSize: 5
+                        },
+                        // STILE GRIGLIA A RAGNATELA
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)',
+                            circular: false // Mantienilo poligonale per un look più aggressivo
+                        },
+                        angleLines: {
+                            color: 'rgba(0, 0, 0, 0.15)'
+                        }
+                    } 
+                }
             }
         });
     },
 
-    // 6. CONFRONTO AUTOMATICO GIOCATORI
+    // 6. CONFRONTO AUTOMATICO GIOCATORI (Modificato per Squadre)
     creaConfrontoAutomatico: function(idPartita) {
         fetch(`/api/partita/${idPartita}`)
             .then(res => {
@@ -204,7 +265,6 @@ window.DataViz = {
                 return res.json();
             })
             .then(data => {
-                // Legge i giocatori usando il nome corretto dal backend
                 const listaGiocatori = data.giocatori;
 
                 if (!listaGiocatori || listaGiocatori.length < 2) {
@@ -212,15 +272,33 @@ window.DataViz = {
                     return;
                 }
 
-                // Ordina i giocatori per punti decrescenti
-                listaGiocatori.sort((a, b) => b.punti - a.punti);
+                // 1. Identifichiamo i nomi delle due squadre presenti
+                // Usiamo Set per estrarre in automatico i due nomi univoci (es. "Casa" e "Ospite", oppure "Lakers" e "Bulls")
+                const squadrePresenti = [...new Set(listaGiocatori.map(g => g.squadra))];
+
+                if (squadrePresenti.length < 2) {
+                    this.mostraNotifica("⚠️ Impossibile dividere i giocatori in due squadre.", "warning");
+                    return;
+                }
+
+                // 2. Dividiamo i giocatori in due array separati
+                const giocatoriSquadraA = listaGiocatori.filter(g => g.squadra === squadrePresenti[0]);
+                const giocatoriSquadraB = listaGiocatori.filter(g => g.squadra === squadrePresenti[1]);
+
+                // 3. Funzione per calcolare la "Valutazione" (la formula del VERO leader/MVP)
+                const calcolaVal = (p) => (p.punti + p.rimbalzi + p.assist + p.rubate + p.stoppate) - (p.falli + p.perse);
+
+                // 4. Ordiniamo ogni squadra in base al giocatore più forte (Valutazione decrescente)
+                giocatoriSquadraA.sort((a, b) => calcolaVal(b) - calcolaVal(a));
+                giocatoriSquadraB.sort((a, b) => calcolaVal(b) - calcolaVal(a));
                 
-                const p1 = listaGiocatori[0];
-                const p2 = listaGiocatori[1];
+                // 5. Estraiamo il numero 1 di ogni squadra!
+                const leaderA = giocatoriSquadraA[0];
+                const leaderB = giocatoriSquadraB[0];
                 
-                if (p1 && p2) {
-                    this.renderRadarChart(p1, p2);
-                    this.mostraNotifica(`📊 Grafico generato: ${p1.nome} vs ${p2.nome}`, "success");
+                if (leaderA && leaderB) {
+                    this.renderRadarChart(leaderA, leaderB);
+                    this.mostraNotifica(`📊 Confronto Leader generato: ${leaderA.nome} vs ${leaderB.nome}`, "success");
                 }
             })
             .catch(err => {
