@@ -6,7 +6,7 @@ window.DataViz = {
     myBarChart: null,
 
     // 1. NOTIFICHE JQUERY
-   mostraNotifica: function(messaggio, tipo = 'info') {
+    mostraNotifica: function(messaggio, tipo = 'info') {
         let bgColor = "#1a2a6c"; 
         let borderColor = "#d4af37"; 
         
@@ -21,20 +21,46 @@ window.DataViz = {
             borderColor = "#f1c40f";
         }
 
-        $("<div class='toast-msg'></div>")
+        // 1. Creiamo il "contenitore" delle notifiche se non esiste ancora
+        if ($("#toast-container").length === 0) {
+            $("<div id='toast-container'></div>").css({
+                position: "fixed",
+                bottom: "20px",
+                right: "20px",
+                zIndex: 3000,
+                display: "flex",
+                flexDirection: "column", // Incolonna gli elementi
+                gap: "10px",             // Spazio di 10px tra una notifica e l'altra
+                alignItems: "flex-end",  // Allinea tutto a destra
+                pointerEvents: "none"    // Permette di cliccare lo schermo "attraverso" lo spazio vuoto
+            }).appendTo("body");
+        }
+
+        // 2. Creiamo la singola notifica (senza position fixed, ci pensa il contenitore ora!)
+        let $toast = $("<div class='toast-msg'></div>")
             .html(messaggio)
             .css({
-                position: "fixed", bottom: "20px", right: "20px",
                 background: bgColor, color: "white", padding: "15px",
-                borderRadius: "8px", zIndex: 3000, boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+                borderRadius: "8px", boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
                 fontFamily: "sans-serif", borderLeft: "6px solid " + borderColor,
-                maxWidth: "320px", fontSize: "1rem", lineHeight: "1.4"
-            })
-            .appendTo("body")
-            .hide()
-            .fadeIn(400)
-            .delay(4000)
-            .fadeOut(400, function() { $(this).remove(); });
+                maxWidth: "320px", fontSize: "1rem", lineHeight: "1.4",
+                pointerEvents: "auto" // Riabilita il click sulla notifica stessa
+            });
+
+        // 3. Aggiungiamo la notifica in fondo al contenitore (le vecchie saliranno!)
+        $("#toast-container").append($toast);
+
+        // 4. Animazione di entrata e uscita (4 secondi)
+        $toast.hide().fadeIn(300).delay(4000).fadeOut(400, function() { 
+            $(this).remove(); 
+        });
+
+        // 5. LIMITE A 5 NOTIFICHE: Se ce ne sono più di 5, cancelliamo la più vecchia in alto
+        let $toastsAttuali = $("#toast-container .toast-msg");
+        if ($toastsAttuali.length > 5) {
+            // .first() prende la prima della lista (la più in alto/vecchia) e la distrugge all'istante
+            $toastsAttuali.first().remove(); 
+        }
     },
 
     // 2. POPUP MODALE PER L'ANTEPRIMA XML
@@ -75,7 +101,7 @@ window.DataViz = {
 
     // 3. ANTEPRIMA XML 
     anteprimaXML: function(nomeFile) {
-        fetch('http://localhost:3000/referti/' + nomeFile)
+        fetch('/referti/' + nomeFile)
             .then(res => res.text())
             .then(str => {
                 let parser = new DOMParser();
@@ -105,7 +131,7 @@ window.DataViz = {
 
     // 4. RICHIESTA MVP
     mostraMVP: function(idPartita) {
-        fetch(`http://localhost:3000/api/mvp/${idPartita}`)
+        fetch(`/api/mvp/${idPartita}`)
             .then(res => {
                 if(!res.ok) throw new Error("Dati MVP non ancora disponibili");
                 return res.json();
@@ -180,7 +206,7 @@ window.DataViz = {
 
     // 6. CONFRONTO AUTOMATICO GIOCATORI
     creaConfrontoAutomatico: function(idPartita) {
-        fetch(`http://localhost:3000/api/partita/${idPartita}`)
+        fetch(`/api/partita/${idPartita}`)
             .then(res => {
                 if (!res.ok) throw new Error("Partita non trovata nel database");
                 return res.json();
@@ -220,36 +246,80 @@ window.DataViz = {
         
         if (DataViz.myBarChart) { DataViz.myBarChart.destroy(); }
 
-        // Prendiamo solo i primi 5 (il backend li ha già ordinati in modo decrescente!)
         const top5 = giocatori.slice(0, 5);
         
-        // Creiamo le etichette "Nome (Squadra)" e i valori
-        const nomi = top5.map(g => `${g.nome} (${g.squadra})`);
-        const punti = top5.map(g => g.punti_totali); // Corrisponde al nome generato nel tuo classifica.js
+        // TRUCCO 1: Mettiamo Nome e Squadra in un Array così Chart.js li scrive su due righe separate!
+        const nomi = top5.map(g => [g.nome, `(${g.squadra})`]); 
+        const punti = top5.map(g => g.punti_totali);
+
+        // TRUCCO 2: Colori Stile Podio (Oro, Argento, Bronzo, Blu e Azzurro)
+        const backgroundColors = [
+            'rgba(255, 215, 0, 0.85)',   // 1° Oro
+            'rgba(192, 192, 192, 0.85)', // 2° Argento
+            'rgba(205, 127, 50, 0.85)',  // 3° Bronzo
+            'rgba(26, 42, 108, 0.85)',   // 4° Blu 
+            'rgba(52, 152, 219, 0.85)'   // 5° Azzurro
+        ];
+        
+        const borderColors = ['#e6c200', '#a6a6a6', '#a66a28', '#1a2a6c', '#2980b9'];
 
         DataViz.myBarChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: nomi,
                 datasets: [{
-                    label: 'Punti Totali nel Torneo',
+                    label: 'Punti Totali',
                     data: punti,
-                    backgroundColor: 'rgba(243, 156, 18, 0.8)', // Arancione
-                    borderColor: '#f39c12',
-                    borderWidth: 1,
-                    borderRadius: 6 // Arrotonda le colonne
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 2,
+                    borderRadius: 8, // Angoli smussati più pronunciati
+                    barPercentage: 0.5 // Rende le barre più snelle ed eleganti
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false, // Permette al grafico di riempire l'altezza di 600px
+                layout: {
+                    padding: { top: 20 }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: { stepSize: 1 } // Solo numeri interi
+                        grid: {
+                            color: 'rgba(0,0,0,0.06)',
+                            drawBorder: false,
+                            borderDash: [5, 5] // Linee orizzontali tratteggiate
+                        },
+                        ticks: { 
+                            stepSize: 1, 
+                            font: { size: 16 }, // Numeri Y più grandi
+                            color: '#7f8c8d'
+                        }
+                    },
+                    x: {
+                        grid: { 
+                            display: false // Nasconde le brutte linee verticali
+                        }, 
+                        ticks: {
+                            font: { size: 15, weight: 'bold' }, // Testo X più grande
+                            color: '#2c3e50'
+                        }
                     }
                 },
                 plugins: {
-                    legend: { display: false } // Nascondiamo la legenda perché è ovvia
+                    legend: { display: false },
+                    tooltip: {
+                        titleFont: { size: 18 },
+                        bodyFont: { size: 16 },
+                        padding: 15,
+                        displayColors: false, // Nasconde il quadratino nel tooltip
+                        callbacks: {
+                            label: function(context) {
+                                return context.raw + ' Punti Segnati';
+                            }
+                        }
+                    }
                 }
             }
         });

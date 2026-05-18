@@ -3,7 +3,7 @@ const api = {
     // 1. Funzione per salvare la partita (quella che avevi già)
     async salva(dati) {
         try {
-            const response = await fetch('http://localhost:3000/api/salva_partita', {
+            const response = await fetch('/api/salva_partita', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dati) 
@@ -36,7 +36,7 @@ const api = {
     async getListaReferti() {
         try {
             // URL corretto derivato dal tuo server.js
-            const response = await fetch('http://localhost:3000/api/lista_referti');
+            const response = await fetch('/api/lista_referti');
             
             if (response.ok) {
                 return await response.json(); // Ritorna l'array dei nomi file
@@ -52,7 +52,7 @@ const api = {
     // 2. Recupera la classifica marcatori globale
     async ottieniClassifica() {
         try {
-            const response = await fetch('http://localhost:3000/api/classifica');
+            const response = await fetch('/api/classifica');
             if (response.ok) {
                 return await response.json(); 
             } else {
@@ -69,7 +69,7 @@ const api = {
     // (Utile per una pagina "Storico Partite" o per rileggere i dati prima di stampare il referto)
     async ottieniPartita(id) {
         try {
-            const response = await fetch(`http://localhost:3000/api/partita/${id}`);
+            const response = await fetch(`/api/partita/${id}`);
             if (response.ok) {
                 return await response.json(); 
             } else {
@@ -86,7 +86,7 @@ const api = {
     async leggiAnteprimaXML(nomeFileXML) {
         try {
             // Scarica il file XML dalla cartella pubblica
-            const response = await fetch(`http://localhost:3000/referti/${nomeFileXML}`);
+            const response = await fetch(`/referti/${nomeFileXML}`);
             
             if (!response.ok) throw new Error("Errore nel download dell'XML");
             

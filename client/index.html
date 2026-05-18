@@ -17,7 +17,7 @@
             <h1>BasketTracker</h1>
             
             <nav v-if="currentView == 'home'">
-                <button @click="logout" class="btn-logout">Esci</button>
+                <button @click="chiediConfermaLogout" class="btn-logout">Esci</button>  
             </nav>
             
             <nav v-if="currentView == 'court' || currentView == 'boxscore'">
@@ -109,8 +109,8 @@
 
                     <div class="menu-card" @click="apriLeaderboard">
                         <div class="menu-card-icon">🏆</div>
-                        <h3>Statistiche Globali</h3>
-                        <p>Scopri i migliori marcatori del torneo tramite query SQL di aggregazione.</p>
+                        <h3>Classifica</h3>
+                        <p>Scopri la classifica delle squadre e i migliori marcatori del torneo, calcolati tramite query SQL di aggregazione.</p>
                     </div>
                 </div>
             </section>
@@ -150,11 +150,59 @@
 
             <section v-if="currentView === 'leaderboard'" class="view-container">
                 <div class="header-archivio" style="text-align: center;">
-                    <h2>Top 5 Marcatori del Torneo</h2>
+                    <h2>Dashboard Statistiche</h2>
                 </div>
                 
-                <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 800px; margin: 20px auto;">
-                    <canvas id="topScorersChart"></canvas>
+                <div style="display: flex; justify-content: center; gap: 15px; margin: 25px 0;">
+                    <button @click="leaderboardView = 'teams'" 
+                            :style="leaderboardView === 'teams' ? 'background: #1a2a6c; color: white;' : 'background: white; color: #1a2a6c;'"
+                            style="padding: 12px 25px; border: 2px solid #1a2a6c; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;">
+                        🏆 Classifica Squadre
+                    </button>
+                    <button @click="leaderboardView = 'scorers'" 
+                            :style="leaderboardView === 'scorers' ? 'background: #f39c12; color: white; border-color: #f39c12;' : 'background: white; color: #f39c12; border-color: #f39c12;'"
+                            style="padding: 12px 25px; border: 2px solid; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;">
+                        🔥 Top 5 Marcatori
+                    </button>
+                </div>
+                
+                <div v-if="leaderboardView === 'teams'" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 900px; margin: 0 auto; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa; border-bottom: 3px solid #1a2a6c; color: #2c3e50;">
+                                <th style="padding: 15px; text-align: left;">SQUADRA</th>
+                                <th style="padding: 15px;" title="Partite Giocate">PG</th>
+                                <th style="padding: 15px; color: #27ae60;" title="Vinte">V</th>
+                                <th style="padding: 15px; color: #c0392b;" title="Perse">P</th>
+                                <th style="padding: 15px;" title="Pareggiate">PAR</th>
+                                <th style="padding: 15px;" title="Punti Fatti">PF</th>
+                                <th style="padding: 15px;" title="Punti Subiti">PS</th>
+                                <th style="padding: 15px; font-weight: 900; color: #1a2a6c;" title="Punti Classifica">PTS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(team, index) in classificaSquadre" :key="team.squadra" style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 15px; text-align: left; font-weight: bold; font-size: 1.1rem;">
+                                    <span style="color: #bdc3c7; margin-right: 15px;">{{ index + 1 }}</span>
+                                    {{ team.squadra }}
+                                </td>
+                                <td style="padding: 15px; font-weight: 500;">{{ team.giocate }}</td>
+                                <td style="padding: 15px; color: #27ae60; font-weight: bold;">{{ team.vinte }}</td>
+                                <td style="padding: 15px; color: #c0392b; font-weight: bold;">{{ team.perse }}</td>
+                                <td style="padding: 15px;">{{ team.pareggiate }}</td>
+                                <td style="padding: 15px; color: #7f8c8d;">{{ team.punti_fatti }}</td>
+                                <td style="padding: 15px; color: #7f8c8d;">{{ team.punti_subiti }}</td>
+                                <td style="padding: 15px; font-size: 1.3rem; font-weight: 900; color: #1a2a6c;">{{ team.punti_classifica }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div v-show="leaderboardView === 'scorers'" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 1200px; width: 95%; margin: 0 auto; height: 600px; display: flex; flex-direction: column;">
+                    <h3 style="text-align: center; color: #f39c12; margin-bottom: 25px; font-size: 1.8rem; font-weight: 900;">Migliori 5 Realizzatori</h3>
+                    <div style="flex-grow: 1; position: relative;">
+                        <canvas id="topScorersChart"></canvas>
+                    </div>
                 </div>
 
                 <div style="text-align: center; margin-top: 30px;">
@@ -481,6 +529,20 @@
                     </div>
                 </div>
             </div> 
+
+            <div v-if="mostraPopupLogout" class="popup-overlay">
+                <div class="popup-content" style="border-top: 8px solid #c0392b;">
+                    <div class="popup-icon">🚪</div>
+                    <h2 class="popup-title" style="color: #c0392b; font-size: 2.2rem; letter-spacing: 1px;">Logout</h2>
+                    <h3 class="popup-subtitle">Sei sicuro di voler uscire?</h3>
+                    <p class="popup-text">Verrai riportato alla schermata di Login.</p>
+                    
+                    <div class="popup-actions">
+                        <button class="btn-primary btn-large" style="background-color: #c0392b;" @click="eseguiLogout">🚪 Sì, Esci</button>
+                        <button class="btn-secondary" @click="annullaLogout">❌ Annulla</button>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>      
     <script type="module" src="js/main.js"></script>

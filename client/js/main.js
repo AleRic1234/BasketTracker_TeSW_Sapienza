@@ -4,7 +4,7 @@ import api from './api.js';
 
 const { createApp } = Vue;
 
-// 1. SPOSTIAMO LA FUNZIONE QUI FUORI! Così Vue non andrà MAI PIÙ in crash all'avvio
+// Spostata fuori per fare iun modo che Vue non vada MAI PIÙ in crash all'avvio
 const generaSquadraVuota = (nome, idPrefix, posSuffix) => {
     return {
         nome: nome,
@@ -23,6 +23,8 @@ const app = createApp({
         return {
             DataViz: window.DataViz, 
             currentView: 'login', 
+            leaderboardView: 'teams',
+            classificaSquadre: [],
             ruolo: null,
             tabellinoAttivo: 'casa',
             username: '',
@@ -37,9 +39,10 @@ const app = createApp({
             socket: null,
             partitaTerminata: false,
             periodo: 1,
-            attesaLiveTimeout: null, // <-- AGGIUNTO: Timer per bloccare l'accesso al viewer
+            attesaLiveTimeout: null, // Timer per bloccare l'accesso al viewer
             mostraPopupHome: false,
             mostraPopupSalvataggio: false,
+            mostraPopupLogout: false,
             mostraPopupAvviso: false,
             messaggioAvviso: '',
 
@@ -83,7 +86,20 @@ const app = createApp({
         this.aggiornaListaReferti();
         
         if (typeof io !== 'undefined') {
-            this.socket = io('http://localhost:3000');
+            this.socket = io();
+
+            // Gestione riconnessione automatica
+            this.socket.on('connect', () => {
+                if (this.idPartitaCorrente && this.idPartitaCorrente !== '0000') {
+                    // Rientra automaticamente nella stanza corretta
+                    this.socket.emit('entra_partita', this.idPartitaCorrente);
+                    
+                    // Se chi si è appena ricollegato è l'iPad (admin), forza la trasmissione dei dati al PC
+                    if (this.ruolo === 'admin') {
+                        this.trasmettiDatiLive();
+                    }
+                }
+            });
             
             this.socket.on('dati_live', (payload) => {
                 if (this.ruolo === 'utente' || this.ruolo === 'viewer') {
@@ -130,7 +146,7 @@ const app = createApp({
 
         // Apre il file XML appena generato in una nuova scheda.
         stampaRefertoUfficiale() {
-            const urlReferto = `http://localhost:3000/referti/referto_${this.idPartitaCorrente}.xml`;
+            const urlReferto = `/referti/referto_${this.idPartitaCorrente}.xml`;
             window.open(urlReferto, '_blank');
         },
 
@@ -335,7 +351,7 @@ const app = createApp({
             }
         },
 
-        // --- BLOCCO E TOAST IN FASE DI ACCESSO SPETTATORE ---
+        // --- ACCESSO A PARTITA SE IN CORSO ---
         async accediPartitaConCodice() {
             if (this.codicePartitaInput.trim() === '') {
                 if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Inserisci un codice!", "warning");
@@ -372,6 +388,13 @@ const app = createApp({
                             if (this.currentView !== 'court') {
                                 if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("❌ Partita non in diretta o codice errato.", "error");
                                 this.idPartitaCorrente = '0000'; // Resettiamo l'ID fasullo
+                                
+                                // --- RIPRISTINO POTERI SE LA RICERCA FALLISCE ---
+                                if (this.username.toLowerCase() === 'admin') {
+                                    this.ruolo = 'admin';
+                                } else {
+                                    this.ruolo = 'utente';
+                                }
                             }
                         }, 3000);
                     }
@@ -416,16 +439,22 @@ const app = createApp({
 
         async apriLeaderboard() {
             try {
-                // Chiama la TUA api scritta in classifica.js!
-                const response = await fetch('http://localhost:3000/api/classifica');
-                const classificaDati = await response.json();
+                // Chiamata all'api in classifica.js
+                const response = await fetch('/api/classifica');
+                const data = await response.json();
                 
+                // Salviamo le statistiche delle squadre nelle nuove variabili Vue
+                this.classificaSquadre = data.standings;
+                
+                // Cambiamo schermata e impostiamo la vista di default sulla tabella
                 this.currentView = 'leaderboard';
+                this.leaderboardView = 'teams'; 
                 
                 // Aspettiamo che Vue renderizzi il canvas, poi disegniamo il grafico
                 setTimeout(() => {
                     if (typeof DataViz !== 'undefined') {
-                        DataViz.renderTopScorersChart(classificaDati);
+                        // Al grafico passiamo SOLO la parte dei marcatori
+                        DataViz.renderTopScorersChart(data.topScorers);
                         DataViz.mostraNotifica("Dati aggregati caricati con successo!", "success");
                     }
                 }, 100);
@@ -436,7 +465,17 @@ const app = createApp({
             }
         },
 
-        logout() {
+        chiediConfermaLogout() {
+            this.mostraPopupLogout = true;
+        },
+
+        annullaLogout() {
+            this.mostraPopupLogout = false;
+        },
+
+        eseguiLogout() {
+            this.mostraPopupLogout = false;
+            
             // Pulizia del timer anche al logout
             if (this.$refs.timerRef) {
                 this.$refs.timerRef.timerRunning = false;
@@ -500,6 +539,13 @@ const app = createApp({
             // Resetta i team per crearne una nuova pulita
             this.teamA = this.getEmptyTeam("", "A", "a");
             this.teamB = this.getEmptyTeam("", "B", "b");
+
+            // --- 4. RIPRISTINIAMO IL RUOLO ORIGINALE ALLA HOME ---
+            if (this.username.toLowerCase() === 'admin') {
+                this.ruolo = 'admin';
+            } else if (this.username.toLowerCase() === 'utente') {
+                this.ruolo = 'utente';
+            }
         },
 
         annullaBackhome() {
