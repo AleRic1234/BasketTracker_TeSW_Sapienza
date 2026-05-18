@@ -121,27 +121,37 @@
                 </div>
                 
                 <div class="referti-grid" style="display:flex; gap:20px; flex-wrap:wrap; margin-top: 20px; justify-content: center;">
-                    <div v-for="file in listaReferti" :key="file" class="referto-card" style="background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.05); width:220px; text-align:center; transition: transform 0.3s ease;">
+                    <div v-for="partita in storicoPartite" :key="partita.id" class="referto-card" style="background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.05); width:240px; text-align:center; transition: transform 0.3s ease;">
                         
                         <div class="referto-icon" style="font-size:3.5rem; margin-bottom:10px;">📄</div>
                         
                         <div class="referto-info">
-                            <span class="file-name" style="display:block; margin-bottom:15px; font-weight:800; color: var(--dark-bg); font-size: 1.1rem;">
-                                {{ file.replace('.xml', '') }}
+                            <span class="file-name" style="display:block; margin-bottom:10px; font-weight:800; color: var(--dark-bg); font-size: 1.1rem;">
+                                {{ partita.nomeFile.replace('.xml', '') }}
                             </span>
+                            
+                            <div style="background: rgba(241, 196, 15, 0.1); border: 1px solid #f1c40f; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+                                <span style="display: block; font-size: 0.8rem; text-transform: uppercase; color: #7f8c8d; font-weight: bold;">MVP del Match</span>
+                                <span style="display: block; font-size: 1.1rem; color: #f39c12; font-weight: 900; margin: 3px 0;">
+                                    🏆 {{ partita.mvpNome }}
+                                </span>
+                                <span v-if="partita.valutazioneMvp > 0" style="display: block; font-size: 0.8rem; color: #95a5a6;">
+                                    (Valutazione: {{ partita.valutazioneMvp }})
+                                </span>
+                            </div>
                         </div>
                         
                         <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <a :href="'http://localhost:3000/referti/' + file" target="_blank" class="btn-view" style="background:var(--primary-color); color:white; padding:10px; text-decoration:none; border-radius:6px; font-weight: bold; width: 100%; transition: background 0.2s;">
+                            <a :href="'http://localhost:3000/referti/' + partita.nomeFile" target="_blank" class="btn-view" style="background:var(--primary-color); color:white; padding:10px; text-decoration:none; border-radius:6px; font-weight: bold; width: 100%; transition: background 0.2s;">
                                 📥 APRI REFERTO
                             </a>
                             
-                            <button @click="DataViz.anteprimaXML(file)" style="background:#f39c12; color:white; padding:10px; border:none; border-radius:6px; cursor:pointer; font-weight: bold; width: 100%; transition: background 0.2s; text-transform: uppercase;">
+                            <button @click="DataViz.anteprimaXML(partita.nomeFile)" style="background:#f39c12; color:white; padding:10px; border:none; border-radius:6px; cursor:pointer; font-weight: bold; width: 100%; transition: background 0.2s; text-transform: uppercase;">
                                 👁️ Anteprima
                             </button>
-                            
-                            <button @click="DataViz.creaConfrontoAutomatico(file.replace('referto_', '').replace('.xml', ''))" style="background:#8e44ad; color:white; padding:10px; border:none; border-radius:6px; cursor:pointer; font-weight: bold; width: 100%; transition: background 0.2s; text-transform: uppercase;">
-                                📊 Confronto
+
+                            <button @click="DataViz.creaConfrontoAutomatico(partita.nomeFile.replace('referto_', '').replace('.xml', ''))" style="background:#8e44ad; color:white; padding:10px; border:none; border-radius:6px; cursor:pointer; font-weight: bold; width: 100%; transition: background 0.2s; text-transform: uppercase;">
+                                ⚔️ Confronto
                             </button>
                         </div>
                     </div>
@@ -348,14 +358,22 @@
 
                         <div v-for="p in giocatoriValidiA" :key="p.id" 
                             :class="getClasseGiocatore(p, 'A')" 
+                            :style="p === giocatoreMVP ? 'box-shadow: 0 0 20px #f1c40f, inset 0 0 10px #f1c40f; border-color: #f1c40f; z-index: 10;' : ''"
                             @click="gestisciClickGiocatore(p)">
+                            
+                            <span v-if="p === giocatoreMVP" style="position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">🏆</span>
+                            
                             {{ p.numero }}
                             <div v-if="p.showPopup" class="floating-stat" :class="{ negativo: p.isNegativo }">{{ p.popupMsg }}</div>
                         </div>
 
                         <div v-for="p in giocatoriValidiB" :key="p.id" 
                             :class="getClasseGiocatore(p, 'B')" 
+                            :style="p === giocatoreMVP ? 'box-shadow: 0 0 20px #f1c40f, inset 0 0 10px #f1c40f; border-color: #f1c40f; z-index: 10;' : ''"
                             @click="gestisciClickGiocatore(p)">
+                            
+                            <span v-if="p === giocatoreMVP" style="position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">🏆</span>
+                            
                             {{ p.numero }}
                             <div v-if="p.showPopup" class="floating-stat" :class="{ negativo: p.isNegativo }">{{ p.popupMsg }}</div>
                         </div>
@@ -465,12 +483,16 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="p in teamA.giocatori" :key="p.id" v-show="p.nome.trim() !== ''" :class="[p.inCampo ? 'in-campo-row' : '', { 'row-espulso': p.falli >= 5 }]">
+                                <tr v-for="p in teamA.giocatori" :key="p.id" v-show="p.nome.trim() !== ''" 
+                                    :class="[p.inCampo ? 'in-campo-row' : '', { 'row-espulso': p.falli >= 5 }]"
+                                    :style="p === giocatoreMVP ? 'background-color: rgba(241, 196, 15, 0.15); border-left: 5px solid #f1c40f;' : ''">
+                                    
                                     <td><strong>{{ p.numero }}</strong></td>
                                     <td style="text-align: left;">
                                         {{ p.nome }}
                                         <span v-if="p.falli >= 5" class="badge-falli">OUT</span>
                                         <span v-else-if="p.inCampo" class="badge-starter">IN CAMPO</span>
+                                        <span v-if="p === giocatoreMVP" style="color: #f1c40f; font-size: 1.2rem; margin-right: 5px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));" title="MVP della Partita">🏆</span>
                                     </td>
                                     <td>{{ formatMinuti(p.minuti) }}</td><td>{{ p.punti }}</td><td>{{ p.rimbalzi }}</td><td>{{ p.assist }}</td>
                                     <td>{{ p.stoppate }}</td><td>{{ p.rubate }}</td><td>{{ p.perse }}</td><td>{{ p.falli }}</td>
@@ -497,12 +519,16 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="p in teamB.giocatori" :key="p.id" v-show="p.nome.trim() !== ''" :class="[p.inCampo ? 'in-campo-row' : '', { 'row-espulso': p.falli >= 5 }]">
+                                <tr v-for="p in teamB.giocatori" :key="p.id" v-show="p.nome.trim() !== ''" 
+                                    :class="[p.inCampo ? 'in-campo-row' : '', { 'row-espulso': p.falli >= 5 }]"
+                                    :style="p === giocatoreMVP ? 'background-color: rgba(241, 196, 15, 0.15); border-left: 5px solid #f1c40f;' : ''">
+                                    
                                     <td><strong>{{ p.numero }}</strong></td>
                                     <td style="text-align: left;">
                                         {{ p.nome }}
                                         <span v-if="p.falli >= 5" class="badge-falli">OUT</span>
                                         <span v-else-if="p.inCampo" class="badge-starter">IN CAMPO</span>
+                                        <span v-if="p === giocatoreMVP" style="color: #f1c40f; font-size: 1.2rem; margin-right: 5px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));" title="MVP della Partita">🏆</span>
                                     </td>
                                     <td>{{ formatMinuti(p.minuti) }}</td><td>{{ p.punti }}</td><td>{{ p.rimbalzi }}</td><td>{{ p.assist }}</td>
                                     <td>{{ p.stoppate }}</td><td>{{ p.rubate }}</td><td>{{ p.perse }}</td><td>{{ p.falli }}</td>

@@ -87,6 +87,30 @@ const app = createApp({
         giocatoriValidiB() {
             return this.teamB.giocatori.filter(p => p.nome.trim() !== '');
         },
+
+        giocatoreMVP() {
+            // L'MVP viene calcolato SOLO se la partita è terminata
+            if (!this.partitaTerminata) return null;
+            
+            const tuttiGiocatori = [...this.teamA.giocatori, ...this.teamB.giocatori].filter(g => g.nome.trim() !== '');
+            if (tuttiGiocatori.length === 0) return null;
+
+            let mvp = null;
+            let maxValutazione = -Infinity;
+
+            tuttiGiocatori.forEach(player => {
+                // Formula: (Punti + Rimbalzi + Assist + Rubate + Stoppate) - (Falli + Perse)
+                const valutazione = (player.punti + player.rimbalzi + player.assist + player.rubate + player.stoppate) - (player.falli + player.perse);
+                
+                if (valutazione > maxValutazione) {
+                    maxValutazione = valutazione;
+                    mvp = player;
+                }
+            });
+
+            // Restituisce il giocatore solo se ha fatto qualcosa di utile (valutazione > 0)
+            return maxValutazione > 0 ? mvp : null;
+        },
     },
     mounted() {
         this.aggiornaListaReferti();
@@ -226,6 +250,13 @@ const app = createApp({
                 if (risposta) {
                     await this.aggiornaListaReferti();
                     this.apriBoxScore();
+                    
+                    // Notifica MVP al salvataggio 
+                    if (this.giocatoreMVP && this.DataViz) {
+                        setTimeout(() => {
+                            this.DataViz.mostraNotifica(`🏆 MVP: ${this.giocatoreMVP.nome}!`, "success");
+                        }, 800);
+                    }
                 }
             } catch (error) {
                 console.error("Errore salvataggio:", error);
@@ -253,14 +284,52 @@ const app = createApp({
 
         async aggiornaListaReferti() {
             try {
+                console.log("🔄 Inizio aggiornamento storico referti...");
                 const files = await api.getListaReferti();
                 this.listaReferti = files || [];
+                
+                if (files && files.length > 0) {
+                    // 1. Prepariamo la lista temporanea
+                    let nuovoStorico = [];
+                    for (const ref of files) {
+                        const idMatch = ref.replace('referto_', '').replace('.xml', '');
+                        nuovoStorico.push({
+                            id: idMatch,
+                            nomeFile: ref,
+                            mvpNome: 'Calcolo...',
+                            valutazioneMvp: 0
+                        });
+                    }
+                    
+                    nuovoStorico.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+                    
+                    // 2. Passiamo l'array a Vue per mostrare le card con "Calcolo..."
+                    this.storicoPartite = [...nuovoStorico];
+                    
+                    // 3. Andiamo a caccia degli MVP uno per uno!
+                    for (let i = 0; i < this.storicoPartite.length; i++) {
+                        const partita = this.storicoPartite[i];
+                        const idPuroDB = parseInt(partita.id, 10); 
+                        
+                        const datiMvp = await api.getMVP(idPuroDB);
+                        
+                        if (datiMvp && datiMvp.nome) {
+                            // Aggiorna i dati
+                            this.storicoPartite[i].mvpNome = datiMvp.nome;
+                            this.storicoPartite[i].valutazioneMvp = datiMvp.valutazione;
+                        } else {
+                            // Nessun dato trovato nel DB
+                            this.storicoPartite[i].mvpNome = 'N/D';
+                        }
+                    }
+                    console.log("✅ Storico aggiornato con successo!");
+                }
             } catch (error) {
-                console.error("Errore lista referti:", error);
+                console.error("❌ Errore lista referti ed MVP:", error);
             }
         },
 
-        // --- FUNZIONI DI GESTIONE PARTITA E INTERAZIONE REINSERITE ---
+        // --- FUNZIONI DI GESTIONE PARTITA ---
         getClasseGiocatore(p, teamId) {
             const isCasa = teamId === 'A';
             return [
@@ -499,7 +568,16 @@ const app = createApp({
                         }
                     });
                     
-                    if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("📂 Partita recuperata dall'archivio.", "success");
+                    if (typeof DataViz !== 'undefined') {
+                        DataViz.mostraNotifica("📂 Partita recuperata dall'archivio.", "success");
+                        
+                        // Notifica MVP caricamento archivio 
+                        setTimeout(() => {
+                            if (this.giocatoreMVP) {
+                                DataViz.mostraNotifica(`🏆 MVP del match: ${this.giocatoreMVP.nome}`, "success");
+                            }
+                        }, 1200);
+                    }
                     
                 } else {
                     // ==========================================

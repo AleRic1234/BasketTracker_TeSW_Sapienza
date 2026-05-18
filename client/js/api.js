@@ -82,6 +82,27 @@ const api = {
         }
     },
 
+    async getMVP(idPartita) {
+        try {
+            const idFormattato = parseInt(idPartita, 10); 
+            const url = `/api/mvp/${idFormattato}`;
+            console.log(`[API] 📡 Chiedo l'MVP al server: ${url}`);
+            
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                console.warn(`[API] ⚠️ Il server non ha trovato l'MVP (Status: ${response.status})`);
+                return null;
+            }
+            const data = await response.json();
+            console.log(`[API] 🏆 MVP Trovato! Dati:`, data);
+            return data;
+        } catch (error) {
+            console.error(`[API] ❌ Errore critico nel recupero MVP:`, error);
+            return null;
+        }
+    },
+
     // FUNZIONE: Scarica un XML e ne fa il parse con il DOMParser
     async leggiAnteprimaXML(nomeFileXML) {
         try {
