@@ -1,5 +1,6 @@
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
 const router = express.Router();
 
 module.exports = function(db) {
@@ -42,7 +43,9 @@ module.exports = function(db) {
         xmlString += `</referto_partita>`;
 
         const nomeFile = `referto_${idFormattato}.xml`;
-        fs.writeFileSync(`../referti/${nomeFile}`, xmlString);
+        const cartellaReferti = path.join(__dirname, '../../../referti');
+        const percorsoCompleto = path.join(cartellaReferti, nomeFile);
+        fs.writeFileSync(percorsoCompleto, xmlString);
         console.log(`Creato con successo XML: ${nomeFile}`);
     }
 

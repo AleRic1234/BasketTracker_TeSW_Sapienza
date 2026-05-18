@@ -39,6 +39,10 @@ const app = createApp({
             socket: null,
             partitaTerminata: false,
             partitaInterrotta: false, // : Stato per la partita interrotta
+            mostraPopupInizioPartita: false, // Nuovo stato per il popup di conferma inizio partita
+            fischioInizioMostrato: false, // Per evitare che il fischio venga mostrato più volte
+            mostraPopupFinePartitaSpettatore: false, // Nuovo stato per il popup di fine partita agli spettatori
+            mostraPopupConfermaNextQ: false, // Nuovo stato per il popup di conferma avanzamento periodo
             periodo: 1,
             attesaLiveTimeout: null, // Timer per bloccare l'accesso al viewer
             mostraPopupHome: false,
@@ -83,6 +87,30 @@ const app = createApp({
         giocatoriValidiB() {
             return this.teamB.giocatori.filter(p => p.nome.trim() !== '');
         },
+
+        giocatoreMVP() {
+            // L'MVP viene calcolato SOLO se la partita è terminata
+            if (!this.partitaTerminata) return null;
+            
+            const tuttiGiocatori = [...this.teamA.giocatori, ...this.teamB.giocatori].filter(g => g.nome.trim() !== '');
+            if (tuttiGiocatori.length === 0) return null;
+
+            let mvp = null;
+            let maxValutazione = -Infinity;
+
+            tuttiGiocatori.forEach(player => {
+                // Formula: (Punti + Rimbalzi + Assist + Rubate + Stoppate) - (Falli + Perse)
+                const valutazione = (player.punti + player.rimbalzi + player.assist + player.rubate + player.stoppate) - (player.falli + player.perse);
+                
+                if (valutazione > maxValutazione) {
+                    maxValutazione = valutazione;
+                    mvp = player;
+                }
+            });
+
+            // Restituisce il giocatore solo se ha fatto qualcosa di utile (valutazione > 0)
+            return maxValutazione > 0 ? mvp : null;
+        },
     },
     mounted() {
         this.aggiornaListaReferti();
@@ -117,11 +145,44 @@ const app = createApp({
                         if (this.DataViz) this.DataViz.mostraNotifica("📡 Segnale Live stabilito!", "success");
                     }
 
+                    // --- NUOVO: NOTIFICA CAMBIO QUARTO ANCHE PER LO SPETTATORE ---
+                    if (payload.periodo > this.periodo) {
+                        if (this.DataViz) {
+                            if (payload.periodo <= 4) {
+                                this.DataViz.mostraNotifica(`🏀 Inizia il Quarto ${payload.periodo}`, "info");
+                            } else if (payload.periodo === 5) {
+                                this.DataViz.mostraNotifica("🏀 Parità! Si va all'OVERTIME (5 Minuti)!", "warning");
+                            } else {
+                                this.DataViz.mostraNotifica(`🏀 Inizia l'OT ${payload.periodo - 4}`, "info");
+                            }
+                        }
+                    }
+
+                    // --- NUOVO: POPUP FISCHIO D'INIZIO AL PRIMO "PLAY" DEL MATCH ---
+                    if (payload.periodo === 1 && payload.timer && payload.timer.inEsecuzione && !this.fischioInizioMostrato) {
+                        this.mostraPopupInizioPartita = true;
+                        this.fischioInizioMostrato = true; // Blinda il fischio per non ripeterlo
+                        setTimeout(() => {
+                            this.mostraPopupInizioPartita = false;
+                        }, 3000); 
+                    }
+                    
+                    if (payload.periodo >= 4 && payload.timer && payload.timer.tempoResiduo === 0 && 
+                        (payload.teamA.giocatori.reduce((sum, p) => sum + p.punti, 0) !== payload.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0)) && 
+                        !this.mostraPopupFinePartitaSpettatore && !this.partitaTerminata) {
+                        
+                        this.mostraPopupFinePartitaSpettatore = true;
+                        setTimeout(() => {
+                            this.mostraPopupFinePartitaSpettatore = false;
+                        }, 5000); // Rimane visibile per 5 secondi
+                    }
+
+                    // --- ASSEGNAZIONE DI TUTTI I DATI ---
                     this.teamA = payload.teamA;
                     this.teamB = payload.teamB;
                     this.partitaTerminata = payload.partitaTerminata;   
                     
-                    //Variabile per gestire lo stato di interruzione
+                    // Variabile per gestire lo stato di interruzione (Integrata qui dentro!)
                     this.partitaInterrotta = payload.partitaInterrotta; 
                     
                     this.periodo = payload.periodo;     
@@ -131,14 +192,6 @@ const app = createApp({
                             payload.timer.inEsecuzione
                         );
                     }
-                }
-            });
-
-            // --- NUOVO: INTERCETTA IL SEGNALE DI INTERRUZIONE DAL SERVER ---
-            this.socket.on('partita_interrotta_live', () => {
-                if (this.ruolo === 'utente' || this.ruolo === 'viewer') {
-                    this.partitaInterrotta = true;
-                    if (this.DataViz) this.DataViz.mostraNotifica("🛑 L'admin ha interrotto la partita.", "warning");
                 }
             });
 
@@ -197,6 +250,13 @@ const app = createApp({
                 if (risposta) {
                     await this.aggiornaListaReferti();
                     this.apriBoxScore();
+                    
+                    // Notifica MVP al salvataggio 
+                    if (this.giocatoreMVP && this.DataViz) {
+                        setTimeout(() => {
+                            this.DataViz.mostraNotifica(`🏆 MVP: ${this.giocatoreMVP.nome}!`, "success");
+                        }, 800);
+                    }
                 }
             } catch (error) {
                 console.error("Errore salvataggio:", error);
@@ -224,14 +284,52 @@ const app = createApp({
 
         async aggiornaListaReferti() {
             try {
+                console.log("🔄 Inizio aggiornamento storico referti...");
                 const files = await api.getListaReferti();
                 this.listaReferti = files || [];
+                
+                if (files && files.length > 0) {
+                    // 1. Prepariamo la lista temporanea
+                    let nuovoStorico = [];
+                    for (const ref of files) {
+                        const idMatch = ref.replace('referto_', '').replace('.xml', '');
+                        nuovoStorico.push({
+                            id: idMatch,
+                            nomeFile: ref,
+                            mvpNome: 'Calcolo...',
+                            valutazioneMvp: 0
+                        });
+                    }
+                    
+                    nuovoStorico.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+                    
+                    // 2. Passiamo l'array a Vue per mostrare le card con "Calcolo..."
+                    this.storicoPartite = [...nuovoStorico];
+                    
+                    // 3. Andiamo a caccia degli MVP uno per uno!
+                    for (let i = 0; i < this.storicoPartite.length; i++) {
+                        const partita = this.storicoPartite[i];
+                        const idPuroDB = parseInt(partita.id, 10); 
+                        
+                        const datiMvp = await api.getMVP(idPuroDB);
+                        
+                        if (datiMvp && datiMvp.nome) {
+                            // Aggiorna i dati
+                            this.storicoPartite[i].mvpNome = datiMvp.nome;
+                            this.storicoPartite[i].valutazioneMvp = datiMvp.valutazione;
+                        } else {
+                            // Nessun dato trovato nel DB
+                            this.storicoPartite[i].mvpNome = 'N/D';
+                        }
+                    }
+                    console.log("✅ Storico aggiornato con successo!");
+                }
             } catch (error) {
-                console.error("Errore lista referti:", error);
+                console.error("❌ Errore lista referti ed MVP:", error);
             }
         },
 
-        // --- FUNZIONI DI GESTIONE PARTITA E INTERAZIONE REINSERITE ---
+        // --- FUNZIONI DI GESTIONE PARTITA ---
         getClasseGiocatore(p, teamId) {
             const isCasa = teamId === 'A';
             return [
@@ -291,10 +389,46 @@ const app = createApp({
             this.ruolo = 'viewer';
             this.currentView = 'court';
             this.partitaTerminata = true;
-            this.teamA.nome = partita.info.squadra_casa;
-            this.teamB.nome = partita.info.squadra_ospite;
-            this.teamA.giocatori = partita.tabellino.filter(g => g.squadra === partita.info.squadra_casa);
-            this.teamB.giocatori = partita.tabellino.filter(g => g.squadra === partita.info.squadra_ospite);
+            this.partitaInterrotta = false; // Sicurezza nel caso arrivasse da una vista sporca
+
+            // 1. Genera le squadre con la struttura grafica, coordinate e classi CSS intatte
+            this.teamA = this.getEmptyTeam(partita.info.squadra_casa, "A", "a");
+            this.teamB = this.getEmptyTeam(partita.info.squadra_ospite, "B", "b");
+
+            // 2. Filtra i giocatori estratti dal database per le rispettive squadre
+            const dbGiocatoriA = partita.giocatori.filter(g => g.squadra === partita.info.squadra_casa);
+            const dbGiocatoriB = partita.giocatori.filter(g => g.squadra === partita.info.squadra_ospite);
+
+            // 3. Travasa i dettagli statistici senza sovrascrivere o rompere le proprietà grafiche di Vue
+            dbGiocatoriA.forEach((dbPlayer, index) => {
+                if (index < 10) { // Limite massimo dei 10 slot disponibili per il roster
+                    this.teamA.giocatori[index].nome = dbPlayer.nome;
+                    this.teamA.giocatori[index].numero = dbPlayer.numero;
+                    this.teamA.giocatori[index].punti = dbPlayer.punti;
+                    this.teamA.giocatori[index].falli = dbPlayer.falli;
+                    this.teamA.giocatori[index].rimbalzi = dbPlayer.rimbalzi;
+                    this.teamA.giocatori[index].assist = dbPlayer.assist;
+                    this.teamA.giocatori[index].rubate = dbPlayer.rubate;
+                    this.teamA.giocatori[index].stoppate = dbPlayer.stoppate;
+                    this.teamA.giocatori[index].perse = dbPlayer.perse;
+                    this.teamA.giocatori[index].inCampo = index < 5; // Schiera i primi 5 sul campo, gli altri in panchina
+                }
+            });
+
+            dbGiocatoriB.forEach((dbPlayer, index) => {
+                if (index < 10) {
+                    this.teamB.giocatori[index].nome = dbPlayer.nome;
+                    this.teamB.giocatori[index].numero = dbPlayer.numero;
+                    this.teamB.giocatori[index].punti = dbPlayer.punti;
+                    this.teamB.giocatori[index].falli = dbPlayer.falli;
+                    this.teamB.giocatori[index].rimbalzi = dbPlayer.rimbalzi;
+                    this.teamB.giocatori[index].assist = dbPlayer.assist;
+                    this.teamB.giocatori[index].rubate = dbPlayer.rubate;
+                    this.teamB.giocatori[index].stoppate = dbPlayer.stoppate;
+                    this.teamB.giocatori[index].perse = dbPlayer.perse;
+                    this.teamB.giocatori[index].inCampo = index < 5;
+                }
+            });
         },
 
         effettuaLogin() {
@@ -359,6 +493,7 @@ const app = createApp({
             // Imposta lo stato della partita e cambia vista
             this.idPartitaCorrente = nextId.toString().padStart(4, '0');
             this.ruolo = 'admin';
+            this.periodo = 1; // Assicura che il periodo parta da 1
             this.currentView = 'court';
 
             // Attiva la trasmissione Live
@@ -366,9 +501,14 @@ const app = createApp({
                 this.socket.emit('entra_partita', this.idPartitaCorrente);
                 this.trasmettiDatiLive();
             }
+
+            // --- NUOVO: Notifica di creazione partita avvenuta con successo ---
+            if (this.DataViz) {
+                this.DataViz.mostraNotifica(`🏀 Partita N° ${this.idPartitaCorrente} creata con successo!`, "success");
+            }
         },
 
-        // --- ACCESSO A PARTITA SE IN CORSO ---
+        // --- ACCESSO A PARTITA (LIVE O ARCHIVIO) ---
         async accediPartitaConCodice() {
             if (this.codicePartitaInput.trim() === '') {
                 if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Inserisci un codice!", "warning");
@@ -379,19 +519,70 @@ const app = createApp({
 
             try {
                 const partitaDB = await api.ottieniPartita(idCercato);
+                
                 if (partitaDB && partitaDB.info) {
-                    // SE PARTITA E' IN ARCHIVIO
+                    // ==========================================
+                    // SE LA PARTITA E' CONCLUSA E IN ARCHIVIO
+                    // ==========================================
                     this.ruolo = 'viewer';
                     this.currentView = 'court';
-                    this.partitaTerminata = true; 
-                    this.teamA.nome = partitaDB.info.squadra_casa;
-                    this.teamB.nome = partitaDB.info.squadra_ospite;
-                    this.teamA.giocatori = partitaDB.tabellino.filter(g => g.squadra === partitaDB.info.squadra_casa);
-                    this.teamB.giocatori = partitaDB.tabellino.filter(g => g.squadra === partitaDB.info.squadra_ospite);
+                    this.partitaTerminata = true;
+                    this.partitaInterrotta = false;
+
+                    // 1. Genera squadre con grafica e coordinate intatte
+                    this.teamA = this.getEmptyTeam(partitaDB.info.squadra_casa, "A", "a");
+                    this.teamB = this.getEmptyTeam(partitaDB.info.squadra_ospite, "B", "b");
+
+                    // 2. Estrae i giocatori dal database
+                    const dbGiocatoriA = partitaDB.giocatori.filter(g => g.squadra === partitaDB.info.squadra_casa);
+                    const dbGiocatoriB = partitaDB.giocatori.filter(g => g.squadra === partitaDB.info.squadra_ospite);
+
+                    // 3. Travasa i dati statistici senza rompere la grafica
+                    dbGiocatoriA.forEach((dbPlayer, index) => {
+                        if (index < 10) { // Max 10 giocatori per team
+                            this.teamA.giocatori[index].nome = dbPlayer.nome;
+                            this.teamA.giocatori[index].numero = dbPlayer.numero;
+                            this.teamA.giocatori[index].punti = dbPlayer.punti;
+                            this.teamA.giocatori[index].falli = dbPlayer.falli;
+                            this.teamA.giocatori[index].rimbalzi = dbPlayer.rimbalzi;
+                            this.teamA.giocatori[index].assist = dbPlayer.assist;
+                            this.teamA.giocatori[index].rubate = dbPlayer.rubate;
+                            this.teamA.giocatori[index].stoppate = dbPlayer.stoppate;
+                            this.teamA.giocatori[index].perse = dbPlayer.perse;
+                            this.teamA.giocatori[index].inCampo = index < 5; // I primi 5 appaiono in campo, gli altri in panca
+                        }
+                    });
+
+                    dbGiocatoriB.forEach((dbPlayer, index) => {
+                        if (index < 10) {
+                            this.teamB.giocatori[index].nome = dbPlayer.nome;
+                            this.teamB.giocatori[index].numero = dbPlayer.numero;
+                            this.teamB.giocatori[index].punti = dbPlayer.punti;
+                            this.teamB.giocatori[index].falli = dbPlayer.falli;
+                            this.teamB.giocatori[index].rimbalzi = dbPlayer.rimbalzi;
+                            this.teamB.giocatori[index].assist = dbPlayer.assist;
+                            this.teamB.giocatori[index].rubate = dbPlayer.rubate;
+                            this.teamB.giocatori[index].stoppate = dbPlayer.stoppate;
+                            this.teamB.giocatori[index].perse = dbPlayer.perse;
+                            this.teamB.giocatori[index].inCampo = index < 5;
+                        }
+                    });
                     
-                    if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("📂 Partita recuperata dall'archivio.", "success");
+                    if (typeof DataViz !== 'undefined') {
+                        DataViz.mostraNotifica("📂 Partita recuperata dall'archivio.", "success");
+                        
+                        // Notifica MVP caricamento archivio 
+                        setTimeout(() => {
+                            if (this.giocatoreMVP) {
+                                DataViz.mostraNotifica(`🏆 MVP del match: ${this.giocatoreMVP.nome}`, "success");
+                            }
+                        }, 1200);
+                    }
+                    
                 } else {
-                    // SE PARTITA DOVREBBE ESSERE IN LIVE -> RESTIAMO NELLA HOME
+                    // ==========================================
+                    // SE LA PARTITA NON E' NEL DB (Cerca il LIVE)
+                    // ==========================================
                     this.ruolo = 'viewer';
                     this.partitaTerminata = false;
                     
@@ -399,14 +590,12 @@ const app = createApp({
                         this.socket.emit('entra_partita', idCercato);
                         if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("⏳ Ricerca segnale Live in corso...", "info");
                         
-                        // Imposta timeout di 3 secondi per disdire l'attesa se non arriva nulla
                         if (this.attesaLiveTimeout) clearTimeout(this.attesaLiveTimeout);
                         this.attesaLiveTimeout = setTimeout(() => {
                             if (this.currentView !== 'court') {
                                 if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("❌ Partita non in diretta o codice errato.", "error");
-                                this.idPartitaCorrente = '0000'; // Resettiamo l'ID fasullo
+                                this.idPartitaCorrente = '0000'; 
                                 
-                                // --- RIPRISTINO POTERI SE LA RICERCA FALLISCE ---
                                 if (this.username.toLowerCase() === 'admin') {
                                     this.ruolo = 'admin';
                                 } else {
@@ -417,7 +606,7 @@ const app = createApp({
                     }
                 }
             } catch (e) {
-                if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("⚠️ Errore di connessione al server.", "error");
+                if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("⚠️ Errore di connessione al database.", "error");
             }
         },
 
@@ -527,6 +716,10 @@ const app = createApp({
             this.codicePartitaInput = '';
             this.partitaTerminata = false;
             this.partitaInterrotta = false; // Pronto per un nuovo accesso
+            this.mostraPopupInizioPartita = false;
+            this.fischioInizioMostrato = false;
+            this.mostraPopupFinePartitaSpettatore = false;
+            this.periodo = 1;
             this.idPartitaCorrente = '0000';
             this.squadraCasaSelezionata = null;
             this.squadraOspiteSelezionata = null;
@@ -579,6 +772,10 @@ const app = createApp({
             this.idPartitaCorrente = '0000';
             this.partitaTerminata = false;
             this.partitaInterrotta = false; // Ritona false, pronto per una nuova gara pulita
+            this.mostraPopupInizioPartita = false;
+            this.fischioInizioMostrato = false;
+            this.mostraPopupFinePartitaSpettatore = false;
+            this.periodo = 1;
             this.squadraCasaSelezionata = null;
             this.squadraOspiteSelezionata = null;
             this.giocatoreAttivo = null;
