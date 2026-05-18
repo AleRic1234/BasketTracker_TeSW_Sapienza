@@ -85,7 +85,7 @@ input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
 
 /* Posizioni Giocatori */
 .p1a { top: 18%; left: 5%; }  .p2a { top: 64%; left: 5%; } .p3a { top: 41%; left: 18%; } .p4a { top: 18%; left: 31%; } .p5a { top: 64%; left: 31%; } 
-.p6a { top: 10%; left: -22%; } .p7a { top: 27%; left: -22%; } .p8a { top: 44%; left: -22%; } .p9a { top: 61%; left: -22%; } .p10a { top: 78%; left: -22%; }
+.p6a { top: 3%; left: -22%; } .p7a { top: 23%; left: -22%; } .p8a { top: 43%; left: -22%; } .p9a { top: 63%; left: -22%; } .p10a { top: 83%; left: -22%; }
 .p1b { top: 18%; right: 5%; } .p2b { top: 64%; right: 5%; } .p3b { top: 41%; right: 18%; } .p4b { top: 18%; right: 31%; } .p5b { top: 64%; right: 31%; }
 .p6b { top: 3%; right: -22%; } .p7b { top: 23%; right: -22%; } .p8b { top: 43%; right: -22%; } .p9b { top: 63%; right:-22%; } .p10b { top: 83%; right: -22%; }/* --- STILI ESCLUSIVI PER IL SETUP SQUADRE (Nessuno sfondo) --- */
 

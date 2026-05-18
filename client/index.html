@@ -380,19 +380,30 @@
 
                         <div v-if="giocatoreAttivo && ruolo === 'admin' && !partitaTerminata" class="stat-popup">
                             <h4>{{ giocatoreAttivo.nome }} (#{{ giocatoreAttivo.numero }})</h4>
-                            <div class="actions">
-                                <button @click="aggiungiStat('punti', 1)">+1pt</button>
-                                <button @click="aggiungiStat('punti', 2)">+2pt</button>
-                                <button @click="aggiungiStat('punti', 3)">+3pt</button>
-                                <button @click="rimuoviStat('punti', 1)">-1pt</button>
-                                <button @click="aggiungiStat('rimbalzi', 1)">+1rb</button>
-                                <button @click="aggiungiStat('assist', 1)">+1ast</button>
-                                <button @click="aggiungiStat('rubate', 1)">+1stl</button>
-                                <button @click="aggiungiStat('stoppate', 1)">+1blk</button>
-                                <button @click="aggiungiStat('perse', 1)">+1tov</button>
-                                <button @click="aggiungiStat('falli', 1)">+1pf</button>
+                            <div  v-if="!menuAvanzatoGiocatore"class="actions">
+                                <button @click="aggiungiStat('punti', 1)">+1 PT</button>
+                                <button @click="aggiungiStat('punti', 2)">+2 PT</button>
+                                <button @click="aggiungiStat('punti', 3)">+3 PT</button>
+                                <button @click="aggiungiStat('rimbalzi', 1)">+1 RB</button>
+                                <button @click="aggiungiStat('assist', 1)">+1 AST</button>
+                                <button @click="aggiungiStat('rubate', 1)">+1 STL</button>
+                                <button @click="aggiungiStat('stoppate', 1)">+1 BLK</button>
+                                <button @click="aggiungiStat('perse', 1)">+1 TOV</button>
+                                <button @click="aggiungiStat('falli', 1)">+1 PF</button>
+                                <button @click="menuAvanzatoGiocatore = true" style="background: rgba(243, 156, 18, 0.2); box-shadow: inset 0 0 0 1px #f39c12; color: white;">⚙️</button>
                             </div>
-                            <button @click="giocatoreAttivo = null" class="btn-close">Chiudi</button>
+                            <div v-else class="actions">
+                                <button @click="rimuoviStat('punti', 1); menuAvanzatoGiocatore = false">-1 PT</button>
+                                <button @click="rimuoviStat('rimbalzi', 1); menuAvanzatoGiocatore = false">-1 RB</button>
+                                <button @click="rimuoviStat('assist', 1); menuAvanzatoGiocatore = false">-1 AST</button>
+                                <button @click="rimuoviStat('rubate', 1); menuAvanzatoGiocatore = false">-1 STL</button>
+                                <button @click="rimuoviStat('stoppate', 1); menuAvanzatoGiocatore = false">-1 BLK</button>
+                                <button @click="rimuoviStat('perse', 1); menuAvanzatoGiocatore = false">-1 TOV</button>
+                                <button @click="rimuoviStat('falli', 1); menuAvanzatoGiocatore = false">-1 PF</button>
+                                
+                                <button @click="menuAvanzatoGiocatore = false" style="background: rgba(149, 165, 166, 0.2); box-shadow: inset 0 0 0 1px #95a5a6; color: white;">🔙</button>
+                            </div>
+                            <button @click="giocatoreAttivo = null; menuAvanzatoGiocatore = false" class="btn-close">Chiudi</button>
                         </div>
                     </div> 
 
@@ -541,16 +552,8 @@
 
                 <div style="text-align: center; margin-top: 40px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                     
-                    <button class="btn-primary" style="width: 100%; max-width: 250px;" @click="tornaAlCampo">
-                        🏀 Torna al Campo
-                    </button>
-                    
                     <button v-if="partitaTerminata" class="btn-secondary" style="width: 100%; max-width: 250px;" @click="stampaRefertoUfficiale">
                         📥 Stampa Referto Ufficiale
-                    </button>
-                    
-                    <button v-if="partitaTerminata" class="btn-primary" style="width: 100%; max-width: 250px;" @click="mostraPopupHome = true">
-                        🏠 Torna alla Home
                     </button>
                     
                 </div>
