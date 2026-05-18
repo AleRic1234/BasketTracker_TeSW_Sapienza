@@ -388,7 +388,18 @@
                         @sync-status="trasmettiDatiLive"
                         @avanza-periodo="avanzaPeriodo">
                     </game-timer>
-                </div>
+
+                    <div v-if="partitaInterrotta && ruolo === 'viewer'" class="popup-overlay" style="z-index: 2000;">
+                        <div class="popup-content" style="border-top: 8px solid #e74c3c;">
+                            <div class="popup-icon">🛑</div>
+                            <h2 class="popup-title" style="color: #e74c3c; font-size: 2rem;">GARA INTERROTTA</h2>
+                            <p class="popup-text" style="font-size: 1.1rem; margin-top: 10px;">L'amministratore ha abbandonato la sessione.</p>
+                            <div class="popup-actions" style="margin-top: 20px;">
+                                <button class="btn-primary" style="background-color: #e74c3c;" @click="eseguiBackhome">🏠 Torna alla Home</button>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
             </section>
 
             <section v-if="currentView === 'boxscore'" class="view-container">
