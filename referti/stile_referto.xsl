@@ -48,7 +48,8 @@
 
           <div class="score-box">
             <strong><xsl:value-of select="referto_partita/risultato/casa/@nome"/></strong> 
-            &#160; <xsl:value-of select="referto_partita/risultato/casa"/> - 
+            &#160;
+            <xsl:value-of select="referto_partita/risultato/casa"/> - 
             <xsl:value-of select="referto_partita/risultato/ospiti"/> &#160;
             <strong><xsl:value-of select="referto_partita/risultato/ospiti/@nome"/></strong>
           </div>
@@ -57,23 +58,23 @@
             <div class="team-header">SQUADRA A: <xsl:value-of select="referto_partita/risultato/casa/@nome"/></div>
             <table>
               <tr>
-                <th width="10%" class="center">N. Maglia</th>
-                <th width="30%">Tesserato</th>
-                <th width="10%" class="center">PTS</th>
-                <th width="10%" class="center">REB</th>
-                <th width="10%" class="center">AST</th>
-                <th width="10%" class="center">STL</th>
-                <th width="10%" class="center">BLK</th>
-                <th width="10%" class="center">TOV</th>
-                <th width="10%" class="center">Falli</th>
-                <th width="10%" class="center">+/-</th> 
+                <th width="8%" class="center">N. Maglia</th>
+                <th width="28%">Tesserato</th>
+                <th width="8%" class="center">MIN</th> <th width="8%" class="center">PTS</th>
+                <th width="8%" class="center">REB</th>
+                <th width="8%" class="center">AST</th>
+                <th width="8%" class="center">STL</th>
+                <th width="8%" class="center">BLK</th>
+                <th width="8%" class="center">TOV</th>
+                <th width="8%" class="center">Falli</th>
+                <th width="8%" class="center">+/-</th> 
               </tr>
               <xsl:for-each select="referto_partita/giocatori/giocatore[@squadra='Casa']">
-                <xsl:sort select="@maglia" data-type="number" order="ascending"/>
+                <xsl:sort select="punti" data-type="number" order="descending"/>
                 <tr>
                   <td class="center"><strong><xsl:value-of select="@maglia"/></strong></td>
                   <td><xsl:value-of select="nome"/></td>
-                  <td class="center"><strong><xsl:value-of select="punti"/></strong></td>
+                  <td class="center"><xsl:value-of select="minuti"/></td> <td class="center"><strong><xsl:value-of select="punti"/></strong></td>
                   <td class="center"><xsl:value-of select="rimbalzi"/></td>
                   <td class="center"><xsl:value-of select="assist"/></td>
                   <td class="center"><xsl:value-of select="rubate"/></td>
@@ -83,9 +84,7 @@
                     <xsl:value-of select="falli"/>
                     <xsl:if test="falli >= 5"> <span class="alert">(USCITO)</span></xsl:if>
                   </td>
-                  
                   <td class="center"><xsl:value-of select="plsm"/></td>
-
                 </tr>
               </xsl:for-each>
             </table>
@@ -95,23 +94,23 @@
             <div class="team-header">SQUADRA B: <xsl:value-of select="referto_partita/risultato/ospiti/@nome"/></div>
             <table>
               <tr>
-                <th width="10%" class="center">N. Maglia</th>
-                <th width="30%">Tesserato</th>
-                <th width="10%" class="center">PTS</th>
-                <th width="10%" class="center">REB</th>
-                <th width="10%" class="center">AST</th>
-                <th width="10%" class="center">STL</th>
-                <th width="10%" class="center">BLK</th>
-                <th width="10%" class="center">TOV</th>
-                <th width="10%" class="center">Falli</th>
-                <th width="10%" class="center">+/-</th> 
+                <th width="8%" class="center">N. Maglia</th>
+                <th width="28%">Tesserato</th>
+                <th width="8%" class="center">MIN</th> <th width="8%" class="center">PTS</th>
+                <th width="8%" class="center">REB</th>
+                <th width="8%" class="center">AST</th>
+                <th width="8%" class="center">STL</th>
+                <th width="8%" class="center">BLK</th>
+                <th width="8%" class="center">TOV</th>
+                <th width="8%" class="center">Falli</th>
+                <th width="8%" class="center">+/-</th> 
               </tr>
               <xsl:for-each select="referto_partita/giocatori/giocatore[@squadra='Ospite']">
-                <xsl:sort select="@maglia" data-type="number" order="ascending"/>
+                <xsl:sort select="punti" data-type="number" order="descending"/>
                 <tr>
                   <td class="center"><strong><xsl:value-of select="@maglia"/></strong></td>
                   <td><xsl:value-of select="nome"/></td>
-                  <td class="center"><strong><xsl:value-of select="punti"/></strong></td>
+                  <td class="center"><xsl:value-of select="minuti"/></td> <td class="center"><strong><xsl:value-of select="punti"/></strong></td>
                   <td class="center"><xsl:value-of select="rimbalzi"/></td>
                   <td class="center"><xsl:value-of select="assist"/></td>
                   <td class="center"><xsl:value-of select="rubate"/></td>
@@ -121,9 +120,7 @@
                     <xsl:value-of select="falli"/>
                     <xsl:if test="falli >= 5"> <span class="alert">(USCITO)</span></xsl:if>
                   </td>
-                  
                   <td class="center"><xsl:value-of select="plsm"/></td>
-
                 </tr>
               </xsl:for-each>
             </table>

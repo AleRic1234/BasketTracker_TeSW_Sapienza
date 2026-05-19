@@ -93,12 +93,23 @@ export default {
                         this.timer--;
                         this.$emit('tick', this.timer);
                     } else {
+                        // IL TEMPO È SCADUTO (0:00)
                         clearInterval(this.interval);
                         this.timerRunning = false;
-                        this.$emit('sync-status');
                         
+                        // Controllo: Siamo a fine partita (Q4 o OT senza pareggio)?
                         if (this.periodo >= 4 && this.puntiCasa !== this.puntiOspite) {
                             this.$emit('avanza-periodo');
+                            this.$emit('sync-status');
+                        } else {
+                            // Altrimenti (Q1, Q2, Q3 o pareggio): Avanza al periodo successivo
+                            this.$emit('avanza-periodo');
+                            
+                            // Aspetta un istante per far aggiornare il periodo a main.js, poi resetta il tempo
+                            setTimeout(() => {
+                                this.timer = this.durataDefault;
+                                this.$emit('sync-status');
+                            }, 50);
                         }
                     }
                 }, 1000); 
@@ -145,11 +156,19 @@ export default {
                             this.timer--;
                             this.$emit('tick', this.timer);
                         } else {
+                            // STESSA LOGICA DI RESET INSERITA SOPRA
                             clearInterval(this.interval);
                             this.timerRunning = false;
-                            this.$emit('sync-status');
+                            
                             if (this.periodo >= 4 && this.puntiCasa !== this.puntiOspite) {
                                 this.$emit('avanza-periodo');
+                                this.$emit('sync-status');
+                            } else {
+                                this.$emit('avanza-periodo');
+                                setTimeout(() => {
+                                    this.timer = this.durataDefault;
+                                    this.$emit('sync-status');
+                                }, 50);
                             }
                         }
                     }, 1000); 

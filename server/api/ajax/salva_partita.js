@@ -5,6 +5,14 @@ const router = express.Router();
 
 module.exports = function(db) {
 
+    // Nuova funzione helper interna per formattare i secondi in MM:SS
+    function formattaSecondi(secondiTotali) {
+        const sTot = secondiTotali || 0;
+        const m = Math.floor(sTot / 60);
+        const s = sTot % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
     // Funzione interna per generare l'XML
     function generaRefertoXML(dati, idPartita) {
         const idFormattato = idPartita.toString().padStart(4, '0');
@@ -20,15 +28,18 @@ module.exports = function(db) {
         
         xmlString += `  <giocatori>\n`;
         
-        // Uniamo i giocatori di entrambe le squadre per il referto
         const tuttiGiocatori = [...dati.squadraCasa.giocatori, ...dati.squadraOspite.giocatori];
         
         tuttiGiocatori.forEach(g => {
             if (g.nome && g.nome.trim() !== '') {
                 const nomeSquadra = g.id.startsWith('A') ? 'Casa' : 'Ospite';
+                // Convertiamo i secondi in formato stringa per l'XML
+                const tempoFormattato = formattaSecondi(g.minuti);
+
                 xmlString += `    <giocatore maglia="${g.numero}" squadra="${nomeSquadra}">\n`;
                 xmlString += `      <nome>${g.nome}</nome>\n`;
-                xmlString += `      <punti>${g.punti}</punti>\n`;
+                xmlString += `      <punti>${g.punti || 0}</punti>\n`;
+                xmlString += `      <minuti secondi="${g.minuti || 0}">${tempoFormattato}</minuti>\n`;
                 xmlString += `      <rimbalzi>${g.rimbalzi || 0}</rimbalzi>\n`;
                 xmlString += `      <assist>${g.assist || 0}</assist>\n`;
                 xmlString += `      <rubate>${g.rubate || 0}</rubate>\n`;
@@ -52,7 +63,6 @@ module.exports = function(db) {
     router.post('/', (req, res) => {
         const datiVue = req.body; 
         
-        // Leggiamo la nuova struttura inviata da main.js
         const nomeCasa = datiVue.squadraCasa.nome;
         const nomeOspite = datiVue.squadraOspite.nome;
         const puntiCasa = datiVue.punteggioCasa;
@@ -68,14 +78,13 @@ module.exports = function(db) {
                 if (err) return res.status(500).json({ error: err.message });
                 
                 const idPartita = this.lastID;
-                
-                // Creiamo un unico array con tutti i giocatori per inserirli nel DB
                 const tuttiGiocatori = [...datiVue.squadraCasa.giocatori, ...datiVue.squadraOspite.giocatori];
 
                 tuttiGiocatori.forEach(giocatore => {
                     if (giocatore.nome && giocatore.nome.trim() !== '') {
                         const nomeSquadraReale = giocatore.id.startsWith('A') ? nomeCasa : nomeOspite;
-                        
+                        const tempoFormattato = formattaSecondi(giocatore.minuti); // Formatta prima del DB
+
                         db.run(`INSERT OR IGNORE INTO giocatori (nome, numero_maglia, squadra) VALUES (?, ?, ?)`,
                             [giocatore.nome, giocatore.numero, nomeSquadraReale],
                             function(err) {
@@ -84,8 +93,8 @@ module.exports = function(db) {
                                     (err, row) => {
                                         if (row) {
                                             db.run(`INSERT INTO statistiche_partite 
-                                                (id_partita, id_giocatore, punti, falli, rimbalzi, assist, rubate, stoppate, perse) 
-                                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                                (id_partita, id_giocatore, punti, falli, rimbalzi, assist, rubate, stoppate, perse, minuti) 
+                                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                                                 [
                                                     idPartita, 
                                                     row.id, 
@@ -95,7 +104,8 @@ module.exports = function(db) {
                                                     giocatore.assist || 0,
                                                     giocatore.rubate || 0,
                                                     giocatore.stoppate || 0,
-                                                    giocatore.perse || 0
+                                                    giocatore.perse || 0,
+                                                    tempoFormattato /* MODIFICA: Inserisce la stringa formattata (es. '1:12') */
                                                 ]
                                             );
                                         }
@@ -105,7 +115,6 @@ module.exports = function(db) {
                     }
                 });
                 
-                // Generiamo il file XML!
                 generaRefertoXML(datiVue, idPartita);
 
                 res.status(200).json({ 

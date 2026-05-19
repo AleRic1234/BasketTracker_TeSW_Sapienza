@@ -22,7 +22,7 @@ const app = createApp({
     data() {
         return {
             DataViz: window.DataViz, 
-            currentView: 'login', 
+            currentView: 'landing',
             leaderboardView: 'teams',
             classificaSquadre: [],
             ruolo: null,
@@ -278,7 +278,7 @@ const app = createApp({
             } else {
                 // Quarti normali
                 this.periodo++;
-                if (this.DataViz) this.DataViz.mostraNotifica(`Inizia il Quarto ${this.periodo}`, "info");
+                if (this.DataViz) this.DataViz.mostraNotifica(`🏀 Inizia il Quarto ${this.periodo}`, "info");
             }
             this.trasmettiDatiLive();
         },        
@@ -298,7 +298,9 @@ const app = createApp({
                             id: idMatch,
                             nomeFile: ref,
                             mvpNome: 'Calcolo...',
-                            valutazioneMvp: 0
+                            valutazioneMvp: 0,
+                            squadraCasa: '....', 
+                            squadraOspite: '...' 
                         });
                     }
                     
@@ -312,7 +314,18 @@ const app = createApp({
                         const partita = this.storicoPartite[i];
                         const idPuroDB = parseInt(partita.id, 10); 
                         
-                        const datiMvp = await api.getMVP(idPuroDB);
+                        try {
+                            const partitaDB = await api.ottieniPartita(partita.id);
+                                if (partitaDB && partitaDB.info) {
+                                    this.storicoPartite[i].squadraCasa = partitaDB.info.squadra_casa;
+                                    this.storicoPartite[i].squadraOspite = partitaDB.info.squadra_ospite;
+                                }
+                        } catch (e) {
+                            this.storicoPartite[i].squadraCasa = "N/D";
+                            this.storicoPartite[i].squadraOspite = "N/D";
+                        }
+                        
+                            const datiMvp = await api.getMVP(idPuroDB);
                         
                         if (datiMvp && datiMvp.nome) {
                             // Aggiorna i dati
@@ -708,7 +721,7 @@ const app = createApp({
                 this.$refs.timerRef.timer = 600; // Reset a 10:00 sicuro
             }
 
-            this.currentView = 'login'; 
+            this.currentView = 'landing'; 
             this.password = ''; 
             this.ruolo = null;
             this.username = '';

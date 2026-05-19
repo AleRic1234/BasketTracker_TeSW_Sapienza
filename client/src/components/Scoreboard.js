@@ -2,7 +2,7 @@
 export default {
     props: ['puntiCasa', 'puntiOspiti', 'nomeCasa', 'nomeOspiti', 'logoCasa', 'logoOspiti'],
     template: `
-        <div style="position: absolute; top: -65px; left: 50%; transform: translateX(-50%); width: 100%; max-width: 620px; display: flex; justify-content: center; align-items: center; gap: 50px; background: #2c3e50; color: white; padding: 10px 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 50;">
+        <div style="position: absolute; top: -65px; left: 50%; transform: translateX(-50%); width: 100%; max-width: 620px; display: flex; justify-content: center; align-items: center; gap: 50px; background: #141923; color: white; padding: 10px 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 50;">
             
             <div style="display: flex; align-items: center; gap: 15px; width: 45%; justify-content: center;">
                 <img v-if="logoCasa" :src="logoCasa" style="width: 45px; height: 45px; object-fit: cover; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);">
