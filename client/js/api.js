@@ -10,26 +10,34 @@ const api = {
             });
 
             if (response.ok) {
-                // MODIFICA CHIAVE: Usiamo .text() perché il server restituisce una stringa, non un JSON!
                 const testoRisposta = await response.text();
-                console.log("Risposta dal server:", testoRisposta);
-                
-                // SOSTITUITO: Inseriamo direttamente il 'testoRisposta' nel pop-up
-                window.DataViz.mostraNotifica(`🏆 Partita Archiviata!<br><small>${testoRisposta}</small>`, "success");
-                return true;
+                return { success: true, message: testoRisposta };
             } else {
-                console.error("Errore nel salvataggio. Status:", response.status);
-                
-                // SOSTITUITO: Alert con Toast di Errore (Rosso)
-                window.DataViz.mostraNotifica("❌ Errore durante l'archiviazione della partita.", "error");
-                return false;
+                return { success: false, message: "Errore durante l'archiviazione della partita." };
             }
         } catch (error) {
-            console.error("Errore di rete (Server probabilmente spento):", error);
-            
-            // SOSTITUITO: Alert con Toast di Avviso (Arancione)
-            window.DataViz.mostraNotifica("⚠️ Impossibile connettersi al server.<br><small>Verifica che Node.js sia in esecuzione.</small>", "warning");
-            return false;
+            console.error("Errore di rete:", error);
+            return { success: false, message: "Server offline o errore di rete." };
+        }
+    },
+
+    async salvaFileXML(dati) {
+        try {
+            const response = await fetch('/api/salva_partita/xml', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dati)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                return { success: true, fileName: result.fileName };
+            } else {
+                return { success: false, message: "Errore nella generazione del referto XML." };
+            }
+        } catch (error) {
+            console.error("Errore generazione XML:", error);
+            return { success: false, message: "Errore di connessione durante la generazione." };
         }
     },
     
