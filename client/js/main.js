@@ -59,6 +59,9 @@ const app = createApp({
             radarPlayerB: null,
             radarChartIstanza: null,
             myBarChartIstanza: null,
+            //Anteprima XML
+            mostraModalAnteprima: false,
+            datiAnteprima: { id: '', data: '', casa: '', puntiCasa: '', ospite: '', puntiOspite: '', giocatoriCasa: [], giocatoriOspite: [] },
 
             squadreDisponibili: [
                 { nome: "Sapienza Bulls", logo: "./assets/sapienza_bulls.jpeg" },
@@ -444,9 +447,15 @@ const app = createApp({
                 }))
             };
 
-            try {
+           try {
                 const risultato = await api.salva(payload);
                 if (risultato.success) {
+                    
+                    // --- IL BLOCCO RIPRISTINATO! ---
+                    this.partitaTerminata = true; 
+                    this.trasmettiDatiLive(); // Avvisa anche gli spettatori che è finita
+                    // -------------------------------
+
                     this.mostraNotifica(`🏆 Partita Archiviata!<br><small>${risultato.message}</small>`, "success");
                     await this.aggiornaListaReferti();
                     this.apriBoxScore();
@@ -550,6 +559,79 @@ const app = createApp({
                 console.error("Errore caricamento classifica:", error);
                 this.mostraNotifica("Errore di connessione al database.", "error");
             }
+        },
+
+        anteprimaXML(nomeFile) {
+            fetch('/referti/' + nomeFile)
+                .then(res => {
+                    if (!res.ok) throw new Error("File XML non trovato.");
+                    return res.text();
+                })
+                .then(str => {
+                    let parser = new DOMParser();
+                    let xmlDoc = parser.parseFromString(str, "text/xml");
+
+                    let radice = xmlDoc.getElementsByTagName("referto_partita")[0];
+                    let garaId = radice ? radice.getAttribute("id") : "N/D";
+                    
+                    let tagData = xmlDoc.getElementsByTagName("data")[0];
+                    let dataGara = tagData && tagData.childNodes[0] ? tagData.childNodes[0].nodeValue : "N/D";
+                    
+                    let nodoCasa = xmlDoc.getElementsByTagName("squadra_casa")[0] || xmlDoc.getElementsByTagName("casa")[0];
+                    let nodoOspiti = xmlDoc.getElementsByTagName("squadra_ospite")[0] || xmlDoc.getElementsByTagName("ospiti")[0];
+                    
+                    // LETTURA RIGOROSA COME ORIGINALE:
+                    let squadraCasa = nodoCasa ? nodoCasa.getAttribute("nome") : "Team Casa";
+                    let puntiCasa = nodoCasa && nodoCasa.childNodes[0] ? nodoCasa.childNodes[0].nodeValue : "0";
+                    
+                    let squadraOspite = nodoOspiti ? nodoOspiti.getAttribute("nome") : "Team Ospiti";
+                    let puntiOspite = nodoOspiti && nodoOspiti.childNodes[0] ? nodoOspiti.childNodes[0].nodeValue : "0";
+
+                    let nodiGiocatori = xmlDoc.getElementsByTagName("giocatore");
+                    let rosterCasa = [];
+                    let rosterOspiti = [];
+
+                    for (let i = 0; i < nodiGiocatori.length; i++) {
+                        let nG = nodiGiocatori[i];
+                        let squadraAttr = nG.getAttribute("squadra");
+                        let maglia = nG.getAttribute("maglia");
+                        
+                        let tagNome = nG.getElementsByTagName("nome")[0];
+                        let nome = tagNome && tagNome.childNodes[0] ? tagNome.childNodes[0].nodeValue : "";
+                        
+                        let tagPunti = nG.getElementsByTagName("punti")[0];
+                        let punti = tagPunti && tagPunti.childNodes[0] ? parseInt(tagPunti.childNodes[0].nodeValue, 10) || 0 : 0;
+
+                        let playerObj = { nome, numero: maglia, punti };
+
+                        if (squadraAttr === 'Casa') {
+                            rosterCasa.push(playerObj);
+                        } else {
+                            rosterOspiti.push(playerObj);
+                        }
+                    }
+
+                    rosterCasa.sort((a, b) => b.punti - a.punti);
+                    rosterOspiti.sort((a, b) => b.punti - a.punti);
+
+                    // Adesso che datiAnteprima esiste in data(), Vue aggiornerà l'HTML all'istante!
+                    this.datiAnteprima = {
+                        id: garaId,
+                        data: dataGara,
+                        casa: squadraCasa,
+                        puntiCasa: puntiCasa,
+                        ospite: squadraOspite,
+                        puntiOspite: puntiOspite,
+                        giocatoriCasa: rosterCasa.slice(0, 3),
+                        giocatoriOspite: rosterOspiti.slice(0, 3)
+                    };
+                    
+                    this.mostraModalAnteprima = true;
+                })
+                .catch(err => {
+                    console.error("Errore lettura o parsing XML:", err);
+                    this.mostraNotifica("⚠️ Impossibile caricare l'anteprima del referto XML.", "error");
+                });
         },
 
         // =========================================
