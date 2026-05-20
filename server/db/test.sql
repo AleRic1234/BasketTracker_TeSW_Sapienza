@@ -1,6 +1,6 @@
 -- Tabella per le partite di basket
 CREATE TABLE IF NOT EXISTS partite (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT, -- Identificatore univoco per ogni partita, aumenta automaticamente ad ogni inserimento
     data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     squadra_casa TEXT NOT NULL,
     squadra_ospite TEXT NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS partite (
 
 -- Tabella per i giocatori di basket
 CREATE TABLE IF NOT EXISTS giocatori (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT, -- I giocatori sono innanzitutto identificati da un ID univoco, che viene generato automaticamente
     nome TEXT NOT NULL,
     numero_maglia TEXT NOT NULL,
     squadra TEXT NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS statistiche_partite (
     rubate INTEGER DEFAULT 0,
     stoppate INTEGER DEFAULT 0,
     perse INTEGER DEFAULT 0,
-    minuti TEXT DEFAULT '0:00', -- <-- Modificato da INTEGER a TEXT con default '0:00'
+    minuti TEXT DEFAULT '0:00', -- Formato "minuti:secondi", contiamo i minuti giocati
     FOREIGN KEY (id_partita) REFERENCES partite(id) ON DELETE CASCADE,
     FOREIGN KEY (id_giocatore) REFERENCES giocatori(id) ON DELETE CASCADE,
     PRIMARY KEY (id_partita, id_giocatore)

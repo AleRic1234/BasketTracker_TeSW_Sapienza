@@ -1,5 +1,8 @@
 import Timer from '../src/components/Timer.js';
 import Scoreboard from '../src/components/Scoreboard.js';
+import LandingPage from '../src/components/LandingPage.js'; 
+import LoginForm from '../src/components/LoginForm.js';
+import LeaderboardView from '../src/components/LeaderboardView.js';
 import api from './api.js';
 
 const { createApp } = Vue;
@@ -22,13 +25,8 @@ const app = createApp({
     data() {
         return {
             currentView: 'landing',
-            leaderboardView: 'teams',
-            classificaSquadre: [],
-            miglioriMarcatori: [], // Aggiunto per il grafico Chart.js
             ruolo: null,
             tabellinoAttivo: 'casa',
-            username: '',
-            password: '',
             storicoPartite: [],
             listaReferti: [],
             erroreLogin: false,
@@ -58,7 +56,6 @@ const app = createApp({
             radarPlayerA: null,
             radarPlayerB: null,
             radarChartIstanza: null,
-            myBarChartIstanza: null,
             //Anteprima XML
             mostraModalAnteprima: false,
             datiAnteprima: { id: '', data: '', casa: '', puntiCasa: '', ospite: '', puntiOspite: '', giocatoriCasa: [], giocatoriOspite: [] },
@@ -304,99 +301,7 @@ const app = createApp({
                 }
             });
         },
-
-        renderizzaGraficoMarcatori() {
-            this.$nextTick(() => {
-                const canvas = document.getElementById('topScorersChart');
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d');
-
-                // Distrugge il grafico precedente se esiste per evitare sovrapposizioni
-                if (this.myBarChartIstanza) this.myBarChartIstanza.destroy();
-
-                // Prende i primi 5 giocatori dall'array caricato dal database
-                const top5 = this.miglioriMarcatori.slice(0, 5);
-
-                // TRUCCO 1: Mettiamo Nome e Squadra in un Array così Chart.js li scrive su due righe separate!
-                const nomi = top5.map(g => [g.nome, `(${g.squadra})`]); 
-                const punti = top5.map(g => g.punti_totali || g.punti); // Compatibile sia con punti_totali che con punti
-
-                // TRUCCO 2: Colori Stile Podio (Oro, Argento, Bronzo, Blu e Azzurro)
-                const backgroundColors = [
-                    'rgba(255, 215, 0, 0.85)',   // 1° Oro
-                    'rgba(192, 192, 192, 0.85)', // 2° Argento
-                    'rgba(205, 127, 50, 0.85)',  // 3° Bronzo
-                    'rgba(26, 42, 108, 0.85)',   // 4° Blu 
-                    'rgba(52, 152, 219, 0.85)'   // 5° Azzurro
-                ];
-                
-                const borderColors = ['#e6c200', '#a6a6a6', '#a66a28', '#1a2a6c', '#2980b9'];
-
-                this.myBarChartIstanza = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: nomi,
-                        datasets: [{
-                            label: 'Punti Totali',
-                            data: punti,
-                            backgroundColor: backgroundColors,
-                            borderColor: borderColors,
-                            borderWidth: 2,
-                            borderRadius: 8, // Angoli smussati più pronunciati
-                            barPercentage: 0.5 // Rende le barre più snelle ed eleganti
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false, // Permette al grafico di riempire l'altezza
-                        layout: {
-                            padding: { top: 20 }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(0,0,0,0.06)',
-                                    drawBorder: false,
-                                    borderDash: [5, 5] // Linee orizzontali tratteggiate
-                                },
-                                ticks: { 
-                                    stepSize: 1, 
-                                    font: { size: 16 }, // Numeri Y più grandi
-                                    color: '#7f8c8d'
-                                }
-                            },
-                            x: {
-                                grid: { 
-                                    display: false // Nasconde le brutte linee verticali
-                                }, 
-                                ticks: {
-                                    font: { size: 15, weight: 'bold' }, // Testo X più grande
-                                    color: '#2c3e50'
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                titleFont: { size: 18 },
-                                bodyFont: { size: 16 },
-                                padding: 15,
-                                displayColors: false, // Nasconde il quadratino nel tooltip
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.raw + ' Punti Segnati';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            });
-        },
-
         
-
         // =========================================
         // 3. FUNZIONI DI NAVIGAZIONE E SALVATAGGIO
         // =========================================
@@ -564,22 +469,9 @@ const app = createApp({
             this.currentView = 'history';
         },
 
-        async apriLeaderboard() {
-            try {
-                const response = await fetch('/api/classifica');
-                const data = await response.json();
-                
-                this.classificaSquadre = data.standings;
-                this.miglioriMarcatori = data.topScorers; // Salviamo i dati per la schermata "scorers"
-                
-                this.currentView = 'leaderboard';
-                this.leaderboardView = 'teams'; 
-                
-                this.mostraNotifica("Dati aggregati caricati con successo!", "success");
-            } catch (error) {
-                console.error("Errore caricamento classifica:", error);
-                this.mostraNotifica("Errore di connessione al database.", "error");
-            }
+        apriLeaderboard() {
+            this.currentView = 'leaderboard';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         },
 
         anteprimaXML(nomeFile) {
@@ -711,14 +603,19 @@ const app = createApp({
             ];
         },
 
-        effettuaLogin() {
-            if (this.username.toLowerCase() === 'admin' && this.password === '1234') {
+        effettuaLogin(credenziali) {
+            const user = credenziali.username.toLowerCase();
+            const pass = credenziali.password;
+
+            if (user === 'admin' && pass === '1234') {
                 this.ruolo = 'admin';
+                this.username = user; // Salviamo lo user globale
                 this.erroreLogin = false;
                 this.currentView = 'home';
             } 
-            else if (this.username.toLowerCase() === 'utente' && this.password === '0000') {
+            else if (user === 'utente' && pass === '0000') {
                 this.ruolo = 'utente';
+                this.username = user; // Salviamo lo user globale
                 this.erroreLogin = false;
                 this.currentView = 'home';
             } 
@@ -1064,4 +961,7 @@ const app = createApp({
 
 app.component('game-timer', Timer);
 app.component('score-board', Scoreboard);
+app.component('landing-page', LandingPage);
+app.component('login-form', LoginForm);
+app.component('leaderboard-view', LeaderboardView);
 app.mount('#app');

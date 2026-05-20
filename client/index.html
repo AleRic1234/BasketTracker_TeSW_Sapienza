@@ -37,113 +37,15 @@
                 <button @click="backhome" class="btn-logout">🏠 Home</button>
             </nav>
             
-            <nav v-if="currentView == 'setup' || currentView == 'history'">
+            <nav v-if="currentView == 'setup' || currentView == 'history' || currentView == 'leaderboard'">
                 <button @click="backhome" class="btn-logout">🏠 Home</button>
             </nav>
         </header>
 
         <main>
-
-            <section v-if="currentView === 'landing'" class="landing-container fade-in">
+            <landing-page v-if="currentView === 'landing'" @vai-al-login="currentView = 'login'"></landing-page>
             
-            <div class="landing-hero" style= "margin-top: 150px;" >
-                <h2>Analisi Basket in Tempo Reale</h2>
-                <p>La piattaforma evoluta e reattiva per il monitoraggio delle statistiche sul campo, la generazione automatica di referti ufficiali e la trasmissione in diretta streaming per gli spettatori.</p>
-                <button class="btn-cta" @click="currentView = 'login'">Entra nella Piattaforma 🏀</button>
-            </div>
-
-            <div class="features-gallery">
-                
-                <div class="feature-card">
-                    <h3 style="color: #3498db; font-weight: 800;">Pedine & Campo Live</h3>
-                    <p style="font-size: 0.95rem; margin-top: 5px; color: #bbb;">Un'interfaccia interattiva a forma di campo da gioco per registrare o guardare falli, canestri e movimenti in tempo reale.</p>
-                    <img src="assets/campo.png" alt="Campo Live" style="width: 100%; height: 180px; object-fit: cover; border-radius: 16px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                </div>
-
-                <div class="feature-card">
-                    <h3 style="color: #f1c40f; font-weight: 800;">Archivio & MVP</h3>
-                    <p style="font-size: 0.95rem; margin-top: 5px; color: #bbb;">Tutti i match vengono archiviati in formato XML rigido. Il sistema calcola all'istante l'MVP estraendolo via SQL dal database.</p>
-                    <img src="assets/archivio.png" alt="Archivio Referti" style="width: 100%; height: 180px; object-fit: cover; border-radius: 16px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                </div>
-
-                <div class="feature-card">
-                    <h3 style="color: #2ecc71; font-weight: 800;">Classifiche e Grafici</h3>
-                    <p style="font-size: 0.95rem; margin-top: 5px; color: #bbb;">Analisi visiva immediata tramite grafici radar per scontri diretti tra i leader e grafici a barre per il rendimento dei team.</p>
-                    <img src="assets/classifica.png" alt="Classifiche e Grafici" style="width: 100%; height: 180px; object-fit: cover; border-radius: 16px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                </div>
-
-            </div>
-
-            <div class="instructions-section">
-                <h3>Come Funziona il Sistema</h3>
-                
-                <div class="roles-grid">
-                    
-                    <div class="role-box">
-                        <h4 style="color: #3498db;">👥 Spettatore (Viewer)</h4>
-                        <p style="font-size: 0.9rem; margin-bottom: 15px; color: #aaa;">Ideale per il pubblico, i tifosi o gli atleti che vogliono seguire la gara da remoto.</p>
-                        <ul>
-                            <li style="color: #3498db;">Accesso libero senza password tramite il Codice Partita.</li>
-                            <li>Ricezione asincrona dei dati sul campo tramite WebSockets.</li>
-                            <li>Popup automatici visivi (Fischio d'inizio e Sirena finale).</li>
-                            <li>Consultazione dello storico referti e confronto radar dei leader.</li>
-                        </ul>
-                    </div>
-
-                    <div class="role-box admin-emphasis">
-                        <h4 style="color: #f39c12;">⚡ Amministratore (Tavolo Ufficiali)</h4>
-                        <p style="font-size: 0.9rem; margin-bottom: 15px; color: #e67e22; font-weight: bold;">Il centro di controllo operativo della partita.</p>
-                        <ul>
-                            <li style="color: #f39c12; font-weight: bold;">Richiede credenziali di sicurezza per l'autenticazione.</li>
-                            <li>Creazione guidata dei roster con blocco dei numeri duplicati.</li>
-                            <li>Gestione completa del cronometro di gioco (con popup di conferma "Next Q" integrato).</li>
-                            <li>Assegnazione real-time di Punti (PTS), Rimbalzi (REB), Assist (AST) e Falli con tracciamento automatico dell'espulsione (OUT).</li>
-                            <li>Esportazione nativa del referto in formato ufficiale XML al termine della gara.</li>
-                        </ul>
-                    </div>
-
-                </div>
-            </div>
-
-        </section>
-
-            <section v-if="currentView === 'login'" class="view-container login-section">
-                <div class="login-card">
-                    <div class="login-header">
-                        <h2>🏀 BasketTracker</h2>
-                        <p>Effettua l'accesso per continuare</p>
-                    </div>
-                    
-                    <div class="login-body">
-                        <div class="input-group">
-                            <label for="username">Username</label>
-                            <input 
-                                type="text" 
-                                id="username" 
-                                v-model="username" 
-                                placeholder="es. admin o utente"
-                            >
-                        </div>
-                        
-                        <div class="input-group">
-                            <label for="password">Password</label>
-                            <input 
-                                type="password" 
-                                id="password" 
-                                v-model="password" 
-                                placeholder="Inserisci la tua password" 
-                                @keyup.enter="effettuaLogin"
-                            >
-                        </div>
-                        
-                        <div v-if="erroreLogin" class="error-msg">
-                            ⚠️ Credenziali non valide. Riprova.
-                        </div>
-                        
-                        <button @click="effettuaLogin" class="btn-login">ACCEDI</button>
-                    </div>
-                </div>
-            </section>
+            <login-form v-if="currentView === 'login'" :errore-login="erroreLogin" @esegui-login="effettuaLogin"></login-form>
 
             <section v-if="currentView === 'home'" class="home-container">
                 <h2 class="main-title">Benvenuto, {{ username.toUpperCase() }}!</h2>
@@ -175,7 +77,7 @@
                     <div class="menu-card" @click="apriLeaderboard">
                         <div class="menu-card-icon">🏆</div>
                         <h3>Classifica</h3>
-                        <p>Scopri la classifica delle squadre e i migliori marcatori del torneo, calcolati tramite query SQL di aggregazione.</p>
+                        <p>Scopri la classifica delle squadre e i migliori marcatori del torneo...</p>
                     </div>
                 </div>
             </section>
@@ -223,69 +125,11 @@
                 </div>
             </section>
 
-            <section v-if="currentView === 'leaderboard'" class="view-container">
-                <div class="header-archivio" style="text-align: center;">
-                    <h2>Dashboard Statistiche</h2>
-                </div>
-                
-                <div style="display: flex; justify-content: center; gap: 15px; margin: 25px 0;">
-                    <button @click="leaderboardView = 'teams'" 
-                            :style="leaderboardView === 'teams' ? 'background: #1a2a6c; color: white;' : 'background: white; color: #1a2a6c;'"
-                            style="padding: 12px 25px; border: 2px solid #1a2a6c; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;">
-                        🏆 Classifica Squadre
-                    </button>
-                    <button @click="leaderboardView = 'scorers'; renderizzaGraficoMarcatori()" 
-                            :style="leaderboardView === 'scorers' ? 'background: #f39c12; color: white; border-color: #f39c12;' : 'background: white; color: #f39c12; border-color: #f39c12;'"
-                            style="padding: 12px 25px; border: 2px solid; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;">
-                        🔥 Top 5 Marcatori
-                    </button>
-                </div>
-                
-                <div v-if="leaderboardView === 'teams'" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 900px; margin: 0 auto; overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: center;">
-                        <thead>
-                            <tr style="background-color: #f8f9fa; border-bottom: 3px solid #1a2a6c; color: #2c3e50;">
-                                <th style="padding: 15px; text-align: left;">SQUADRA</th>
-                                <th style="padding: 15px;" title="Partite Giocate">PG</th>
-                                <th style="padding: 15px; color: #27ae60;" title="Vinte">V</th>
-                                <th style="padding: 15px; color: #c0392b;" title="Perse">P</th>
-                                <th style="padding: 15px;" title="Pareggiate">PAR</th>
-                                <th style="padding: 15px;" title="Punti Fatti">PF</th>
-                                <th style="padding: 15px;" title="Punti Subiti">PS</th>
-                                <th style="padding: 15px; font-weight: 900; color: #1a2a6c;" title="Punti Classifica">PTS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(team, index) in classificaSquadre" :key="team.squadra" style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 15px; text-align: left; font-weight: bold; font-size: 1.1rem;">
-                                    <span style="color: #bdc3c7; margin-right: 15px;">{{ index + 1 }}</span>
-                                    {{ team.squadra }}
-                                </td>
-                                <td style="padding: 15px; font-weight: 500;">{{ team.giocate }}</td>
-                                <td style="padding: 15px; color: #27ae60; font-weight: bold;">{{ team.vinte }}</td>
-                                <td style="padding: 15px; color: #c0392b; font-weight: bold;">{{ team.perse }}</td>
-                                <td style="padding: 15px;">{{ team.pareggiate }}</td>
-                                <td style="padding: 15px; color: #7f8c8d;">{{ team.punti_fatti }}</td>
-                                <td style="padding: 15px; color: #7f8c8d;">{{ team.punti_subiti }}</td>
-                                <td style="padding: 15px; font-size: 1.3rem; font-weight: 900; color: #1a2a6c;">{{ team.punti_classifica }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div v-show="leaderboardView === 'scorers'" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 1200px; width: 95%; margin: 0 auto; height: 600px; display: flex; flex-direction: column;">
-                    <h3 style="text-align: center; color: #f39c12; margin-bottom: 25px; font-size: 1.8rem; font-weight: 900;">Migliori 5 Realizzatori</h3>
-                    <div style="flex-grow: 1; position: relative;">
-                        <canvas id="topScorersChart"></canvas>
-                    </div>
-                </div>
-
-                <div style="text-align: center; margin-top: 30px;">
-                    <button @click="backhome" class="btn-primary" style="max-width: 250px;">
-                        🏠 Torna alla Home
-                    </button>
-                </div>
-            </section>
+            <leaderboard-view 
+                v-if="currentView === 'leaderboard'" 
+                @torna-home="backhome" 
+                @invia-notifica="mostraNotifica($event.msg, $event.type)">
+            </leaderboard-view>
 
             <section v-if="currentView === 'setup'" class="view-container">
                 <h2>Configurazione Squadre</h2>
