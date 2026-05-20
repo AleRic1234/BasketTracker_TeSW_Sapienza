@@ -10,8 +10,9 @@ const api = {
             });
 
             if (response.ok) {
-                const testoRisposta = await response.text();
-                return { success: true, message: testoRisposta };
+                // Leggiamo la risposta come JSON e prendiamo solo la stringa "message"
+                const datiRisposta = await response.json();
+                return { success: true, message: datiRisposta.message };
             } else {
                 return { success: false, message: "Errore durante l'archiviazione della partita." };
             }

@@ -311,68 +311,91 @@ const app = createApp({
                 if (!canvas) return;
                 const ctx = canvas.getContext('2d');
 
+                // Distrugge il grafico precedente se esiste per evitare sovrapposizioni
                 if (this.myBarChartIstanza) this.myBarChartIstanza.destroy();
 
+                // Prende i primi 5 giocatori dall'array caricato dal database
                 const top5 = this.miglioriMarcatori.slice(0, 5);
+
+                // TRUCCO 1: Mettiamo Nome e Squadra in un Array così Chart.js li scrive su due righe separate!
+                const nomi = top5.map(g => [g.nome, `(${g.squadra})`]); 
+                const punti = top5.map(g => g.punti_totali || g.punti); // Compatibile sia con punti_totali che con punti
+
+                // TRUCCO 2: Colori Stile Podio (Oro, Argento, Bronzo, Blu e Azzurro)
+                const backgroundColors = [
+                    'rgba(255, 215, 0, 0.85)',   // 1° Oro
+                    'rgba(192, 192, 192, 0.85)', // 2° Argento
+                    'rgba(205, 127, 50, 0.85)',  // 3° Bronzo
+                    'rgba(26, 42, 108, 0.85)',   // 4° Blu 
+                    'rgba(52, 152, 219, 0.85)'   // 5° Azzurro
+                ];
                 
+                const borderColors = ['#e6c200', '#a6a6a6', '#a66a28', '#1a2a6c', '#2980b9'];
+
                 this.myBarChartIstanza = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: top5.map(g => g.nome),
+                        labels: nomi,
                         datasets: [{
-                            label: 'Punti Segnati',
-                            data: top5.map(g => g.punti),
-                            backgroundColor: '#f39c12',
-                            borderRadius: 8, barPercentage: 0.6
+                            label: 'Punti Totali',
+                            data: punti,
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 2,
+                            borderRadius: 8, // Angoli smussati più pronunciati
+                            barPercentage: 0.5 // Rende le barre più snelle ed eleganti
                         }]
                     },
                     options: {
-                        responsive: true, maintainAspectRatio: false,
-                        scales: {
-                            y: { beginAtZero: true, grid: { borderDash: [5, 5] }, ticks: { stepSize: 1, font: { size: 16 } } },
-                            x: { grid: { display: false }, ticks: { font: { size: 15, weight: 'bold' } } }
+                        responsive: true,
+                        maintainAspectRatio: false, // Permette al grafico di riempire l'altezza
+                        layout: {
+                            padding: { top: 20 }
                         },
-                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => context.raw + ' Punti Segnati' } } }
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0,0,0,0.06)',
+                                    drawBorder: false,
+                                    borderDash: [5, 5] // Linee orizzontali tratteggiate
+                                },
+                                ticks: { 
+                                    stepSize: 1, 
+                                    font: { size: 16 }, // Numeri Y più grandi
+                                    color: '#7f8c8d'
+                                }
+                            },
+                            x: {
+                                grid: { 
+                                    display: false // Nasconde le brutte linee verticali
+                                }, 
+                                ticks: {
+                                    font: { size: 15, weight: 'bold' }, // Testo X più grande
+                                    color: '#2c3e50'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                titleFont: { size: 18 },
+                                bodyFont: { size: 16 },
+                                padding: 15,
+                                displayColors: false, // Nasconde il quadratino nel tooltip
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.raw + ' Punti Segnati';
+                                    }
+                                }
+                            }
+                        }
                     }
                 });
             });
         },
 
-        anteprimaXML(nomeFile) {
-            const xmlUrl = `http://localhost:3000/referti/${nomeFile}`;
-            fetch(xmlUrl)
-                .then(response => {
-                    if (!response.ok) throw new Error("File XML non trovato.");
-                    return response.text();
-                })
-                .then(str => {
-                    const nuovaFinestra = window.open("", "_blank");
-                    nuovaFinestra.document.write(`
-                        <html>
-                            <head>
-                                <title>Codice Sorgente XML: ${nomeFile}</title>
-                                <style>
-                                    body { background-color: #1e1e1e; color: #d4d4d4; font-family: monospace; padding: 20px; white-space: pre-wrap; font-size: 14px; }
-                                    .tag { color: #569cd6; }
-                                    .attr { color: #9cdcfe; }
-                                    .val { color: #ce9178; }
-                                </style>
-                            </head>
-                            <body><h2>Struttura Dati XML Grezza</h2><hr><code>${
-                                str.replace(/</g, "&lt;").replace(/>/g, "&gt;")
-                                   .replace(/(&lt;\/?[a-zA-Z0-9_:-]+)/g, "<span class='tag'>$1</span>")
-                                   .replace(/([a-zA-Z0-9_:-]+=)/g, "<span class='attr'>$1</span>")
-                                   .replace(/(\".*?\")/g, "<span class='val'>$1</span>")
-                            }</code></body>
-                        </html>
-                    `);
-                    nuovaFinestra.document.close();
-                })
-                .catch(error => {
-                    console.error("Errore caricamento XML:", error);
-                    this.mostraNotifica("Impossibile caricare l'anteprima del codice XML.", "error");
-                });
-        },
+        
 
         // =========================================
         // 3. FUNZIONI DI NAVIGAZIONE E SALVATAGGIO
@@ -389,25 +412,20 @@ const app = createApp({
         },
 
         async stampaRefertoUfficiale() {
-            const payload = {
-                dataGara: new Date().toLocaleDateString('it-IT'),
-                
-                // Stessa correzione: oggetti per le squadre e nomi corretti per i punteggi
-                squadraCasa: { nome: this.teamA.nome || 'SQUADRA CASA' },
-                squadraOspite: { nome: this.teamB.nome || 'SQUADRA OSPITI' },
-                punteggioCasa: this.punteggioCasa,
-                punteggioOspite: this.punteggioOspite,
-                
-                giocatori: [...this.teamA.giocatori, ...this.teamB.giocatori].filter(p => p.nome.trim() !== '')
-            };
-
-            const risultato = await api.salvaFileXML(payload);
-            if (risultato.success) {
-                this.mostraNotifica("📄 Referto XML generato con successo!", "success");
-                window.open(`http://localhost:3000/referti/${risultato.fileName}`, '_blank');
-            } else {
-                this.mostraNotifica(`❌ ${risultato.message}`, "error");
+            // Verifica che ci sia una partita valida
+            if (!this.idPartitaCorrente || this.idPartitaCorrente === '0000') {
+                this.mostraNotifica("❌ Nessuna partita selezionata per la stampa del referto.", "error");
+                return;
             }
+
+            // Formatta l'ID a 4 cifre per trovare il nome esatto del file (es. 1 -> 0001)
+            const idFormattato = this.idPartitaCorrente.toString().padStart(4, '0');
+            const fileName = `referto_${idFormattato}.xml`;
+            
+            // Apre l'XML già generato in una nuova scheda.
+            // Uso il percorso relativo '/referti/' così funziona sia dal pc che dallo smartphone!
+            window.open(`/referti/${fileName}`, '_blank');
+            this.mostraNotifica("📄 Referto XML aperto con successo!", "success");
         },
 
         chiediConfermaSalvataggio() {
@@ -436,8 +454,11 @@ const app = createApp({
                     nome: this.teamB.nome || 'SQUADRA OSPITI',
                     giocatori: this.teamB.giocatori.filter(p => p.nome.trim() !== '')
                 },
-                puntiCasa: this.punteggioCasa,
-                puntiOspite: this.punteggioOspite,
+                
+                // ⚠️ MODIFICA QUI: Devi usare 'punteggio' e non 'punti'
+                punteggioCasa: this.punteggioCasa,
+                punteggioOspite: this.punteggioOspite,
+                
                 giocatori: listaGiocatori.map(p => ({
                     nome: p.nome,
                     numero: p.numero,
@@ -575,17 +596,17 @@ const app = createApp({
                     let garaId = radice ? radice.getAttribute("id") : "N/D";
                     
                     let tagData = xmlDoc.getElementsByTagName("data")[0];
-                    let dataGara = tagData && tagData.childNodes[0] ? tagData.childNodes[0].nodeValue : "N/D";
+                    let dataGara = tagData ? tagData.textContent.trim() : "N/D";
                     
                     let nodoCasa = xmlDoc.getElementsByTagName("squadra_casa")[0] || xmlDoc.getElementsByTagName("casa")[0];
                     let nodoOspiti = xmlDoc.getElementsByTagName("squadra_ospite")[0] || xmlDoc.getElementsByTagName("ospiti")[0];
                     
-                    // LETTURA RIGOROSA COME ORIGINALE:
+                    // LETTURA SICURA CON textContent (risolve l'errore "undefined")
                     let squadraCasa = nodoCasa ? nodoCasa.getAttribute("nome") : "Team Casa";
-                    let puntiCasa = nodoCasa && nodoCasa.childNodes[0] ? nodoCasa.childNodes[0].nodeValue : "0";
+                    let puntiCasa = nodoCasa ? nodoCasa.textContent.trim() : "0";
                     
                     let squadraOspite = nodoOspiti ? nodoOspiti.getAttribute("nome") : "Team Ospiti";
-                    let puntiOspite = nodoOspiti && nodoOspiti.childNodes[0] ? nodoOspiti.childNodes[0].nodeValue : "0";
+                    let puntiOspite = nodoOspiti ? nodoOspiti.textContent.trim() : "0";
 
                     let nodiGiocatori = xmlDoc.getElementsByTagName("giocatore");
                     let rosterCasa = [];
@@ -597,10 +618,10 @@ const app = createApp({
                         let maglia = nG.getAttribute("maglia");
                         
                         let tagNome = nG.getElementsByTagName("nome")[0];
-                        let nome = tagNome && tagNome.childNodes[0] ? tagNome.childNodes[0].nodeValue : "";
+                        let nome = tagNome ? tagNome.textContent.trim() : "";
                         
                         let tagPunti = nG.getElementsByTagName("punti")[0];
-                        let punti = tagPunti && tagPunti.childNodes[0] ? parseInt(tagPunti.childNodes[0].nodeValue, 10) || 0 : 0;
+                        let punti = tagPunti ? parseInt(tagPunti.textContent.trim(), 10) || 0 : 0;
 
                         let playerObj = { nome, numero: maglia, punti };
 
@@ -614,14 +635,16 @@ const app = createApp({
                     rosterCasa.sort((a, b) => b.punti - a.punti);
                     rosterOspiti.sort((a, b) => b.punti - a.punti);
 
-                    // Adesso che datiAnteprima esiste in data(), Vue aggiornerà l'HTML all'istante!
+                    // Mappiamo sia 'punti' che 'punteggio' per sicurezza assoluta con il tuo file HTML
                     this.datiAnteprima = {
                         id: garaId,
                         data: dataGara,
                         casa: squadraCasa,
                         puntiCasa: puntiCasa,
+                        punteggioCasa: puntiCasa, 
                         ospite: squadraOspite,
                         puntiOspite: puntiOspite,
+                        punteggioOspite: puntiOspite, 
                         giocatoriCasa: rosterCasa.slice(0, 3),
                         giocatoriOspite: rosterOspiti.slice(0, 3)
                     };
