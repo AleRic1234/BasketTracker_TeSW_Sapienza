@@ -1,0 +1,99 @@
+/* --- RESPONSIVE DESIGN --- */
+
+@media (max-width: 768px) {
+    /* 1. Rimpicciolisce l'intestazione */
+    header h1 {
+        font-size: 1.5rem;
+    }
+    
+    /* 2. Dispone il campo in verticale invece che affiancato */
+    .court-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 60px; /* Lascia spazio per il tabellone */
+    }
+
+    /* 3. Adatta i pannelli delle squadre (tabelle) */
+    .team-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    table {
+        font-size: 12px; /* Riduce il testo delle statistiche */
+    }
+
+    th, td {
+        padding: 5px; /* Restringe le celle per farle entrare nello schermo */
+    }
+
+    /* 4. Aggiusta la Scoreboard (sovrascrive in parte gli stili inline) */
+    div[style*="top: -65px"] {
+        top: -10px !important;
+        position: relative !important;
+        gap: 20px !important;
+        padding: 10px !important;
+        transform: translateX(0) !important;
+        left: 0 !important;
+        margin-bottom: 20px;
+    }
+    
+    div[style*="font-size: 28px"] {
+        font-size: 22px !important;
+    }
+}
+
+/* =========================================
+   FIX SCALING CAMPO DA BASKET (Mobile)
+   ========================================= */
+
+/* Schermi medi in orizzontale (es. iPhone Pro Max / Android grandi) */
+@media (max-width: 950px) and (orientation: landscape) {
+    .court-wrapper {
+        transform: scale(0.80); 
+        transform-origin: top center;
+        margin-bottom: -60px; 
+    }
+}
+
+/* Schermi piccoli in orizzontale (es. iPhone base / Android standard) */
+@media (max-width: 750px) and (orientation: landscape) {
+    .court-wrapper {
+        transform: scale(0.65); 
+        transform-origin: top center;
+        margin-bottom: -100px;
+    }
+}
+
+/* Schermi in Verticale (Portrait) */
+@media (max-width: 500px) and (orientation: portrait) {
+    .court-wrapper {
+        transform: scale(0.40); 
+        transform-origin: top center;
+        margin-bottom: -190px;
+    }
+}
+
+/* =========================================
+   FIX SCALING POPUP IN ORIZZONTALE
+   ========================================= */
+@media (max-height: 450px) and (orientation: landscape) {
+    .popup-content {
+        padding: 15px 20px;
+        transform: scale(0.85); /* Rimpicciolisce il popup del 15% */
+        border-width: 4px !important;
+    }
+    
+    .popup-icon { font-size: 30px; margin-bottom: 5px; }
+    
+    .popup-title { 
+        font-size: 1.6rem !important; 
+        margin-bottom: 5px; 
+    }
+    
+    .popup-subtitle { font-size: 1rem; margin-bottom: 5px; }
+    .popup-text { margin-bottom: 15px; font-size: 0.9rem; }
+    
+    .popup-actions { flex-direction: row; justify-content: center; }
+    .popup-actions button { padding: 8px 15px; font-size: 0.95rem; }
+}

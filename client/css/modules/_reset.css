@@ -1,0 +1,16 @@
+/* --- VARIABILI E RESET --- */
+:root {
+    --primary-color: #3498db;     
+    --danger-color: #e74c3c;      
+    --success-color: #27ae60;      
+    --dark-bg: #2c3e50;
+    --text-light: #ecf0f1;
+    --line-color: #0f0f0f;
+    --bg-color: #f4f7f6;
+    --border-width: 2px; 
+    --timer-color: #ff4500;
+}
+
+[v-cloak] { display: none; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e0e0e0; color: #333; line-height: 1.6; }

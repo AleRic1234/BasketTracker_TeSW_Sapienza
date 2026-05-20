@@ -1,0 +1,292 @@
+/* --- 4. IL CAMPO DA BASKET --- */
+.court-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; }
+.basketball-court { position: relative; width: 578px; height: 325px; background-color: rgb(230, 156, 19); border: var(--border-width) solid var(--line-color); box-sizing: border-box; margin-bottom: 5px; }
+
+/* Linee del Campo */
+.half-court-line { position: absolute; left: 50%; top: 0; bottom: 0; width: var(--border-width); background-color: var(--line-color); transform: translateX(-50%); }
+.center-circle { position: absolute; top: 50%; left: 50%; width: 72px; height: 72px; border: var(--border-width) solid var(--line-color); border-radius: 50%; transform: translate(-50%, -50%); }
+.three-point-line { position: absolute; top: 50%; width: 166px; height: 246px; border: var(--border-width) solid var(--line-color); transform: translateY(-50%); }
+.left-arc { left: 0; border-radius: 0 123px 123px 0; border-left: none; }
+.right-arc { right: 0; border-radius: 123px 0 0 123px; border-right: none; }
+.paint-area { position: absolute; top: 50%; width: 101px; height: 115px; border: var(--border-width) solid var(--line-color); transform: translateY(-50%); }
+.left-paint { left: 0; border-left: none; }
+.right-paint { right: 0; border-right: none; }
+.free-throw-circle { position: absolute; top: 50%; width: 29px; height: 58px; border: var(--border-width) solid var(--line-color); transform: translateY(-50%); }
+.left-ft { left: 102px; border-radius: 0 85px 85px 0; border-left: none; }
+.right-ft { right: 102px; border-radius: 85px 0 0 85px; border-right: none; }
+.hoop-box { position: absolute; top: 50%; width: 21px; height: 43px; border: var(--border-width) solid var(--line-color); transform: translateY(-50%); }
+.left-hoop { left: 0; border-left: none; border-radius: 0 85px 85px 0; }
+.right-hoop { right: 0; border-right: none; border-radius: 85px 0 0 85px; }
+
+/* Panchine e Giocatori */
+.bench-tag { display: inline-flex; align-items: center; justify-content: center; color: black; font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: bold; border-radius: 6px; width: 160px; height: 34px; position: absolute; }
+.team { background-color: var(--primary-color); left: -180px; top: -60px; }
+.opp { background-color: var(--danger-color); right: -180px; top: -60px; }
+
+.player { position: absolute; width: 51px; height: 51px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 10; display: flex; align-items: center; justify-content: center; font-weight: bold; color: rgb(0, 0, 0); cursor: pointer; transition: all 0.4s ease-in-out; }
+.pronto-al-cambio { border: 3px solid #27ae60 !important; transform: scale(1.15) !important; box-shadow: 0 0 15px #27ae60; z-index: 20; }
+.player:hover { transform: scale(1.1); }
+.team-left { border-color: white; background-color:var(--primary-color); color: white;}
+.team-right { border-color: white; background-color:var(--danger-color); color: white;}
+
+/* Posizioni Giocatori */
+.p1a { top: 18%; left: 5%; }  .p2a { top: 64%; left: 5%; } .p3a { top: 41%; left: 18%; } .p4a { top: 18%; left: 31%; } .p5a { top: 64%; left: 31%; } 
+.p6a { top: 3%; left: -22%; } .p7a { top: 23%; left: -22%; } .p8a { top: 43%; left: -22%; } .p9a { top: 63%; left: -22%; } .p10a { top: 83%; left: -22%; }
+.p1b { top: 18%; right: 5%; } .p2b { top: 64%; right: 5%; } .p3b { top: 41%; right: 18%; } .p4b { top: 18%; right: 31%; } .p5b { top: 64%; right: 31%; }
+.p6b { top: 3%; right: -22%; } .p7b { top: 23%; right: -22%; } .p8b { top: 43%; right: -22%; } .p9b { top: 63%; right:-22%; } .p10b { top: 83%; right: -22%; }/* --- STILI ESCLUSIVI PER IL SETUP SQUADRE (Nessuno sfondo) --- */
+
+.setup-titolare {
+    border: 3px solid #27ae60 !important; /* Solo il contorno verde brillante */
+    /* Sfondo invisibile/bianco */
+}
+
+.setup-panchina {
+    border: 3px solid transparent !important; /* Nessun contorno */
+}
+/* --- +/- --- */
+.plus-stat {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.minus-stat {
+    color: #e74c3c;
+    font-weight: bold;
+}
+/* --- STATO GIOCATORI (In Campo / Panchina) --- */
+.player.espulso {
+    background-color: #555 !important; /* Grigio scuro */
+    border: 3px solid var(--danger-color) !important; /* Bordo rosso */
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.player.espulso::after {
+    content: "OUT";
+    position: absolute;
+    top: -15px;
+    background: var(--danger-color);
+    color: white;
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.giocatore-box {
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    transition: all 0.3s ease; /* Rende il cambio di colore fluido */
+}
+
+.bordo-verdea {
+    border: 3px solid #27ae60 !important; /* Verde per i 5 in campo */
+    background-color:var(--primary-color); /* Sfondo leggermente verdino */
+}
+
+.bordo-biancoa {
+    border: 3px solid #ffff !important; /* Nero per chi è in panchina */
+    background-color: var(--primary-color);
+    opacity: 0.8; /* Rende i panchinari un po' più sbiaditi */
+}
+.bordo-verdeb {
+    border: 3px solid #27ae60 !important; /* Verde per i 5 in campo */
+    background-color:var(--danger-color); /* Sfondo leggermente verdino */
+}
+
+.bordo-biancob {
+    border: 3px solid #ffff !important; /* Nero per chi è in panchina */
+    background-color: var(--danger-color);
+    opacity: 0.8; /* Rende i panchinari un po' più sbiaditi */
+}
+
+/* --- STILE PER IL POPUP DELLE STATISTICHE SUI GIOCATORI --- */
+.floating-stat {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.75);
+    color: #00ff00; /* Verde brillante */
+    font-weight: bold;
+    font-size: 14px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    pointer-events: none; /* Evita che blocchi i click sul giocatore */
+    white-space: nowrap;
+    z-index: 1000;
+    animation: floatUpFade 1.2s ease-out forwards;
+}
+
+.floating-stat.negativo {
+    color: #ff4444; /* Rosso brillante */
+}
+
+@keyframes floatUpFade {
+    0% { opacity: 1; top: -10px; }
+    100% { opacity: 0; top: -45px; } 
+}
+
+/* --- 5. COMPONENTI E TABELLE --- */
+.timer-component { width: 100%; display: flex; justify-content: center; margin-top: 20px; }
+.scoreboard-timer { position: absolute; top: -125px; left: 50%; transform: translateX(-50%); background-color: #222; color: var(--timer-color); padding: 5px 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 40px; font-weight: bold; border: 2px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+.controls { display: flex; gap: 15px; }
+.controls button { padding: 10px 25px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; border-radius: 35px; background-color: #333; color: white; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+.controls button:hover { background-color: var(--primary-color); transform: scale(1.05); }
+
+/* --- NUOVO STILE MODERNO PER AGGIORNAMENTO PUNTI (.stat-popup) --- */
+.stat-popup { 
+    position: absolute; 
+    top: 50%; left: 50%; transform: translate(-50%, -50%); 
+    background: rgba(17, 24, 39, 0.85); /* Sfondo scuro elegante */
+    backdrop-filter: blur(12px); /* Effetto vetro sfocato */
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 25px; 
+    border-radius: 20px; 
+    z-index: 1000; 
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+    min-width: 420px; 
+    text-align: center; 
+    color: white; /* Testo bianco */
+    animation: popInAbsolute 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.stat-popup h4 { 
+    margin-bottom: 20px; 
+    border-bottom: 1px solid rgba(255,255,255,0.1); 
+    padding-bottom: 15px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.actions { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 12px; 
+    margin-bottom: 25px; 
+}
+
+.actions button { 
+    padding: 14px 5px; 
+    border: none; 
+    background: rgba(255, 255, 255, 0.1); /* Bottoni semi-trasparenti */
+    border-radius: 12px; 
+    cursor: pointer; 
+    font-weight: bold; 
+    font-size: 1.1rem;
+    color: white; 
+    transition: all 0.2s ease;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+/* Tasti dei Punti (Si illuminano di Verde) */
+.actions button.btn-hover-green:hover {
+    background: #10b981 !important; 
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important; 
+    transform: translateY(-2px);
+}
+
+/* Altre statistiche: Assist, Rimbalzi, ecc (Si illuminano di Blu) */
+.actions button.btn-hover-blue:hover {
+    background: #3b82f6 !important; 
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4) !important; 
+    transform: translateY(-2px);
+}
+
+/* Tasti di Rimozione (Si illuminano TUTTI di Rosso) */
+.actions button.btn-hover-red:hover {
+    background: #ef4444 !important; 
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4) !important; 
+    transform: translateY(-2px);
+}
+
+/* Tasto Ingranaggio (Si illumina di Arancione) */
+.actions button.btn-hover-orange:hover {
+    background: #f59e0b !important; 
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4) !important; 
+    transform: translateY(-2px);
+}
+
+/* Tasto Indietro (Si illumina di Grigio) */
+.actions button.btn-hover-gray:hover {
+    background: #6b7280 !important; 
+    box-shadow: 0 4px 15px rgba(107, 114, 128, 0.4) !important; 
+    transform: translateY(-2px);
+}
+
+/* Bottone Chiudi */
+.btn-close { 
+    background: linear-gradient(135deg, #ef4444, #dc2626); 
+    color: white; 
+    border: none; 
+    padding: 14px; 
+    width: 100%; 
+    border-radius: 12px; 
+    cursor: pointer;
+    font-weight: 900;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-close:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+.box-table { width: 100%; border-spacing: 0; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-top: 20px; table-layout: fixed; }
+.box-table th { background-color: var(--dark-bg); color: white; padding: 12px; }
+.box-table td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
+
+/* --- DA PIÙ SPAZIO AL NOME (Seconda colonna) --- */
+.box-table th:nth-child(2),
+.box-table td:nth-child(2) {
+    width: 35%; /* Riserva un bel pezzo di tabella solo per il nome */
+    text-align: left; /* Allinea il nome a sinistra per eleganza */
+    word-wrap: break-word; /* Se un nome è esageratamente lungo e senza spazi, lo manda a capo */
+    overflow-wrap: break-word;
+}
+
+/* --- HIGHLIGHT GIOCATORI IN CAMPO --- */
+
+/* Colora di verdino tutta la riga del giocatore titolare (usiamo !important per vincere sulle righe pari/dispari) */
+.in-campo-row td {
+    background-color: #f0fdf4 !important; 
+}
+
+/* Aggiunge una barra verde elegante a sinistra della riga per farla risaltare */
+.in-campo-row td:first-child {
+    border-left: 4px solid #27ae60;
+}
+
+/* Etichetta "IN CAMPO" */
+.badge-starter { 
+    font-size: 0.65rem; 
+    background: #27ae60; 
+    color: white; 
+    padding: 3px 6px; 
+    border-radius: 4px; 
+    margin-left: 8px; 
+    display: inline-block; 
+    white-space: nowrap; 
+}
+/* ---HIGHLIGHT GIOCATORI ESPULSO --- */
+
+.row-espulso td {
+    background-color: #fcdecf !important; 
+}
+.row-espulso td:first-child {
+    border-left: 4px solid red;
+}
+.badge-falli {
+    background-color: #ff0000;
+    color: white;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    display: inline-block;
+}
