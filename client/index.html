@@ -6,8 +6,6 @@
     <title>BasketTracker</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
-    <script src="js/data-viz.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -39,357 +37,44 @@
                 <button @click="backhome" class="btn-logout">🏠 Home</button>
             </nav>
             
-            <nav v-if="currentView == 'setup' || currentView == 'history'">
+            <nav v-if="currentView == 'setup' || currentView == 'history' || currentView == 'leaderboard' ">
                 <button @click="backhome" class="btn-logout">🏠 Home</button>
             </nav>
         </header>
 
         <main>
-
-            <section v-if="currentView === 'landing'" class="landing-container fade-in">
+            <landing-page v-if="currentView === 'landing'" @vai-al-login="currentView = 'login'"></landing-page>
             
-            <div class="landing-hero" style= "margin-top: 150px;" >
-                <h2>Analisi Basket in Tempo Reale</h2>
-                <p>La piattaforma evoluta e reattiva per il monitoraggio delle statistiche sul campo, la generazione automatica di referti ufficiali e la trasmissione in diretta streaming per gli spettatori.</p>
-                <button class="btn-cta" @click="currentView = 'login'">Entra nella Piattaforma 🏀</button>
-            </div>
+            <login-form v-if="currentView === 'login'" :errore-login="erroreLogin" @esegui-login="effettuaLogin"></login-form>
 
-            <div class="features-gallery">
-                
-                <div class="feature-card">
-                    <h3 style="color: #3498db; font-weight: 800;">Pedine & Campo Live</h3>
-                    <p style="font-size: 0.95rem; margin-top: 5px; color: #bbb;">Un'interfaccia interattiva a forma di campo da gioco per registrare o guardare falli, canestri e movimenti in tempo reale.</p>
-                    <img src="assets/campo.png" alt="Campo Live" style="width: 100%; height: 180px; object-fit: cover; border-radius: 16px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                </div>
+            <home-view 
+                v-if="currentView === 'home'" 
+                :username="username" 
+                :ruolo="ruolo"
+                @apri-setup="currentView = 'setup'"
+                @apri-archivio="apriArchivio"
+                @apri-leaderboard="apriLeaderboard"
+                @accedi-partita="accediPartitaConCodice">
+            </home-view>
 
-                <div class="feature-card">
-                    <h3 style="color: #f1c40f; font-weight: 800;">Archivio & MVP</h3>
-                    <p style="font-size: 0.95rem; margin-top: 5px; color: #bbb;">Tutti i match vengono archiviati in formato XML rigido. Il sistema calcola all'istante l'MVP estraendolo via SQL dal database.</p>
-                    <img src="assets/archivio.png" alt="Archivio Referti" style="width: 100%; height: 180px; object-fit: cover; border-radius: 16px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                </div>
+            <history-view 
+                v-if="currentView === 'history'"
+                @invia-notifica="mostraNotifica($event.msg, $event.type)">
+            </history-view>
 
-                <div class="feature-card">
-                    <h3 style="color: #2ecc71; font-weight: 800;">Classifiche e Grafici</h3>
-                    <p style="font-size: 0.95rem; margin-top: 5px; color: #bbb;">Analisi visiva immediata tramite grafici radar per scontri diretti tra i leader e grafici a barre per il rendimento dei team.</p>
-                    <img src="assets/classifica.png" alt="Classifiche e Grafici" style="width: 100%; height: 180px; object-fit: cover; border-radius: 16px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                </div>
+            <leaderboard-view 
+                v-if="currentView === 'leaderboard'" 
+                @torna-home="backhome" 
+                @invia-notifica="mostraNotifica($event.msg, $event.type)">
+            </leaderboard-view>
 
-            </div>
-
-            <div class="instructions-section">
-                <h3>Come Funziona il Sistema</h3>
-                
-                <div class="roles-grid">
-                    
-                    <div class="role-box">
-                        <h4 style="color: #3498db;">👥 Spettatore (Viewer)</h4>
-                        <p style="font-size: 0.9rem; margin-bottom: 15px; color: #aaa;">Ideale per il pubblico, i tifosi o gli atleti che vogliono seguire la gara da remoto.</p>
-                        <ul>
-                            <li style="color: #3498db;">Accesso libero senza password tramite il Codice Partita.</li>
-                            <li>Ricezione asincrona dei dati sul campo tramite WebSockets.</li>
-                            <li>Popup automatici visivi (Fischio d'inizio e Sirena finale).</li>
-                            <li>Consultazione dello storico referti e confronto radar dei leader.</li>
-                        </ul>
-                    </div>
-
-                    <div class="role-box admin-emphasis">
-                        <h4 style="color: #f39c12;">⚡ Amministratore (Tavolo Ufficiali)</h4>
-                        <p style="font-size: 0.9rem; margin-bottom: 15px; color: #e67e22; font-weight: bold;">Il centro di controllo operativo della partita.</p>
-                        <ul>
-                            <li style="color: #f39c12; font-weight: bold;">Richiede credenziali di sicurezza per l'autenticazione.</li>
-                            <li>Creazione guidata dei roster con blocco dei numeri duplicati.</li>
-                            <li>Gestione completa del cronometro di gioco (con popup di conferma "Next Q" integrato).</li>
-                            <li>Assegnazione real-time di Punti (PTS), Rimbalzi (REB), Assist (AST) e Falli con tracciamento automatico dell'espulsione (OUT).</li>
-                            <li>Esportazione nativa del referto in formato ufficiale XML al termine della gara.</li>
-                        </ul>
-                    </div>
-
-                </div>
-            </div>
-
-        </section>
-
-            <section v-if="currentView === 'login'" class="view-container login-section">
-                <div class="login-card">
-                    <div class="login-header">
-                        <h2>🏀 BasketTracker</h2>
-                        <p>Effettua l'accesso per continuare</p>
-                    </div>
-                    
-                    <div class="login-body">
-                        <div class="input-group">
-                            <label for="username">Username</label>
-                            <input 
-                                type="text" 
-                                id="username" 
-                                v-model="username" 
-                                placeholder="es. admin o utente"
-                            >
-                        </div>
-                        
-                        <div class="input-group">
-                            <label for="password">Password</label>
-                            <input 
-                                type="password" 
-                                id="password" 
-                                v-model="password" 
-                                placeholder="Inserisci la tua password" 
-                                @keyup.enter="effettuaLogin"
-                            >
-                        </div>
-                        
-                        <div v-if="erroreLogin" class="error-msg">
-                            ⚠️ Credenziali non valide. Riprova.
-                        </div>
-                        
-                        <button @click="effettuaLogin" class="btn-login">ACCEDI</button>
-                    </div>
-                </div>
-            </section>
-
-            <section v-if="currentView === 'home'" class="home-container">
-                <h2 class="main-title">Benvenuto, {{ username.toUpperCase() }}!</h2>
-                
-                <div class="menu-grid">
-                    <div v-if="ruolo === 'admin'" class="menu-card" @click="currentView = 'setup'">
-                        <div class="menu-card-icon">🏀</div>
-                        <h3>Crea Nuova Partita</h3>
-                        <p>Configura le squadre e i roster NBA per iniziare a tracciare le statistiche live.</p>
-                    </div>
-
-                    <div class="menu-card" @click="mostraInputCodice = !mostraInputCodice">
-                        <div class="menu-card-icon">🔍</div>
-                        <h3>Segui Live con Codice</h3>
-                        <p>Inserisci il codice univoco (es: 0001) per visualizzare una partita in corso o un referto archiviato.</p>
-                        
-                        <div v-if="mostraInputCodice" class="input-inline-container" @click.stop>
-                            <input type="text" v-model="codicePartitaInput" placeholder="Codice" @keyup.enter="accediPartitaConCodice">
-                            <button @click="accediPartitaConCodice" class="btn-mini">Entra</button>
-                        </div>
-                    </div>
-
-                    <div class="menu-card" @click="apriArchivio">
-                        <div class="menu-card-icon">📂</div>
-                        <h3>Archivio Referti</h3>
-                        <p>Consulta lo storico delle partite, visualizza i grafici radar e scarica i file ufficiali.</p>
-                    </div>
-
-                    <div class="menu-card" @click="apriLeaderboard">
-                        <div class="menu-card-icon">🏆</div>
-                        <h3>Classifica</h3>
-                        <p>Scopri la classifica delle squadre e i migliori marcatori del torneo, calcolati tramite query SQL di aggregazione.</p>
-                    </div>
-                </div>
-            </section>
-
-            <section v-if="currentView === 'history'" class="view-container">
-                <div class="header-archivio">
-                    <h2>Archivio Referti Ufficiali</h2>
-                </div>
-                
-                <div class="referti-grid" style="display:flex; gap:20px; flex-wrap:wrap; margin-top: 20px; justify-content: center;">
-                    <div v-for="partita in storicoPartite" :key="partita.id" class="referto-card" style="background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.05); width:240px; text-align:center; transition: transform 0.3s ease;">
-                        
-                        <div class="referto-icon" style="font-size:3.5rem; margin-bottom:10px;">📄</div>
-                        
-                        <div class="referto-info">
-                            <span class="file-name" style="display:block; margin-bottom:10px; font-weight:800; color: var(--dark-bg); font-size: 1.05rem; text-transform: uppercase;">
-                                {{ partita.squadraCasa }} vs {{ partita.squadraOspite }} (#{{ partita.id }})
-                            </span>
-                            
-                            <div style="background: rgba(241, 196, 15, 0.1); border: 1px solid #f1c40f; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
-                                <span style="display: block; font-size: 0.8rem; text-transform: uppercase; color: #7f8c8d; font-weight: bold;">MVP del Match</span>
-                                <span style="display: block; font-size: 1.1rem; color: #f39c12; font-weight: 900; margin: 3px 0;">
-                                    🏆 {{ partita.mvpNome }}
-                                </span>
-                                <span v-if="partita.valutazioneMvp > 0" style="display: block; font-size: 0.8rem; color: #95a5a6;">
-                                    (Valutazione: {{ partita.valutazioneMvp }})
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <a :href="'http://localhost:3000/referti/' + partita.nomeFile" target="_blank" class="btn-view" style="background:var(--primary-color); color:white; padding:10px; text-decoration:none; border-radius:6px; font-weight: bold; width: 100%; transition: background 0.2s;">
-                                📥 APRI REFERTO
-                            </a>
-                            
-                            <button @click="DataViz.anteprimaXML(partita.nomeFile)" style="background:#f39c12; color:white; padding:10px; border:none; border-radius:6px; cursor:pointer; font-weight: bold; width: 100%; transition: background 0.2s; text-transform: uppercase;">
-                                👁️ Anteprima
-                            </button>
-
-                            <button @click="DataViz.creaConfrontoAutomatico(partita.nomeFile.replace('referto_', '').replace('.xml', ''))" style="background:#8e44ad; color:white; padding:10px; border:none; border-radius:6px; cursor:pointer; font-weight: bold; width: 100%; transition: background 0.2s; text-transform: uppercase;">
-                                ⚔️ Confronto
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section v-if="currentView === 'leaderboard'" class="view-container">
-                <div class="header-archivio" style="text-align: center;">
-                    <h2>Dashboard Statistiche</h2>
-                </div>
-                
-                <div style="display: flex; justify-content: center; gap: 15px; margin: 25px 0;">
-                    <button @click="leaderboardView = 'teams'" 
-                            :style="leaderboardView === 'teams' ? 'background: #1a2a6c; color: white;' : 'background: white; color: #1a2a6c;'"
-                            style="padding: 12px 25px; border: 2px solid #1a2a6c; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;">
-                        🏆 Classifica Squadre
-                    </button>
-                    <button @click="leaderboardView = 'scorers'" 
-                            :style="leaderboardView === 'scorers' ? 'background: #f39c12; color: white; border-color: #f39c12;' : 'background: white; color: #f39c12; border-color: #f39c12;'"
-                            style="padding: 12px 25px; border: 2px solid; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;">
-                        🔥 Top 5 Marcatori
-                    </button>
-                </div>
-                
-                <div v-if="leaderboardView === 'teams'" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 900px; margin: 0 auto; overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: center;">
-                        <thead>
-                            <tr style="background-color: #f8f9fa; border-bottom: 3px solid #1a2a6c; color: #2c3e50;">
-                                <th style="padding: 15px; text-align: left;">SQUADRA</th>
-                                <th style="padding: 15px;" title="Partite Giocate">PG</th>
-                                <th style="padding: 15px; color: #27ae60;" title="Vinte">V</th>
-                                <th style="padding: 15px; color: #c0392b;" title="Perse">P</th>
-                                <th style="padding: 15px;" title="Pareggiate">PAR</th>
-                                <th style="padding: 15px;" title="Punti Fatti">PF</th>
-                                <th style="padding: 15px;" title="Punti Subiti">PS</th>
-                                <th style="padding: 15px; font-weight: 900; color: #1a2a6c;" title="Punti Classifica">PTS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(team, index) in classificaSquadre" :key="team.squadra" style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 15px; text-align: left; font-weight: bold; font-size: 1.1rem;">
-                                    <span style="color: #bdc3c7; margin-right: 15px;">{{ index + 1 }}</span>
-                                    {{ team.squadra }}
-                                </td>
-                                <td style="padding: 15px; font-weight: 500;">{{ team.giocate }}</td>
-                                <td style="padding: 15px; color: #27ae60; font-weight: bold;">{{ team.vinte }}</td>
-                                <td style="padding: 15px; color: #c0392b; font-weight: bold;">{{ team.perse }}</td>
-                                <td style="padding: 15px;">{{ team.pareggiate }}</td>
-                                <td style="padding: 15px; color: #7f8c8d;">{{ team.punti_fatti }}</td>
-                                <td style="padding: 15px; color: #7f8c8d;">{{ team.punti_subiti }}</td>
-                                <td style="padding: 15px; font-size: 1.3rem; font-weight: 900; color: #1a2a6c;">{{ team.punti_classifica }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div v-show="leaderboardView === 'scorers'" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 1200px; width: 95%; margin: 0 auto; height: 600px; display: flex; flex-direction: column;">
-                    <h3 style="text-align: center; color: #f39c12; margin-bottom: 25px; font-size: 1.8rem; font-weight: 900;">Migliori 5 Realizzatori</h3>
-                    <div style="flex-grow: 1; position: relative;">
-                        <canvas id="topScorersChart"></canvas>
-                    </div>
-                </div>
-
-                <div style="text-align: center; margin-top: 30px;">
-                    <button @click="backhome" class="btn-primary" style="max-width: 250px;">
-                        🏠 Torna alla Home
-                    </button>
-                </div>
-            </section>
-
-            <section v-if="currentView === 'setup'" class="view-container">
-                <h2>Configurazione Squadre</h2>
-                
-                <button @click="caricaTestNBA" class="btn-primary" style="background-color: #f39c12; margin-bottom: 25px; width: 100%; max-width: 830px;">
-                    ⚡ RIEMPIMENTO RAPIDO TEST (NBA)
-                </button>
-
-                <div class="setup-container" style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
-                    
-                    <div class="setup-card" style="flex: 1; min-width: 320px; max-width: 400px; background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                        
-                        <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #7f8c8d; font-size: 0.9rem; text-transform: uppercase;">Seleziona da Archivio:</label>
-                        <select v-model="squadraCasaSelezionata" @change="aggiornaNomiSquadre" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; width: 100%; margin-bottom: 20px; font-size: 1rem; background-color: #f9f9f9;">
-                            <option :value="null">📝 Inserimento Manuale...</option>
-                            <option v-for="s in squadreDisponibili" :key="s.nome" :value="s">{{ s.nome }}</option>
-                        </select>
-
-                        <div class="team-header-horizontal" style="padding: 0 0 15px 0; border-bottom: 3px solid var(--primary-color); margin-bottom: 20px; background: transparent; box-shadow: none;">
-                            <img v-if="teamA.logo" :src="teamA.logo" class="logo-grande">
-                            <div v-else class="logo-grande" style="display:flex; align-items:center; justify-content:center; font-size:2.5rem; background:#f4f7f6; color: #ccc;">🏠</div>
-                            
-                            <input v-model="teamA.nome" placeholder="Nome Squadra Casa" class="in-team-name" style="font-size: 1.3rem; font-weight: 800; border: none; background: transparent; text-align: left; width: 100%; color: var(--dark-bg); text-transform: uppercase;">
-                        </div>
-
-                        <div v-for="(p, i) in teamA.giocatori" 
-                             :key="'setupA-'+i" 
-                             class="input-row giocatore-box"
-                             :class="p.inCampo ? 'setup-titolare' : 'setup-panchina'"
-                             style="display: flex; gap: 10px; margin-bottom: 8px;">
-                             
-                            <input 
-                                type="number" 
-                                v-model="p.numero" 
-                                min="0" 
-                                max="99" 
-                                oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);"
-                                placeholder="N°" 
-                                class="in-num" 
-                                style="width: 50px; text-align: center; border-radius: 5px; border: 1px solid #ccc;"
-                            >
-                            <input 
-                                type="text" 
-                                v-model="p.nome" 
-                                oninput="this.value = this.value.replace(/[^a-zA-ZÀ-ÿ.\s']/g, '');"
-                                placeholder="Nome Giocatore" 
-                                class="in-nome"
-                                style="width: 100%; border-radius: 5px; border: 1px solid #ccc; padding: 5px;"
-                            >
-                        </div>
-                    </div>
-
-                    <div class="setup-card" style="flex: 1; min-width: 320px; max-width: 400px; background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                        
-                        <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #7f8c8d; font-size: 0.9rem; text-transform: uppercase;">Seleziona da Archivio:</label>
-                        <select v-model="squadraOspiteSelezionata" @change="aggiornaNomiSquadre" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; width: 100%; margin-bottom: 20px; font-size: 1rem; background-color: #f9f9f9;">
-                            <option :value="null">📝 Inserimento Manuale...</option>
-                            <option v-for="s in squadreDisponibili" :key="s.nome" :value="s">{{ s.nome }}</option>
-                        </select>
-
-                        <div class="team-header-horizontal ospiti" style="padding: 0 0 15px 0; border-bottom: 3px solid var(--danger-color); margin-bottom: 20px; background: transparent; box-shadow: none;">
-                            <img v-if="teamB.logo" :src="teamB.logo" class="logo-grande">
-                            <div v-else class="logo-grande" style="display:flex; align-items:center; justify-content:center; font-size:2.5rem; background:#f4f7f6; color: #ccc;">✈️</div>
-                            
-                            <input v-model="teamB.nome" placeholder="Nome Squadra Ospiti" class="in-team-name" style="font-size: 1.3rem; font-weight: 800; border: none; background: transparent; text-align: left; width: 100%; color: var(--dark-bg); text-transform: uppercase;">
-                        </div>
-
-                        <div v-for="(p, i) in teamB.giocatori" 
-                             :key="'setupB-'+i" 
-                             class="input-row giocatore-box"
-                             :class="p.inCampo ? 'setup-titolare' : 'setup-panchina'"
-                             style="display: flex; gap: 10px; margin-bottom: 8px;">
-                             
-                            <input 
-                               type="number" 
-                               v-model="p.numero" 
-                               min="0" 
-                               max="99" 
-                               oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);"
-                               placeholder="N°" 
-                               class="in-num" 
-                               style="width: 50px; text-align: center; border-radius: 5px; border: 1px solid #ccc;"
-                            >
-                            <input 
-                                type="text" 
-                                v-model="p.nome" 
-                                oninput="this.value = this.value.replace(/[^a-zA-ZÀ-ÿ.\s']/g, '');"
-                                placeholder="Nome Giocatore" 
-                                class="in-nome"
-                                style="width: 100%; border-radius: 5px; border: 1px solid #ccc; padding: 5px;"
-                            >
-                        </div>
-                    </div>
-
-                </div>
-
-                <div style="text-align: center; margin-top: 40px; width: 100%;">
-                    <button class="btn-primary" style="max-width: 400px; font-size: 1.3rem; padding: 15px 30px; border-radius: 50px; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);" @click="iniziaPartita">
-                        🏀 INIZIA PARTITA
-                    </button>
-                </div>
-            </section>
+            <setup-view 
+                v-if="currentView === 'setup'"
+                :team-a="teamA"
+                :team-b="teamB"
+                @invia-notifica="mostraNotifica($event.msg, $event.type)"
+                @inizia-partita="iniziaPartita">
+            </setup-view>
 
             <section v-show="currentView === 'court'" class="view-container" style="max-width: 1100px; margin-top: 10px;">
                 <div class="court-wrapper" style="margin-top: 180px;">
@@ -442,28 +127,32 @@
 
                         <div v-if="giocatoreAttivo && ruolo === 'admin' && !partitaTerminata" class="stat-popup">
                             <h4>{{ giocatoreAttivo.nome }} (#{{ giocatoreAttivo.numero }})</h4>
-                            <div  v-if="!menuAvanzatoGiocatore"class="actions">
-                                <button @click="aggiungiStat('punti', 1)">+1 PT</button>
-                                <button @click="aggiungiStat('punti', 2)">+2 PT</button>
-                                <button @click="aggiungiStat('punti', 3)">+3 PT</button>
-                                <button @click="aggiungiStat('rimbalzi', 1)">+1 RB</button>
-                                <button @click="aggiungiStat('assist', 1)">+1 AST</button>
-                                <button @click="aggiungiStat('rubate', 1)">+1 STL</button>
-                                <button @click="aggiungiStat('stoppate', 1)">+1 BLK</button>
-                                <button @click="aggiungiStat('perse', 1)">+1 TOV</button>
-                                <button @click="aggiungiStat('falli', 1)">+1 PF</button>
-                                <button @click="menuAvanzatoGiocatore = true" style="background: rgba(243, 156, 18, 0.2); box-shadow: inset 0 0 0 1px #f39c12; color: white;">⚙️</button>
-                            </div>
-                            <div v-else class="actions">
-                                <button @click="rimuoviStat('punti', 1); menuAvanzatoGiocatore = false">-1 PT</button>
-                                <button @click="rimuoviStat('rimbalzi', 1); menuAvanzatoGiocatore = false">-1 RB</button>
-                                <button @click="rimuoviStat('assist', 1); menuAvanzatoGiocatore = false">-1 AST</button>
-                                <button @click="rimuoviStat('rubate', 1); menuAvanzatoGiocatore = false">-1 STL</button>
-                                <button @click="rimuoviStat('stoppate', 1); menuAvanzatoGiocatore = false">-1 BLK</button>
-                                <button @click="rimuoviStat('perse', 1); menuAvanzatoGiocatore = false">-1 TOV</button>
-                                <button @click="rimuoviStat('falli', 1); menuAvanzatoGiocatore = false">-1 PF</button>
+                            
+                            <div v-if="!menuAvanzatoGiocatore" class="actions">
+                                <button @click="aggiungiStat('punti', 1)" class="btn-hover-green">+1 PT</button>
+                                <button @click="aggiungiStat('punti', 2)" class="btn-hover-green">+2 PT</button>
+                                <button @click="aggiungiStat('punti', 3)" class="btn-hover-green">+3 PT</button>
                                 
-                                <button @click="menuAvanzatoGiocatore = false" style="background: rgba(149, 165, 166, 0.2); box-shadow: inset 0 0 0 1px #95a5a6; color: white;">🔙</button>
+                                <button @click="aggiungiStat('rimbalzi', 1)" class="btn-hover-blue">+1 RB</button>
+                                <button @click="aggiungiStat('assist', 1)" class="btn-hover-blue">+1 AST</button>
+                                <button @click="aggiungiStat('rubate', 1)" class="btn-hover-blue">+1 STL</button>
+                                <button @click="aggiungiStat('stoppate', 1)" class="btn-hover-blue">+1 BLK</button>
+                                <button @click="aggiungiStat('perse', 1)" class="btn-hover-red">+1 TOV</button>
+                                <button @click="aggiungiStat('falli', 1)" class="btn-hover-red">+1 PF</button>
+                                
+                                <button @click="menuAvanzatoGiocatore = true" class="btn-hover-orange">⚙️</button>
+                            </div>
+                            
+                            <div v-else class="actions">
+                                <button @click="rimuoviStat('punti', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 PT</button>
+                                <button @click="rimuoviStat('rimbalzi', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 RB</button>
+                                <button @click="rimuoviStat('assist', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 AST</button>
+                                <button @click="rimuoviStat('rubate', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 STL</button>
+                                <button @click="rimuoviStat('stoppate', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 BLK</button>
+                                <button @click="rimuoviStat('perse', 1); menuAvanzatoGiocatore = false" class="btn-hover-green">-1 TOV</button>
+                                <button @click="rimuoviStat('falli', 1); menuAvanzatoGiocatore = false" class="btn-hover-green">-1 PF</button>
+                                
+                                <button @click="menuAvanzatoGiocatore = false" class="btn-hover-gray">🔙</button>
                             </div>
                             <button @click="giocatoreAttivo = null; menuAvanzatoGiocatore = false" class="btn-close">Chiudi</button>
                         </div>
@@ -532,102 +221,15 @@
 
             </section>
 
-            <section v-if="currentView === 'boxscore'" class="view-container">
-                
-                <div class="boxscore-header-nav">
-                    <h1 class="main-title">BOX SCORE</h1>
-                    <div class="tab-switcher">
-                        <button :class="['tab-btn', { active: tabellinoAttivo === 'casa' }]" 
-                                @click="tabellinoAttivo = 'casa'">
-                            CASA
-                        </button>
-                        <button :class="['tab-btn', { active: tabellinoAttivo === 'ospiti' }]" 
-                                @click="tabellinoAttivo = 'ospiti'">
-                            OSPITI
-                        </button>
-                    </div>
-                </div>
-
-                <div v-if="tabellinoAttivo === 'casa'" class="fade-in">
-                    <div class="team-header-horizontal" style="margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                        <img v-if="teamA.logo" :src="teamA.logo" class="logo-grande">
-                        <div v-else class="logo-grande" style="display:flex; align-items:center; justify-content:center; font-size:2rem; background:#f4f7f6; color: #ccc;">🏠</div>
-                        <h3 class="nome-squadra-header">{{ teamA.nome || 'SQUADRA CASA' }}</h3>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="box-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th style="text-align: left;">Nome</th>
-                                    <th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>BLK</th><th>STL</th><th>TOV</th><th>PF</th><th>+/-</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="p in teamA.giocatori" :key="p.id" v-show="p.nome.trim() !== ''" 
-                                    :class="[p.inCampo ? 'in-campo-row' : '', { 'row-espulso': p.falli >= 5 }]"
-                                    :style="p === giocatoreMVP ? 'background-color: rgba(241, 196, 15, 0.15); border-left: 5px solid #f1c40f;' : ''">
-                                    
-                                    <td><strong>{{ p.numero }}</strong></td>
-                                    <td style="text-align: left;">
-                                        {{ p.nome }}
-                                        <span v-if="p.falli >= 5" class="badge-falli">OUT</span>
-                                        <span v-else-if="p.inCampo" class="badge-starter">IN CAMPO</span>
-                                        <span v-if="p === giocatoreMVP" style="color: #f1c40f; font-size: 1.2rem; margin-right: 5px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));" title="MVP della Partita">🏆</span>
-                                    </td>
-                                    <td>{{ formatMinuti(p.minuti) }}</td><td>{{ p.punti }}</td><td>{{ p.rimbalzi }}</td><td>{{ p.assist }}</td>
-                                    <td>{{ p.stoppate }}</td><td>{{ p.rubate }}</td><td>{{ p.perse }}</td><td>{{ p.falli }}</td>
-                                    <td :class="p.plsm >= 0 ? 'plus-stat' : 'minus-stat'">{{ p.plsm > 0 ? '+' : '' }}{{ p.plsm }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div v-if="tabellinoAttivo === 'ospiti'" class="fade-in">
-                    <div class="team-header-horizontal ospiti" style="margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                        <img v-if="teamB.logo" :src="teamB.logo" class="logo-grande">
-                        <div v-else class="logo-grande" style="display:flex; align-items:center; justify-content:center; font-size:2rem; background:#f4f7f6; color: #ccc;">✈️</div>
-                        <h3 class="nome-squadra-header">{{ teamB.nome || 'SQUADRA OSPITI' }}</h3>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="box-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th style="text-align: left;">Nome</th>
-                                    <th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>BLK</th><th>STL</th><th>TOV</th><th>PF</th><th>+/-</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="p in teamB.giocatori" :key="p.id" v-show="p.nome.trim() !== ''" 
-                                    :class="[p.inCampo ? 'in-campo-row' : '', { 'row-espulso': p.falli >= 5 }]"
-                                    :style="p === giocatoreMVP ? 'background-color: rgba(241, 196, 15, 0.15); border-left: 5px solid #f1c40f;' : ''">
-                                    
-                                    <td><strong>{{ p.numero }}</strong></td>
-                                    <td style="text-align: left;">
-                                        {{ p.nome }}
-                                        <span v-if="p.falli >= 5" class="badge-falli">OUT</span>
-                                        <span v-else-if="p.inCampo" class="badge-starter">IN CAMPO</span>
-                                        <span v-if="p === giocatoreMVP" style="color: #f1c40f; font-size: 1.2rem; margin-right: 5px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));" title="MVP della Partita">🏆</span>
-                                    </td>
-                                    <td>{{ formatMinuti(p.minuti) }}</td><td>{{ p.punti }}</td><td>{{ p.rimbalzi }}</td><td>{{ p.assist }}</td>
-                                    <td>{{ p.stoppate }}</td><td>{{ p.rubate }}</td><td>{{ p.perse }}</td><td>{{ p.falli }}</td>
-                                    <td :class="p.plsm >= 0 ? 'plus-stat' : 'minus-stat'">{{ p.plsm > 0 ? '+' : '' }}{{ p.plsm }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div style="text-align: center; margin-top: 40px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                    
-                    <button v-if="partitaTerminata" class="btn-secondary" style="width: 100%; max-width: 250px;" @click="stampaRefertoUfficiale">
-                        📥 Stampa Referto Ufficiale
-                    </button>
-                    
-                </div>
-            </section>
+            <boxscore-view 
+                v-if="currentView === 'boxscore'"
+                :team-a="teamA"
+                :team-b="teamB"
+                :giocatore-mvp="giocatoreMVP"
+                :partita-terminata="partitaTerminata"
+                :id-partita-corrente="idPartitaCorrente"
+                @invia-notifica="mostraNotifica($event.msg, $event.type)">
+            </boxscore-view>
             
             <div v-if="mostraPopupHome" class="popup-overlay">
                 <div class="popup-content" style="border-top: 8px solid var(--primary-color);">
@@ -684,6 +286,12 @@
                     </div>
                 </div>
             </div>
+            <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 5000; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; pointer-events: none;">
+                <div v-for="toast in notifiche" :key="toast.id" :class="['toast-glass', toast.tipo]">
+                    {{ toast.icona }} <span v-html="toast.messaggio"></span>
+                </div>
+            </div>
+        
         </main>
     </div>      
     <script type="module" src="js/main.js"></script>

@@ -1,0 +1,136 @@
+/* --- 4. IL CAMPO DA BASKET --- */
+.court-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; }
+.basketball-court { position: relative; width: 578px; height: 325px; background-color: rgb(230, 156, 19); border: var(--border-width) solid var(--line-color); box-sizing: border-box; margin-bottom: 5px; }
+
+/* Linee del Campo */
+.half-court-line { position: absolute; left: 50%; top: 0; bottom: 0; width: var(--border-width); background-color: var(--line-color); transform: translateX(-50%); }
+.center-circle { position: absolute; top: 50%; left: 50%; width: 72px; height: 72px; border: var(--border-width) solid var(--line-color); border-radius: 50%; transform: translate(-50%, -50%); }
+.three-point-line { position: absolute; top: 50%; width: 166px; height: 246px; border: var(--border-width) solid var(--line-color); transform: translateY(-50%); }
+.left-arc { left: 0; border-radius: 0 123px 123px 0; border-left: none; }
+.right-arc { right: 0; border-radius: 123px 0 0 123px; border-right: none; }
+.paint-area { position: absolute; top: 50%; width: 101px; height: 115px; border: var(--border-width) solid var(--line-color); transform: translateY(-50%); }
+.left-paint { left: 0; border-left: none; }
+.right-paint { right: 0; border-right: none; }
+.free-throw-circle { position: absolute; top: 50%; width: 29px; height: 58px; border: var(--border-width) solid var(--line-color); transform: translateY(-50%); }
+.left-ft { left: 102px; border-radius: 0 85px 85px 0; border-left: none; }
+.right-ft { right: 102px; border-radius: 85px 0 0 85px; border-right: none; }
+.hoop-box { position: absolute; top: 50%; width: 21px; height: 43px; border: var(--border-width) solid var(--line-color); transform: translateY(-50%); }
+.left-hoop { left: 0; border-left: none; border-radius: 0 85px 85px 0; }
+.right-hoop { right: 0; border-right: none; border-radius: 85px 0 0 85px; }
+
+/* Panchine e Giocatori */
+.bench-tag { display: inline-flex; align-items: center; justify-content: center; color: black; font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: bold; border-radius: 6px; width: 160px; height: 34px; position: absolute; }
+.team { background-color: var(--primary-color); left: -180px; top: -60px; }
+.opp { background-color: var(--danger-color); right: -180px; top: -60px; }
+
+.player { position: absolute; width: 51px; height: 51px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 10; display: flex; align-items: center; justify-content: center; font-weight: bold; color: rgb(0, 0, 0); cursor: pointer; transition: all 0.4s ease-in-out; }
+.pronto-al-cambio { border: 3px solid #27ae60 !important; transform: scale(1.15) !important; box-shadow: 0 0 15px #27ae60; z-index: 20; }
+.player:hover { transform: scale(1.1); }
+.team-left { border-color: white; background-color:var(--primary-color); color: white;}
+.team-right { border-color: white; background-color:var(--danger-color); color: white;}
+
+/* Posizioni Giocatori */
+.p1a { top: 18%; left: 5%; }  .p2a { top: 64%; left: 5%; } .p3a { top: 41%; left: 18%; } .p4a { top: 18%; left: 31%; } .p5a { top: 64%; left: 31%; } 
+.p6a { top: 3%; left: -22%; } .p7a { top: 23%; left: -22%; } .p8a { top: 43%; left: -22%; } .p9a { top: 63%; left: -22%; } .p10a { top: 83%; left: -22%; }
+.p1b { top: 18%; right: 5%; } .p2b { top: 64%; right: 5%; } .p3b { top: 41%; right: 18%; } .p4b { top: 18%; right: 31%; } .p5b { top: 64%; right: 31%; }
+.p6b { top: 3%; right: -22%; } .p7b { top: 23%; right: -22%; } .p8b { top: 43%; right: -22%; } .p9b { top: 63%; right:-22%; } .p10b { top: 83%; right: -22%; }/* --- STILI ESCLUSIVI PER IL SETUP SQUADRE (Nessuno sfondo) --- */
+
+.setup-titolare {
+    border: 3px solid #27ae60 !important; /* Solo il contorno verde brillante */
+    /* Sfondo invisibile/bianco */
+}
+
+.setup-panchina {
+    border: 3px solid transparent !important; /* Nessun contorno */
+}
+/* --- +/- --- */
+.plus-stat {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.minus-stat {
+    color: #e74c3c;
+    font-weight: bold;
+}
+/* --- STATO GIOCATORI (In Campo / Panchina) --- */
+.player.espulso {
+    background-color: #555 !important; /* Grigio scuro */
+    border: 3px solid var(--danger-color) !important; /* Bordo rosso */
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.player.espulso::after {
+    content: "OUT";
+    position: absolute;
+    top: -15px;
+    background: var(--danger-color);
+    color: white;
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.giocatore-box {
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    transition: all 0.3s ease; /* Rende il cambio di colore fluido */
+}
+
+.bordo-verdea {
+    border: 3px solid #27ae60 !important; /* Verde per i 5 in campo */
+    background-color:var(--primary-color); /* Sfondo leggermente verdino */
+}
+
+.bordo-biancoa {
+    border: 3px solid #ffff !important; /* Nero per chi è in panchina */
+    background-color: var(--primary-color);
+    opacity: 0.8; /* Rende i panchinari un po' più sbiaditi */
+}
+.bordo-verdeb {
+    border: 3px solid #27ae60 !important; /* Verde per i 5 in campo */
+    background-color:var(--danger-color); /* Sfondo leggermente verdino */
+}
+
+.bordo-biancob {
+    border: 3px solid #ffff !important; /* Nero per chi è in panchina */
+    background-color: var(--danger-color);
+    opacity: 0.8; /* Rende i panchinari un po' più sbiaditi */
+}
+
+/* --- STILE PER IL POPUP DELLE STATISTICHE SUI GIOCATORI --- */
+.floating-stat {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.75);
+    color: #00ff00; /* Verde brillante */
+    font-weight: bold;
+    font-size: 14px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    pointer-events: none; /* Evita che blocchi i click sul giocatore */
+    white-space: nowrap;
+    z-index: 1000;
+    animation: floatUpFade 1.2s ease-out forwards;
+}
+
+.floating-stat.negativo {
+    color: #ff4444; /* Rosso brillante */
+}
+
+@keyframes floatUpFade {
+    0% { opacity: 1; top: -10px; }
+    100% { opacity: 0; top: -45px; } 
+}
+
+/* --- 5. COMPONENTI E TABELLE --- */
+.timer-component { width: 100%; display: flex; justify-content: center; margin-top: 20px; }
+.scoreboard-timer { position: absolute; top: -125px; left: 50%; transform: translateX(-50%); background-color: #222; color: var(--timer-color); padding: 5px 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 40px; font-weight: bold; border: 2px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+.controls { display: flex; gap: 15px; }
+.controls button { padding: 10px 25px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; border-radius: 35px; background-color: #333; color: white; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+.controls button:hover { background-color: var(--primary-color); transform: scale(1.05); }
+
+

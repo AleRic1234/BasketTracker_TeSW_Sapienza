@@ -1,10 +1,17 @@
 import Timer from '../src/components/Timer.js';
 import Scoreboard from '../src/components/Scoreboard.js';
+import LandingPage from '../src/components/LandingPage.js'; 
+import LoginForm from '../src/components/LoginForm.js';
+import LeaderboardView from '../src/components/LeaderboardView.js';
+import HomeView from '../src/components/HomeView.js';
+import HistoryView from '../src/components/HistoryView.js';
+import SetupView from '../src/components/SetupView.js';
+import BoxScoreView from '../src/components/BoxScoreView.js';
 import api from './api.js';
 
 const { createApp } = Vue;
 
-// Spostata fuori per fare iun modo che Vue non vada MAI PIÙ in crash all'avvio
+// Spostata fuori per fare in modo che Vue non vada MAI PIÙ in crash all'avvio
 const generaSquadraVuota = (nome, idPrefix, posSuffix) => {
     return {
         nome: nome,
@@ -21,16 +28,10 @@ const generaSquadraVuota = (nome, idPrefix, posSuffix) => {
 const app = createApp({
     data() {
         return {
-            DataViz: window.DataViz, 
             currentView: 'landing',
-            leaderboardView: 'teams',
-            classificaSquadre: [],
             ruolo: null,
-            tabellinoAttivo: 'casa',
-            username: '',
-            password: '',
-            storicoPartite: [],
-            listaReferti: [],
+            username:'',
+            password:'',
             erroreLogin: false,
             mostraInputCodice: false,
             codicePartitaInput: '',
@@ -38,32 +39,26 @@ const app = createApp({
             idPartitaCorrente: '0000',
             socket: null,
             partitaTerminata: false,
-            partitaInterrotta: false, // : Stato per la partita interrotta
-            mostraPopupInizioPartita: false, // Nuovo stato per il popup di conferma inizio partita
-            fischioInizioMostrato: false, // Per evitare che il fischio venga mostrato più volte
-            mostraPopupFinePartitaSpettatore: false, // Nuovo stato per il popup di fine partita agli spettatori
-            mostraPopupConfermaNextQ: false, // Nuovo stato per il popup di conferma avanzamento periodo
+            partitaInterrotta: false,
+            mostraPopupInizioPartita: false,
+            fischioInizioMostrato: false,
+            mostraPopupFinePartitaSpettatore: false,
+            mostraPopupConfermaNextQ: false,
             periodo: 1,
-            attesaLiveTimeout: null, // Timer per bloccare l'accesso al viewer
+            attesaLiveTimeout: null,
             mostraPopupHome: false,
             mostraPopupSalvataggio: false,
             mostraPopupLogout: false,
             mostraPopupAvviso: false,
             messaggioAvviso: '',
-            menuAvanzatoGiocatore: false, // NUOVA VARIABILE PER IL SOTTOMENU
+            menuAvanzatoGiocatore: false,
+            
+            // --- STATO UI VUE NATIVO (Ex jQuery) ---
+            notifiche: [],
 
-            squadreDisponibili: [
-                { nome: "Sapienza Bulls", logo: "./assets/sapienza_bulls.jpeg" },
-                { nome: "Lamis Lions", logo: "./assets/lamis_lions.jpeg" },
-                { nome: "Orte Dragons", logo: "./assets/orte_dragons.jpeg" },
-                { nome: "Torvergata Griffins ", logo: "./assets/torvergata_griffins.jpeg" },
-            ],
-            squadraCasaSelezionata: null,
-            squadraOspiteSelezionata: null,
             giocatoreAttivo: null,
             panchinaroSelezionato: null,
             
-            // Usiamo la funzione sicura che non fa crashare l'app!
             teamA: generaSquadraVuota("", "A", "a"),
             teamB: generaSquadraVuota("", "B", "b")
         }
@@ -76,10 +71,9 @@ const app = createApp({
             if (this.partitaInterrotta) return `🛑 INTERROTTA`;
             if (this.periodo <= 4) return `QUARTO ${this.periodo}`;
             if (this.periodo === 5) return `OVERTIME`;
-            return `OT ${this.periodo - 4}`; // Es. OT 2, OT 3...
+            return `OT ${this.periodo - 4}`;
         },
         durataPeriodo() {
-            // Ritorna 600 secondi (10 min) per i primi 4 quarti, 300 (5 min) per gli Overtime
             return this.periodo <= 4 ? 600 : 300;
         },
         giocatoriValidiA() {
@@ -88,11 +82,8 @@ const app = createApp({
         giocatoriValidiB() {
             return this.teamB.giocatori.filter(p => p.nome.trim() !== '');
         },
-
         giocatoreMVP() {
-            // L'MVP viene calcolato SOLO se la partita è terminata
             if (!this.partitaTerminata) return null;
-            
             const tuttiGiocatori = [...this.teamA.giocatori, ...this.teamB.giocatori].filter(g => g.nome.trim() !== '');
             if (tuttiGiocatori.length === 0) return null;
 
@@ -100,72 +91,52 @@ const app = createApp({
             let maxValutazione = -Infinity;
 
             tuttiGiocatori.forEach(player => {
-                // Formula: (Punti + Rimbalzi + Assist + Rubate + Stoppate) - (Falli + Perse)
                 const valutazione = (player.punti + player.rimbalzi + player.assist + player.rubate + player.stoppate) - (player.falli + player.perse);
-                
                 if (valutazione > maxValutazione) {
                     maxValutazione = valutazione;
                     mvp = player;
                 }
             });
-
-            // Restituisce il giocatore solo se ha fatto qualcosa di utile (valutazione > 0)
             return maxValutazione > 0 ? mvp : null;
         },
     },
     mounted() {
-        this.aggiornaListaReferti();
         
         if (typeof io !== 'undefined') {
             this.socket = io();
 
-            // Gestione riconnessione automatica
             this.socket.on('connect', () => {
                 if (this.idPartitaCorrente && this.idPartitaCorrente !== '0000') {
-                    // Rientra automaticamente nella stanza corretta
                     this.socket.emit('entra_partita', this.idPartitaCorrente);
-                    
-                    // Se chi si è appena ricollegato è l'iPad (admin), forza la trasmissione dei dati al PC
-                    if (this.ruolo === 'admin') {
-                        this.trasmettiDatiLive();
-                    }
+                    if (this.ruolo === 'admin') this.trasmettiDatiLive();
                 }
             });
             
             this.socket.on('dati_live', (payload) => {
-                
-                // --- FIX BUG HOME: Se siamo tornati alla home, ignora le vecchie trasmissioni! ---
                 if (this.idPartitaCorrente === '0000') return; 
 
                 if (this.ruolo === 'utente' || this.ruolo === 'viewer') {
                     
-                    // --- FIX BUG BOXSCORE: Riportalo in campo SOLO se non sta leggendo le statistiche ---
                     if (this.currentView !== 'court' && this.currentView !== 'boxscore') {
                         this.currentView = 'court';
                         if (this.attesaLiveTimeout) clearTimeout(this.attesaLiveTimeout);
-                        if (this.DataViz) this.DataViz.mostraNotifica("📡 Segnale Live stabilito!", "success");
+                        this.mostraNotifica("📡 Segnale Live stabilito!", "success");
                     }
 
-                    // --- NUOVO: NOTIFICA CAMBIO QUARTO ANCHE PER LO SPETTATORE ---
                     if (payload.periodo > this.periodo) {
-                        if (this.DataViz) {
-                            if (payload.periodo <= 4) {
-                                this.DataViz.mostraNotifica(`🏀 Inizia il Quarto ${payload.periodo}`, "info");
-                            } else if (payload.periodo === 5) {
-                                this.DataViz.mostraNotifica("🏀 Parità! Si va all'OVERTIME (5 Minuti)!", "warning");
-                            } else {
-                                this.DataViz.mostraNotifica(`🏀 Inizia l'OT ${payload.periodo - 4}`, "info");
-                            }
+                        if (payload.periodo <= 4) {
+                            this.mostraNotifica(`🏀 Inizia il Quarto ${payload.periodo}`, "info");
+                        } else if (payload.periodo === 5) {
+                            this.mostraNotifica("🏀 Parità! Si va all'OVERTIME (5 Minuti)!", "warning");
+                        } else {
+                            this.mostraNotifica(`🏀 Inizia l'OT ${payload.periodo - 4}`, "info");
                         }
                     }
 
-                    // --- NUOVO: POPUP FISCHIO D'INIZIO AL PRIMO "PLAY" DEL MATCH ---
                     if (payload.periodo === 1 && payload.timer && payload.timer.inEsecuzione && !this.fischioInizioMostrato) {
                         this.mostraPopupInizioPartita = true;
-                        this.fischioInizioMostrato = true; // Blinda il fischio per non ripeterlo
-                        setTimeout(() => {
-                            this.mostraPopupInizioPartita = false;
-                        }, 2000); 
+                        this.fischioInizioMostrato = true; 
+                        setTimeout(() => { this.mostraPopupInizioPartita = false; }, 2000); 
                     }
                     
                     if (payload.periodo >= 4 && payload.timer && payload.timer.tempoResiduo === 0 && 
@@ -173,38 +144,58 @@ const app = createApp({
                         !this.mostraPopupFinePartitaSpettatore && !this.partitaTerminata) {
                         
                         this.mostraPopupFinePartitaSpettatore = true;
-                        setTimeout(() => {
-                            this.mostraPopupFinePartitaSpettatore = false;
-                        }, 3000); // Rimane visibile per 5 secondi
+                        setTimeout(() => { this.mostraPopupFinePartitaSpettatore = false; }, 3000); 
                     }
 
-                    // --- ASSEGNAZIONE DI TUTTI I DATI ---
                     this.teamA = payload.teamA;
                     this.teamB = payload.teamB;
                     this.partitaTerminata = payload.partitaTerminata;   
-                    
-                    // Variabile per gestire lo stato di interruzione (Integrata qui dentro!)
                     this.partitaInterrotta = payload.partitaInterrotta; 
-                    
                     this.periodo = payload.periodo;     
+
                     if (payload.timer && this.$refs.timerRef) {
-                        this.$refs.timerRef.impostaDatiEsterni(
-                            payload.timer.tempoResiduo, 
-                            payload.timer.inEsecuzione
-                        );
+                        this.$refs.timerRef.impostaDatiEsterni(payload.timer.tempoResiduo, payload.timer.inEsecuzione);
                     }
                 }
             });
 
             this.socket.on('nuovo_spettatore', () => {
-                if (this.ruolo === 'admin') {
-                    this.trasmettiDatiLive();
-                }
+                if (this.ruolo === 'admin') this.trasmettiDatiLive();
             });
         }
     },
     methods: {
-        // --- FUNZIONI DI NAVIGAZIONE E SALVATAGGIO  ---
+        
+        // =========================================
+        // 1. SISTEMA UI VUE NATIVO E NOTIFICHE
+        // =========================================
+        
+        mostraNotifica(messaggio, tipo = 'info') {
+            let icona = "ℹ️";
+            if (tipo === 'success') icona = "✅";
+            if (tipo === 'error') icona = "❌";
+            if (tipo === 'warning') icona = "⚠️";
+
+            const id = Date.now() + Math.random();
+            this.notifiche.push({ id, messaggio, tipo, icona });
+
+            setTimeout(() => {
+                this.notifiche = this.notifiche.filter(n => n.id !== id);
+            }, 3500);
+        },
+
+        mostraMessaggio(testo) {
+            this.messaggioAvviso = testo;
+            this.mostraPopupAvviso = true;
+        },
+
+        chiudiPopupAvviso() {
+            this.mostraPopupAvviso = false;
+        },
+        // =========================================
+        // FUNZIONI DI NAVIGAZIONE E SALVATAGGIO
+        // =========================================
+
         apriBoxScore() {
             this.currentView = 'boxscore';
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -215,11 +206,6 @@ const app = createApp({
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
 
-        // Apre il file XML appena generato in una nuova scheda.
-        stampaRefertoUfficiale() {
-            const urlReferto = `/referti/referto_${this.idPartitaCorrente}.xml`;
-            window.open(urlReferto, '_blank');
-        },
 
         chiediConfermaSalvataggio() {
             this.mostraPopupSalvataggio = true;
@@ -229,121 +215,99 @@ const app = createApp({
         },
 
         async confermaESalva() {
-            this.mostraPopupSalvataggio = false;
-            this.partitaTerminata = true;
-            if (this.$refs.timerRef) {
-                this.$refs.timerRef.timerRunning = false;
-                clearInterval(this.$refs.timerRef.interval);
+            if (this.teamA.giocatori.filter(p => p.nome.trim() !== '').length < 5 || 
+                this.teamB.giocatori.filter(p => p.nome.trim() !== '').length < 5) {
+                this.mostraNotifica("Roster incompleti. Le squadre devono avere almeno 5 giocatori.", "error");
+                this.mostraPopupSalvataggio = false;
+                return;
             }
-            if (this.trasmettiDatiLive) this.trasmettiDatiLive();
+
+            const listaGiocatori = [...this.teamA.giocatori, ...this.teamB.giocatori].filter(p => p.nome.trim() !== '');
 
             const payload = {
-                id: this.idPartitaCorrente,
-                data: new Date().toISOString(),
-                squadraCasa: this.teamA,
-                squadraOspite: this.teamB,
+                squadraCasa: { 
+                    nome: this.teamA.nome || 'SQUADRA CASA',
+                    giocatori: this.teamA.giocatori.filter(p => p.nome.trim() !== '')
+                },
+                squadraOspite: { 
+                    nome: this.teamB.nome || 'SQUADRA OSPITI',
+                    giocatori: this.teamB.giocatori.filter(p => p.nome.trim() !== '')
+                },
+                
                 punteggioCasa: this.punteggioCasa,
-                punteggioOspite: this.punteggioOspite
+                punteggioOspite: this.punteggioOspite,
+                
+                giocatori: listaGiocatori.map(p => ({
+                    nome: p.nome,
+                    numero: p.numero,
+                    squadra: p.posClass.includes('a') ? (this.teamA.nome || 'Casa') : (this.teamB.nome || 'Ospite'),
+                    punti: p.punti, falli: p.falli, rimbalzi: p.rimbalzi,
+                    assist: p.assist, rubate: p.rubate, stoppate: p.stoppate, perse: p.perse
+                }))
             };
 
             try {
-                const risposta = await api.salva(payload);
-                if (risposta) {
-                    await this.aggiornaListaReferti();
+                const risultato = await api.salva(payload);
+                if (risultato.success) {
+                    
+                    this.partitaTerminata = true; 
+                    this.trasmettiDatiLive(); 
+
+                    this.mostraNotifica(`🏆 Partita Archiviata!<br><small>${risultato.message}</small>`, "success");
+                    
+                    // ❌ CANCELLATA LA REGOLA DA QUI: await this.aggiornaListaReferti();
+                    
                     this.apriBoxScore();
                     
-                    // Notifica MVP al salvataggio 
-                    if (this.giocatoreMVP && this.DataViz) {
+                    if (this.giocatoreMVP) {
                         setTimeout(() => {
-                            this.DataViz.mostraNotifica(`🏆 MVP: ${this.giocatoreMVP.nome}!`, "success");
+                            this.mostraNotifica(`🏆 MVP: ${this.giocatoreMVP.nome}!`, "success");
                         }, 800);
                     }
+                } else {
+                    this.mostraNotifica(`❌ ${risultato.message}`, "error");
                 }
             } catch (error) {
-                console.error("Errore salvataggio:", error);
-                if (this.DataViz) this.DataViz.mostraNotifica("❌ Errore tecnico.", "error");
+                console.error(error);
+                this.mostraNotifica("Errore critico durante il salvataggio.", "error");
+            } finally {
+                this.mostraPopupSalvataggio = false;
             }
         },
 
-        //CONTROLLA AVANZAMENTO QUARTI E OVERTIME
         avanzaPeriodo() {
             if (this.periodo >= 4) {
-                // Fine del 4° quarto: controllo se sono in pareggio
                 if (this.punteggioCasa === this.punteggioOspite) {
                     this.periodo++;
-                    if (this.DataViz) this.DataViz.mostraNotifica("🏀 Parità! Si va all'OVERTIME (5 Minuti)!", "warning");
+                    this.mostraNotifica("🏀 Parità! Si va all'OVERTIME (5 Minuti)!", "warning");
                 } else {
-                    if (this.DataViz) this.DataViz.mostraNotifica("🏆 Partita conclusa! Ora puoi premere Salva Partita.", "success");
+                    this.mostraNotifica("🏆 Partita conclusa! Ora puoi premere Salva Partita.", "success");
                 }
             } else {
-                // Quarti normali
                 this.periodo++;
-                if (this.DataViz) this.DataViz.mostraNotifica(`🏀 Inizia il Quarto ${this.periodo}`, "info");
+                this.mostraNotifica(`🏀 Inizia il Quarto ${this.periodo}`, "info");
             }
             this.trasmettiDatiLive();
         },        
 
-        async aggiornaListaReferti() {
-            try {
-                console.log("🔄 Inizio aggiornamento storico referti...");
-                const files = await api.getListaReferti();
-                this.listaReferti = files || [];
-                
-                if (files && files.length > 0) {
-                    // 1. Prepariamo la lista temporanea
-                    let nuovoStorico = [];
-                    for (const ref of files) {
-                        const idMatch = ref.replace('referto_', '').replace('.xml', '');
-                        nuovoStorico.push({
-                            id: idMatch,
-                            nomeFile: ref,
-                            mvpNome: 'Calcolo...',
-                            valutazioneMvp: 0,
-                            squadraCasa: '....', 
-                            squadraOspite: '...' 
-                        });
-                    }
-                    
-                    nuovoStorico.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
-                    
-                    // 2. Passiamo l'array a Vue per mostrare le card con "Calcolo..."
-                    this.storicoPartite = [...nuovoStorico];
-                    
-                    // 3. Andiamo a caccia degli MVP uno per uno!
-                    for (let i = 0; i < this.storicoPartite.length; i++) {
-                        const partita = this.storicoPartite[i];
-                        const idPuroDB = parseInt(partita.id, 10); 
-                        
-                        try {
-                            const partitaDB = await api.ottieniPartita(partita.id);
-                                if (partitaDB && partitaDB.info) {
-                                    this.storicoPartite[i].squadraCasa = partitaDB.info.squadra_casa;
-                                    this.storicoPartite[i].squadraOspite = partitaDB.info.squadra_ospite;
-                                }
-                        } catch (e) {
-                            this.storicoPartite[i].squadraCasa = "N/D";
-                            this.storicoPartite[i].squadraOspite = "N/D";
-                        }
-                        
-                            const datiMvp = await api.getMVP(idPuroDB);
-                        
-                        if (datiMvp && datiMvp.nome) {
-                            // Aggiorna i dati
-                            this.storicoPartite[i].mvpNome = datiMvp.nome;
-                            this.storicoPartite[i].valutazioneMvp = datiMvp.valutazione;
-                        } else {
-                            // Nessun dato trovato nel DB
-                            this.storicoPartite[i].mvpNome = 'N/D';
-                        }
-                    }
-                    console.log("✅ Storico aggiornato con successo!");
-                }
-            } catch (error) {
-                console.error("❌ Errore lista referti ed MVP:", error);
-            }
+        async apriArchivio() {
+            this.currentView = 'history';
         },
 
-        // --- FUNZIONI DI GESTIONE PARTITA ---
+        apriLeaderboard() {
+            this.currentView = 'leaderboard';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        // =========================================
+        //  FUNZIONI DI GESTIONE PARTITA E LOGICHE
+        // =========================================
+
+
+        getEmptyTeam(nome, idPrefix, posSuffix) {
+            return generaSquadraVuota(nome, idPrefix, posSuffix);
+        },
+
         getClasseGiocatore(p, teamId) {
             const isCasa = teamId === 'A';
             return [
@@ -355,104 +319,20 @@ const app = createApp({
                 { 'espulso': p.falli >= 5 }
             ];
         },
-        // --------------------------------------------------------
 
-        caricaTestNBA() {
-            this.teamA.nome = "Los Angeles Lakers";
-            const rosterLakers = [
-                { nome: "L. James", num: "23" }, { nome: "A. Davis", num: "3" }, 
-                { nome: "A. Reaves", num: "15" }, { nome: "D. Russell", num: "1" }, 
-                { nome: "R. Hachimura", num: "28" },
-                { nome: "J. Vanderbilt", num: "2" }, { nome: "C. Wood", num: "35" }, 
-                { nome: "G. Vincent", num: "7" }, { nome: "J. Hayes", num: "11" }, 
-                { nome: "C. Reddish", num: "5" }
-            ];
+        effettuaLogin(credenziali) {
+            const user = credenziali.username.toLowerCase();
+            const pass = credenziali.password;
 
-            rosterLakers.forEach((giocatore, i) => {
-                this.teamA.giocatori[i].nome = giocatore.nome;
-                this.teamA.giocatori[i].numero = giocatore.num;
-                this.teamA.giocatori[i].inCampo = i < 5; 
-            });
-
-            this.teamB.nome = "Golden State Warriors";
-            const rosterWarriors = [
-                { nome: "S. Curry", num: "30" }, { nome: "K. Thompson", num: "11" }, 
-                { nome: "D. Green", num: "23" }, { nome: "A. Wiggins", num: "22" }, 
-                { nome: "K. Looney", num: "5" },
-                { nome: "C. Paul", num: "3" }, { nome: "J. Kuminga", num: "0" }, 
-                { nome: "M. Moody", num: "4" }, { nome: "D. Saric", num: "20" }, 
-                { nome: "G. Payton II", num: "00" }
-            ];
-
-            rosterWarriors.forEach((giocatore, i) => {
-                this.teamB.giocatori[i].nome = giocatore.nome;
-                this.teamB.giocatori[i].numero = giocatore.num;
-                this.teamB.giocatori[i].inCampo = i < 5;
-            });
-
-            if (typeof DataViz !== 'undefined') {
-                DataViz.mostraNotifica("🏀 Roster NBA completi caricati!", "success");
-            }
-        },
-
-        getEmptyTeam(nome, idPrefix, posSuffix) {
-            return generaSquadraVuota(nome, idPrefix, posSuffix);
-        },
-
-        caricaPartitaDaDB(partita) {
-            this.ruolo = 'viewer';
-            this.currentView = 'court';
-            this.partitaTerminata = true;
-            this.partitaInterrotta = false; // Sicurezza nel caso arrivasse da una vista sporca
-
-            // 1. Genera le squadre con la struttura grafica, coordinate e classi CSS intatte
-            this.teamA = this.getEmptyTeam(partita.info.squadra_casa, "A", "a");
-            this.teamB = this.getEmptyTeam(partita.info.squadra_ospite, "B", "b");
-
-            // 2. Filtra i giocatori estratti dal database per le rispettive squadre
-            const dbGiocatoriA = partita.giocatori.filter(g => g.squadra === partita.info.squadra_casa);
-            const dbGiocatoriB = partita.giocatori.filter(g => g.squadra === partita.info.squadra_ospite);
-
-            // 3. Travasa i dettagli statistici senza sovrascrivere o rompere le proprietà grafiche di Vue
-            dbGiocatoriA.forEach((dbPlayer, index) => {
-                if (index < 10) { // Limite massimo dei 10 slot disponibili per il roster
-                    this.teamA.giocatori[index].nome = dbPlayer.nome;
-                    this.teamA.giocatori[index].numero = dbPlayer.numero;
-                    this.teamA.giocatori[index].punti = dbPlayer.punti;
-                    this.teamA.giocatori[index].falli = dbPlayer.falli;
-                    this.teamA.giocatori[index].rimbalzi = dbPlayer.rimbalzi;
-                    this.teamA.giocatori[index].assist = dbPlayer.assist;
-                    this.teamA.giocatori[index].rubate = dbPlayer.rubate;
-                    this.teamA.giocatori[index].stoppate = dbPlayer.stoppate;
-                    this.teamA.giocatori[index].perse = dbPlayer.perse;
-                    this.teamA.giocatori[index].inCampo = index < 5; // Schiera i primi 5 sul campo, gli altri in panchina
-                }
-            });
-
-            dbGiocatoriB.forEach((dbPlayer, index) => {
-                if (index < 10) {
-                    this.teamB.giocatori[index].nome = dbPlayer.nome;
-                    this.teamB.giocatori[index].numero = dbPlayer.numero;
-                    this.teamB.giocatori[index].punti = dbPlayer.punti;
-                    this.teamB.giocatori[index].falli = dbPlayer.falli;
-                    this.teamB.giocatori[index].rimbalzi = dbPlayer.rimbalzi;
-                    this.teamB.giocatori[index].assist = dbPlayer.assist;
-                    this.teamB.giocatori[index].rubate = dbPlayer.rubate;
-                    this.teamB.giocatori[index].stoppate = dbPlayer.stoppate;
-                    this.teamB.giocatori[index].perse = dbPlayer.perse;
-                    this.teamB.giocatori[index].inCampo = index < 5;
-                }
-            });
-        },
-
-        effettuaLogin() {
-            if (this.username.toLowerCase() === 'admin' && this.password === '1234') {
+            if (user === 'admin' && pass === '1234') {
                 this.ruolo = 'admin';
+                this.username = user; // Salviamo lo user globale
                 this.erroreLogin = false;
                 this.currentView = 'home';
             } 
-            else if (this.username.toLowerCase() === 'utente' && this.password === '0000') {
+            else if (user === 'utente' && pass === '0000') {
                 this.ruolo = 'utente';
+                this.username = user; // Salviamo lo user globale
                 this.erroreLogin = false;
                 this.currentView = 'home';
             } 
@@ -462,33 +342,6 @@ const app = createApp({
         },
 
         async iniziaPartita() {
-            // 1. Estrae solo i giocatori che hanno un nome e un numero di maglia compilati
-            const getValidi = (team) => team.giocatori.filter(p => p.nome.trim() !== '' && p.numero !== '');
-            const vA = getValidi(this.teamA);
-            const vB = getValidi(this.teamB);
-
-            // 2. Controllo numero minimo (5 per squadra)
-            if (vA.length < 5 || vB.length < 5) {
-                if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Almeno 5 giocatori con nome e numero per squadra!", "warning");
-                return; // Ferma l'esecuzione della funzione
-            }
-
-            // 3. Controllo numeri duplicati
-            const hasDup = (list) => new Set(list.map(g => g.numero.toString())).size !== list.length;
-            if (hasDup(vA) || hasDup(vB)) {
-                if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Numeri duplicati rilevati nella stessa squadra!", "error");
-                return; // Ferma l'esecuzione della funzione
-            }
-
-            // --- SE SUPERA TUTTI I CONTROLLI, LA PARTITA VIENE CREATA ---
-            
-            // Assegnazione nomi e loghi
-            this.teamA.nome = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.nome : this.teamA.nome;
-            this.teamB.nome = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.nome : this.teamB.nome;
-            this.teamA.logo = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.logo : null;
-            this.teamB.logo = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.logo : null;
-
-            // Generazione automatica ID progressivo
             let nextId = 1;
             try {
                 const referti = await api.getListaReferti(); 
@@ -497,130 +350,85 @@ const app = createApp({
                         const strNum = file.replace('referto_', '').replace('.xml', '');
                         return parseInt(strNum, 10);
                     }).filter(n => !isNaN(n));
-                    
                     if (ids.length > 0) nextId = Math.max(...ids) + 1; 
                 }
-            } catch(e) {
-                console.error("Errore nel recupero ID", e);
-            }
+            } catch(e) { console.error("Errore nel recupero ID", e); }
 
-            // Imposta lo stato della partita e cambia vista
             this.idPartitaCorrente = nextId.toString().padStart(4, '0');
             this.ruolo = 'admin';
-            this.periodo = 1; // Assicura che il periodo parta da 1
+            this.periodo = 1;
             this.currentView = 'court';
 
-            // Attiva la trasmissione Live
             if (this.socket) {
                 this.socket.emit('entra_partita', this.idPartitaCorrente);
                 this.trasmettiDatiLive();
             }
 
-            // --- NUOVO: Notifica di creazione partita avvenuta con successo ---
-            if (this.DataViz) {
-                this.DataViz.mostraNotifica(`🏀 Partita N° ${this.idPartitaCorrente} creata con successo!`, "success");
-            }
+            this.mostraNotifica(`🏀 Partita N° ${this.idPartitaCorrente} creata con successo!`, "success");
         },
 
-        // --- ACCESSO A PARTITA (LIVE O ARCHIVIO) ---
-        async accediPartitaConCodice() {
-            if (this.codicePartitaInput.trim() === '') {
-                if (this.DataViz) this.DataViz.mostraNotifica("⚠️ Inserisci un codice!", "warning");
+        async accediPartitaConCodice(codice) {
+            const codiceDaUsare = codice || this.codicePartitaInput;
+
+            if (!codiceDaUsare || codiceDaUsare.trim() === '') {
+                this.mostraNotifica("⚠️ Inserisci un codice!", "warning");
                 return;
             }
-            const idCercato = this.codicePartitaInput.padStart(4, '0');
+            const idCercato = codiceDaUsare.padStart(4, '0');
             this.idPartitaCorrente = idCercato;
 
             try {
                 const partitaDB = await api.ottieniPartita(idCercato);
                 
                 if (partitaDB && partitaDB.info) {
-                    // ==========================================
-                    // SE LA PARTITA E' CONCLUSA E IN ARCHIVIO
-                    // ==========================================
                     this.ruolo = 'viewer';
                     this.currentView = 'court';
                     this.partitaTerminata = true;
                     this.partitaInterrotta = false;
 
-                    // 1. Genera squadre con grafica e coordinate intatte
                     this.teamA = this.getEmptyTeam(partitaDB.info.squadra_casa, "A", "a");
                     this.teamB = this.getEmptyTeam(partitaDB.info.squadra_ospite, "B", "b");
 
-                    // 2. Estrae i giocatori dal database
                     const dbGiocatoriA = partitaDB.giocatori.filter(g => g.squadra === partitaDB.info.squadra_casa);
                     const dbGiocatoriB = partitaDB.giocatori.filter(g => g.squadra === partitaDB.info.squadra_ospite);
 
-                    // 3. Travasa i dati statistici senza rompere la grafica
                     dbGiocatoriA.forEach((dbPlayer, index) => {
-                        if (index < 10) { // Max 10 giocatori per team
-                            this.teamA.giocatori[index].nome = dbPlayer.nome;
-                            this.teamA.giocatori[index].numero = dbPlayer.numero;
-                            this.teamA.giocatori[index].punti = dbPlayer.punti;
-                            this.teamA.giocatori[index].falli = dbPlayer.falli;
-                            this.teamA.giocatori[index].rimbalzi = dbPlayer.rimbalzi;
-                            this.teamA.giocatori[index].assist = dbPlayer.assist;
-                            this.teamA.giocatori[index].rubate = dbPlayer.rubate;
-                            this.teamA.giocatori[index].stoppate = dbPlayer.stoppate;
-                            this.teamA.giocatori[index].perse = dbPlayer.perse;
-                            this.teamA.giocatori[index].inCampo = index < 5; // I primi 5 appaiono in campo, gli altri in panca
+                        if (index < 10) { 
+                            this.teamA.giocatori[index] = { ...this.teamA.giocatori[index], ...dbPlayer, inCampo: index < 5 };
                         }
                     });
 
                     dbGiocatoriB.forEach((dbPlayer, index) => {
                         if (index < 10) {
-                            this.teamB.giocatori[index].nome = dbPlayer.nome;
-                            this.teamB.giocatori[index].numero = dbPlayer.numero;
-                            this.teamB.giocatori[index].punti = dbPlayer.punti;
-                            this.teamB.giocatori[index].falli = dbPlayer.falli;
-                            this.teamB.giocatori[index].rimbalzi = dbPlayer.rimbalzi;
-                            this.teamB.giocatori[index].assist = dbPlayer.assist;
-                            this.teamB.giocatori[index].rubate = dbPlayer.rubate;
-                            this.teamB.giocatori[index].stoppate = dbPlayer.stoppate;
-                            this.teamB.giocatori[index].perse = dbPlayer.perse;
-                            this.teamB.giocatori[index].inCampo = index < 5;
+                            this.teamB.giocatori[index] = { ...this.teamB.giocatori[index], ...dbPlayer, inCampo: index < 5 };
                         }
                     });
                     
-                    if (typeof DataViz !== 'undefined') {
-                        DataViz.mostraNotifica("📂 Partita recuperata dall'archivio.", "success");
-                        
-                        // Notifica MVP caricamento archivio 
-                        setTimeout(() => {
-                            if (this.giocatoreMVP) {
-                                DataViz.mostraNotifica(`🏆 MVP del match: ${this.giocatoreMVP.nome}`, "success");
-                            }
-                        }, 1200);
-                    }
+                    this.mostraNotifica("📂 Partita recuperata dall'archivio.", "success");
+                    setTimeout(() => {
+                        if (this.giocatoreMVP) this.mostraNotifica(`🏆 MVP del match: ${this.giocatoreMVP.nome}`, "success");
+                    }, 1200);
                     
                 } else {
-                    // ==========================================
-                    // SE LA PARTITA NON E' NEL DB (Cerca il LIVE)
-                    // ==========================================
                     this.ruolo = 'viewer';
                     this.partitaTerminata = false;
                     
                     if (this.socket) {
                         this.socket.emit('entra_partita', idCercato);
-                        if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("⏳ Ricerca segnale Live in corso...", "info");
+                        this.mostraNotifica("⏳ Ricerca segnale Live in corso...", "info");
                         
                         if (this.attesaLiveTimeout) clearTimeout(this.attesaLiveTimeout);
                         this.attesaLiveTimeout = setTimeout(() => {
                             if (this.currentView !== 'court') {
-                                if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("❌ Partita non in diretta o codice errato.", "error");
+                                this.mostraNotifica("❌ Partita non in diretta o codice errato.", "error");
                                 this.idPartitaCorrente = '0000'; 
-                                
-                                if (this.username.toLowerCase() === 'admin') {
-                                    this.ruolo = 'admin';
-                                } else {
-                                    this.ruolo = 'utente';
-                                }
+                                this.ruolo = this.username.toLowerCase() === 'admin' ? 'admin' : 'utente';
                             }
                         }, 3000);
                     }
                 }
             } catch (e) {
-                if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("⚠️ Errore di connessione al database.", "error");
+                this.mostraNotifica("⚠️ Errore di connessione al database.", "error");
             }
         },
 
@@ -634,55 +442,17 @@ const app = createApp({
                     };
                 }
 
-                const payload = {
-                    teamA: this.teamA,
-                    teamB: this.teamB,
-                    partitaTerminata: this.partitaTerminata,
-                    partitaInterrotta: this.partitaInterrotta, 
-                    periodo: this.periodo,
-                    timer: datiTimer 
-                };
-
                 this.socket.emit('aggiornamento_admin', {
                     idPartita: this.idPartitaCorrente,
-                    payload: payload
-                });
-            }
-        },
-
-        async apriArchivio() {
-            this.listaReferti = await api.getListaReferti();
-            this.currentView = 'history';
-            setTimeout(() => { 
-                if (typeof DataViz !== 'undefined') DataViz.caricaArchivio(); 
-            }, 100); 
-        },
-
-        async apriLeaderboard() {
-            try {
-                // Chiamata all'api in classifica.js
-                const response = await fetch('/api/classifica');
-                const data = await response.json();
-                
-                // Salviamo le statistiche delle squadre nelle nuove variabili Vue
-                this.classificaSquadre = data.standings;
-                
-                // Cambiamo schermata e impostiamo la vista di default sulla tabella
-                this.currentView = 'leaderboard';
-                this.leaderboardView = 'teams'; 
-                
-                // Aspettiamo che Vue renderizzi il canvas, poi disegniamo il grafico
-                setTimeout(() => {
-                    if (typeof DataViz !== 'undefined') {
-                        // Al grafico passiamo SOLO la parte dei marcatori
-                        DataViz.renderTopScorersChart(data.topScorers);
-                        DataViz.mostraNotifica("Dati aggregati caricati con successo!", "success");
+                    payload: {
+                        teamA: this.teamA,
+                        teamB: this.teamB,
+                        partitaTerminata: this.partitaTerminata,
+                        partitaInterrotta: this.partitaInterrotta, 
+                        periodo: this.periodo,
+                        timer: datiTimer 
                     }
-                }, 100);
-                
-            } catch (error) {
-                console.error("Errore caricamento classifica:", error);
-                if (typeof DataViz !== 'undefined') DataViz.mostraNotifica("Errore di connessione al database.", "error");
+                });
             }
         },
 
@@ -697,28 +467,20 @@ const app = createApp({
         eseguiLogout() {
             this.mostraPopupLogout = false;
             
-            // 1. CONTROLLO: SE STA USCENDO DA UNA PARTITA IN CORSO E NON SALVATA -> INTERROMPI
             if (this.socket && this.ruolo === 'admin' && this.currentView === 'court' && !this.partitaTerminata) {
-                
-                // Attiva lo stato "Interrotta"
                 this.partitaInterrotta = true;
-                
-                // Congela il tempo dell'orologio prima di trasmettere i dati
                 if (this.$refs.timerRef) {
                     this.$refs.timerRef.timerRunning = false;
                     clearInterval(this.$refs.timerRef.interval);
                 }
-
-                // Avvisa gli spettatori inviando il fotogramma congelato
                 this.socket.emit('interrompi_partita', this.idPartitaCorrente);
                 this.trasmettiDatiLive();
             }
 
-            // 2. PULIZIA DEL SISTEMA (Ora possiamo resettare tutto in sicurezza)
             if (this.$refs.timerRef) {
                 this.$refs.timerRef.timerRunning = false;
                 clearInterval(this.$refs.timerRef.interval);
-                this.$refs.timerRef.timer = 600; // Reset a 10:00 sicuro
+                this.$refs.timerRef.timer = 600; 
             }
 
             this.currentView = 'landing'; 
@@ -726,10 +488,9 @@ const app = createApp({
             this.ruolo = null;
             this.username = '';
 
-            // Svuotiamo tutta la memoria residua
             this.codicePartitaInput = '';
             this.partitaTerminata = false;
-            this.partitaInterrotta = false; // Pronto per un nuovo accesso
+            this.partitaInterrotta = false; 
             this.mostraPopupInizioPartita = false;
             this.fischioInizioMostrato = false;
             this.mostraPopupFinePartitaSpettatore = false;
@@ -743,7 +504,6 @@ const app = createApp({
             this.teamA = this.getEmptyTeam("", "A", "a");
             this.teamB = this.getEmptyTeam("", "B", "b");
         },
-
 
         backhome() { 
             if (this.currentView === 'court' || this.currentView === 'setup' || this.currentView === 'boxscore') {
@@ -756,36 +516,24 @@ const app = createApp({
         eseguiBackhome() {
             this.mostraPopupHome = false;
             
-            // 1. CONTROLLO DI SICUREZZA: SE LA PARTITA NON È STATA SALVATA, ALLORA È INTERROTTA
             if (this.socket && this.ruolo === 'admin' && this.currentView === 'court' && !this.partitaTerminata) {
-                
-                // Attiviamo lo stato di interruzione (come avevi giustamente suggerito!)
                 this.partitaInterrotta = true; 
-                
-                // Congealiamo il tempo attuale dell'orologio (SENZA azzerarlo a 600 ancora!)
                 if (this.$refs.timerRef) {
                     this.$refs.timerRef.timerRunning = false;
                     clearInterval(this.$refs.timerRef.interval);
                 }
-
-                // Avvisa il server e spara l'ultimo fotogramma col tempo reale congelato
                 this.socket.emit('interrompi_partita', this.idPartitaCorrente);
                 this.trasmettiDatiLive();
             }
 
-            // 2. ORA CHE I DATI CORRETTI SONO STATI INVIATI, POSSIAMO PULIRE IL FRONTEND
             this.currentView = 'home'; 
             this.codicePartitaInput = '';
             
-            // Adesso è sicuro riportare l'orologio a 10:00 (600s) per la prossima partita
-            if (this.$refs.timerRef) {
-                this.$refs.timerRef.timer = 600; 
-            }
+            if (this.$refs.timerRef) this.$refs.timerRef.timer = 600; 
 
-            // 3. AZZERIAMO I DATI IN MEMORIA ("Stato Sporco")
             this.idPartitaCorrente = '0000';
             this.partitaTerminata = false;
-            this.partitaInterrotta = false; // Ritona false, pronto per una nuova gara pulita
+            this.partitaInterrotta = false; 
             this.mostraPopupInizioPartita = false;
             this.fischioInizioMostrato = false;
             this.mostraPopupFinePartitaSpettatore = false;
@@ -795,16 +543,11 @@ const app = createApp({
             this.giocatoreAttivo = null;
             this.panchinaroSelezionato = null;
             
-            // Svuota i roster
             this.teamA = this.getEmptyTeam("", "A", "a");
             this.teamB = this.getEmptyTeam("", "B", "b");
 
-            // 4. RIPRISTINIAMO IL RUOLO ORIGINALE ALLA HOME
-            if (this.username.toLowerCase() === 'admin') {
-                this.ruolo = 'admin';
-            } else if (this.username.toLowerCase() === 'utente') {
-                this.ruolo = 'utente';
-            }
+            if (this.username.toLowerCase() === 'admin') this.ruolo = 'admin';
+            else if (this.username.toLowerCase() === 'utente') this.ruolo = 'utente';
         },
 
         annullaBackhome() {
@@ -860,10 +603,7 @@ const app = createApp({
                     this.mostraMessaggio(`Il giocatore numero ${this.giocatoreAttivo.numero} è uscito per 5 falli!`);
                 }
                 
-                const abbreviazioni = {
-                    punti: 'PTS', rimbalzi: 'REB', assist: 'AST', rubate: 'STL', 
-                    stoppate: 'BLK', perse: 'TOV', falli: 'FLS'
-                };
+                const abbreviazioni = { punti: 'PTS', rimbalzi: 'REB', assist: 'AST', rubate: 'STL', stoppate: 'BLK', perse: 'TOV', falli: 'FLS' };
                 const sigla = abbreviazioni[tipo] || tipo.toUpperCase();
                 const playerToAnimate = this.giocatoreAttivo;
                 
@@ -878,26 +618,6 @@ const app = createApp({
             }
         },
 
-        mostraMessaggio(testo) {
-            this.messaggioAvviso = testo;
-            this.mostraPopupAvviso = true;
-        },
-        chiudiPopupAvviso() {
-            this.mostraPopupAvviso = false;
-        },
-
-        aggiornaMinutiGiocatori() {
-            if (this.partitaTerminata) return;
-            this.teamA.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
-            this.teamB.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
-            this.trasmettiDatiLive();
-        },
-
-        formatMinuti(secondiTotali) {
-            const m = Math.floor(secondiTotali / 60);
-            const s = secondiTotali % 60;
-            return `${m}:${s < 10 ? '0' : ''}${s}`;
-        },
         rimuoviStat(tipo, val) {
             if (this.partitaTerminata) return;
             
@@ -907,13 +627,39 @@ const app = createApp({
                 if (tipo === 'falli' && this.giocatoreAttivo.falli >= 5) {
                     this.mostraMessaggio(`Il giocatore numero ${this.giocatoreAttivo.numero} è uscito per 5 falli!`);
                 }
+
+                const abbreviazioni = { punti: 'PTS', rimbalzi: 'REB', assist: 'AST', rubate: 'STL', stoppate: 'BLK', perse: 'TOV', falli: 'FLS' };
+                const sigla = abbreviazioni[tipo] || tipo.toUpperCase();
+                const playerToAnimate = this.giocatoreAttivo;
+                
+                playerToAnimate.popupMsg = `-${val} ${sigla}`;
+                playerToAnimate.isNegativo = true; 
+                playerToAnimate.showPopup = true;
+
                 setTimeout(() => { playerToAnimate.showPopup = false; }, 1200);
                 this.giocatoreAttivo = null;
+
+                this.trasmettiDatiLive();
             }
-        }
+        },
+
+        aggiornaMinutiGiocatori() {
+            if (this.partitaTerminata) return;
+            this.teamA.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
+            this.teamB.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
+            this.trasmettiDatiLive();
+        },
+
     }
 });
 
 app.component('game-timer', Timer);
 app.component('score-board', Scoreboard);
+app.component('landing-page', LandingPage);
+app.component('login-form', LoginForm);
+app.component('leaderboard-view', LeaderboardView);
+app.component('home-view', HomeView);
+app.component('history-view', HistoryView);
+app.component('setup-view', SetupView);
+app.component('boxscore-view', BoxScoreView);
 app.mount('#app');
