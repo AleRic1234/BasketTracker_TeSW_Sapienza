@@ -5,7 +5,8 @@ import LoginForm from '../src/components/LoginForm.js';
 import LeaderboardView from '../src/components/LeaderboardView.js';
 import HomeView from '../src/components/HomeView.js';
 import HistoryView from '../src/components/HistoryView.js';
-import SetupView from '../src/components/SetupView.js'
+import SetupView from '../src/components/SetupView.js';
+import BoxScoreView from '../src/components/BoxScoreView.js';
 import api from './api.js';
 
 const { createApp } = Vue;
@@ -31,7 +32,6 @@ const app = createApp({
             ruolo: null,
             username:'',
             password:'',
-            tabellinoAttivo: 'casa',
             erroreLogin: false,
             mostraInputCodice: false,
             codicePartitaInput: '',
@@ -206,22 +206,6 @@ const app = createApp({
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
 
-        async stampaRefertoUfficiale() {
-            // Verifica che ci sia una partita valida
-            if (!this.idPartitaCorrente || this.idPartitaCorrente === '0000') {
-                this.mostraNotifica("❌ Nessuna partita selezionata per la stampa del referto.", "error");
-                return;
-            }
-
-            // Formatta l'ID a 4 cifre per trovare il nome esatto del file (es. 1 -> 0001)
-            const idFormattato = this.idPartitaCorrente.toString().padStart(4, '0');
-            const fileName = `referto_${idFormattato}.xml`;
-            
-            // Apre l'XML già generato in una nuova scheda.
-            // Uso il percorso relativo '/referti/' così funziona sia dal pc che dallo smartphone!
-            window.open(`/referti/${fileName}`, '_blank');
-            this.mostraNotifica("📄 Referto XML aperto con successo!", "success");
-        },
 
         chiediConfermaSalvataggio() {
             this.mostraPopupSalvataggio = true;
@@ -666,11 +650,6 @@ const app = createApp({
             this.trasmettiDatiLive();
         },
 
-        formatMinuti(secondiTotali) {
-            const m = Math.floor(secondiTotali / 60);
-            const s = secondiTotali % 60;
-            return `${m}:${s < 10 ? '0' : ''}${s}`;
-        }
     }
 });
 
@@ -682,4 +661,5 @@ app.component('leaderboard-view', LeaderboardView);
 app.component('home-view', HomeView);
 app.component('history-view', HistoryView);
 app.component('setup-view', SetupView);
+app.component('boxscore-view', BoxScoreView);
 app.mount('#app');
