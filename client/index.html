@@ -24,11 +24,10 @@
             <nav v-if="currentView == 'court' || currentView == 'boxscore'">
                 
                 <button v-if="ruolo === 'admin'" 
+                        class="btn-save"
                         :disabled="partitaTerminata" 
-                        :style="partitaTerminata ? 'opacity: 0.6; cursor: not-allowed; background-color: #7f8c8d; border-color: #7f8c8d;' : ''" 
-                        @click.prevent="chiediConfermaSalvataggio" 
-                        class="btn-success">
-                    {{ partitaTerminata ? '✅ Referto Salvato' : 'Salva Partita' }}
+                        @click.prevent="chiediConfermaSalvataggio">
+                    {{ partitaTerminata ? '✅ Referto Salvato' : '💾 Salva Partita' }}
                 </button>
                 
                 <button v-if="currentView == 'court'" @click="apriBoxScore">📊 Box Score</button>
