@@ -3,9 +3,10 @@ import Scoreboard from '../src/components/Scoreboard.js';
 import LandingPage from '../src/components/LandingPage.js'; 
 import LoginForm from '../src/components/LoginForm.js';
 import LeaderboardView from '../src/components/LeaderboardView.js';
-import api from './api.js';
 import HomeView from '../src/components/HomeView.js';
 import HistoryView from '../src/components/HistoryView.js';
+import SetupView from '../src/components/SetupView.js'
+import api from './api.js';
 
 const { createApp } = Vue;
 
@@ -55,14 +56,6 @@ const app = createApp({
             // --- STATO UI VUE NATIVO (Ex jQuery) ---
             notifiche: [],
 
-            squadreDisponibili: [
-                { nome: "Sapienza Bulls", logo: "./assets/sapienza_bulls.jpeg" },
-                { nome: "Lamis Lions", logo: "./assets/lamis_lions.jpeg" },
-                { nome: "Orte Dragons", logo: "./assets/orte_dragons.jpeg" },
-                { nome: "Torvergata Griffins ", logo: "./assets/torvergata_griffins.jpeg" },
-            ],
-            squadraCasaSelezionata: null,
-            squadraOspiteSelezionata: null,
             giocatoreAttivo: null,
             panchinaroSelezionato: null,
             
@@ -326,39 +319,6 @@ const app = createApp({
         //  FUNZIONI DI GESTIONE PARTITA E LOGICHE
         // =========================================
 
-        caricaTestNBA() {
-            this.teamA.nome = "Los Angeles Lakers";
-            const rosterLakers = [
-                { nome: "L. James", num: "23" }, { nome: "A. Davis", num: "3" }, 
-                { nome: "A. Reaves", num: "15" }, { nome: "D. Russell", num: "1" }, 
-                { nome: "R. Hachimura", num: "28" }, { nome: "J. Vanderbilt", num: "2" }, 
-                { nome: "C. Wood", num: "35" }, { nome: "G. Vincent", num: "7" }, 
-                { nome: "J. Hayes", num: "11" }, { nome: "C. Reddish", num: "5" }
-            ];
-
-            rosterLakers.forEach((giocatore, i) => {
-                this.teamA.giocatori[i].nome = giocatore.nome;
-                this.teamA.giocatori[i].numero = giocatore.num;
-                this.teamA.giocatori[i].inCampo = i < 5; 
-            });
-
-            this.teamB.nome = "Golden State Warriors";
-            const rosterWarriors = [
-                { nome: "S. Curry", num: "30" }, { nome: "K. Thompson", num: "11" }, 
-                { nome: "D. Green", num: "23" }, { nome: "A. Wiggins", num: "22" }, 
-                { nome: "K. Looney", num: "5" }, { nome: "C. Paul", num: "3" }, 
-                { nome: "J. Kuminga", num: "0" }, { nome: "M. Moody", num: "4" }, 
-                { nome: "D. Saric", num: "20" }, { nome: "G. Payton II", num: "00" }
-            ];
-
-            rosterWarriors.forEach((giocatore, i) => {
-                this.teamB.giocatori[i].nome = giocatore.nome;
-                this.teamB.giocatori[i].numero = giocatore.num;
-                this.teamB.giocatori[i].inCampo = i < 5;
-            });
-
-            this.mostraNotifica("🏀 Roster NBA completi caricati!", "success");
-        },
 
         getEmptyTeam(nome, idPrefix, posSuffix) {
             return generaSquadraVuota(nome, idPrefix, posSuffix);
@@ -398,26 +358,6 @@ const app = createApp({
         },
 
         async iniziaPartita() {
-            const getValidi = (team) => team.giocatori.filter(p => p.nome.trim() !== '' && p.numero !== '');
-            const vA = getValidi(this.teamA);
-            const vB = getValidi(this.teamB);
-
-            if (vA.length < 5 || vB.length < 5) {
-                this.mostraNotifica("⚠️ Almeno 5 giocatori con nome e numero per squadra!", "warning");
-                return; 
-            }
-
-            const hasDup = (list) => new Set(list.map(g => g.numero.toString())).size !== list.length;
-            if (hasDup(vA) || hasDup(vB)) {
-                this.mostraNotifica("⚠️ Numeri duplicati rilevati nella stessa squadra!", "error");
-                return; 
-            }
-
-            this.teamA.nome = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.nome : this.teamA.nome;
-            this.teamB.nome = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.nome : this.teamB.nome;
-            this.teamA.logo = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.logo : null;
-            this.teamB.logo = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.logo : null;
-
             let nextId = 1;
             try {
                 const referti = await api.getListaReferti(); 
@@ -741,4 +681,5 @@ app.component('login-form', LoginForm);
 app.component('leaderboard-view', LeaderboardView);
 app.component('home-view', HomeView);
 app.component('history-view', HistoryView);
+app.component('setup-view', SetupView);
 app.mount('#app');

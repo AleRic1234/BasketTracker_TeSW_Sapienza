@@ -68,107 +68,13 @@
                 @invia-notifica="mostraNotifica($event.msg, $event.type)">
             </leaderboard-view>
 
-            <section v-if="currentView === 'setup'" class="view-container">
-                <h2>Configurazione Squadre</h2>
-                
-                <button @click="caricaTestNBA" class="btn-primary" style="background-color: #f39c12; margin-bottom: 25px; width: 100%; max-width: 830px;">
-                    ⚡ RIEMPIMENTO RAPIDO TEST (NBA)
-                </button>
-
-                <div class="setup-container" style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
-                    
-                    <div class="setup-card" style="flex: 1; min-width: 320px; max-width: 400px; background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                        
-                        <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #7f8c8d; font-size: 0.9rem; text-transform: uppercase;">Seleziona da Archivio:</label>
-                        <select v-model="squadraCasaSelezionata" @change="aggiornaNomiSquadre" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; width: 100%; margin-bottom: 20px; font-size: 1rem; background-color: #f9f9f9;">
-                            <option :value="null">📝 Inserimento Manuale...</option>
-                            <option v-for="s in squadreDisponibili" :key="s.nome" :value="s">{{ s.nome }}</option>
-                        </select>
-
-                        <div class="team-header-horizontal" style="padding: 0 0 15px 0; border-bottom: 3px solid var(--primary-color); margin-bottom: 20px; background: transparent; box-shadow: none;">
-                            <img v-if="teamA.logo" :src="teamA.logo" class="logo-grande">
-                            <div v-else class="logo-grande" style="display:flex; align-items:center; justify-content:center; font-size:2.5rem; background:#f4f7f6; color: #ccc;">🏠</div>
-                            
-                            <input v-model="teamA.nome" placeholder="Nome Squadra Casa" class="in-team-name" style="font-size: 1.3rem; font-weight: 800; border: none; background: transparent; text-align: left; width: 100%; color: var(--dark-bg); text-transform: uppercase;">
-                        </div>
-
-                        <div v-for="(p, i) in teamA.giocatori" 
-                             :key="'setupA-'+i" 
-                             class="input-row giocatore-box"
-                             :class="p.inCampo ? 'setup-titolare' : 'setup-panchina'"
-                             style="display: flex; gap: 10px; margin-bottom: 8px;">
-                             
-                            <input 
-                                type="number" 
-                                v-model="p.numero" 
-                                min="0" 
-                                max="99" 
-                                oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);"
-                                placeholder="N°" 
-                                class="in-num" 
-                                style="width: 50px; text-align: center; border-radius: 5px; border: 1px solid #ccc;"
-                            >
-                            <input 
-                                type="text" 
-                                v-model="p.nome" 
-                                oninput="this.value = this.value.replace(/[^a-zA-ZÀ-ÿ.\s']/g, '');"
-                                placeholder="Nome Giocatore" 
-                                class="in-nome"
-                                style="width: 100%; border-radius: 5px; border: 1px solid #ccc; padding: 5px;"
-                            >
-                        </div>
-                    </div>
-
-                    <div class="setup-card" style="flex: 1; min-width: 320px; max-width: 400px; background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                        
-                        <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #7f8c8d; font-size: 0.9rem; text-transform: uppercase;">Seleziona da Archivio:</label>
-                        <select v-model="squadraOspiteSelezionata" @change="aggiornaNomiSquadre" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; width: 100%; margin-bottom: 20px; font-size: 1rem; background-color: #f9f9f9;">
-                            <option :value="null">📝 Inserimento Manuale...</option>
-                            <option v-for="s in squadreDisponibili" :key="s.nome" :value="s">{{ s.nome }}</option>
-                        </select>
-
-                        <div class="team-header-horizontal ospiti" style="padding: 0 0 15px 0; border-bottom: 3px solid var(--danger-color); margin-bottom: 20px; background: transparent; box-shadow: none;">
-                            <img v-if="teamB.logo" :src="teamB.logo" class="logo-grande">
-                            <div v-else class="logo-grande" style="display:flex; align-items:center; justify-content:center; font-size:2.5rem; background:#f4f7f6; color: #ccc;">✈️</div>
-                            
-                            <input v-model="teamB.nome" placeholder="Nome Squadra Ospiti" class="in-team-name" style="font-size: 1.3rem; font-weight: 800; border: none; background: transparent; text-align: left; width: 100%; color: var(--dark-bg); text-transform: uppercase;">
-                        </div>
-
-                        <div v-for="(p, i) in teamB.giocatori" 
-                             :key="'setupB-'+i" 
-                             class="input-row giocatore-box"
-                             :class="p.inCampo ? 'setup-titolare' : 'setup-panchina'"
-                             style="display: flex; gap: 10px; margin-bottom: 8px;">
-                             
-                            <input 
-                               type="number" 
-                               v-model="p.numero" 
-                               min="0" 
-                               max="99" 
-                               oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);"
-                               placeholder="N°" 
-                               class="in-num" 
-                               style="width: 50px; text-align: center; border-radius: 5px; border: 1px solid #ccc;"
-                            >
-                            <input 
-                                type="text" 
-                                v-model="p.nome" 
-                                oninput="this.value = this.value.replace(/[^a-zA-ZÀ-ÿ.\s']/g, '');"
-                                placeholder="Nome Giocatore" 
-                                class="in-nome"
-                                style="width: 100%; border-radius: 5px; border: 1px solid #ccc; padding: 5px;"
-                            >
-                        </div>
-                    </div>
-
-                </div>
-
-                <div style="text-align: center; margin-top: 40px; width: 100%;">
-                    <button class="btn-primary" style="max-width: 400px; font-size: 1.3rem; padding: 15px 30px; border-radius: 50px; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);" @click="iniziaPartita">
-                        🏀 INIZIA PARTITA
-                    </button>
-                </div>
-            </section>
+            <setup-view 
+                v-if="currentView === 'setup'"
+                :team-a="teamA"
+                :team-b="teamB"
+                @invia-notifica="mostraNotifica($event.msg, $event.type)"
+                @inizia-partita="iniziaPartita">
+            </setup-view>
 
             <section v-show="currentView === 'court'" class="view-container" style="max-width: 1100px; margin-top: 10px;">
                 <div class="court-wrapper" style="margin-top: 180px;">
