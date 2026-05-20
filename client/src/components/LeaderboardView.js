@@ -1,8 +1,11 @@
 // Percorso: client/src/components/LeaderboardView.js
 
 export default {
+    // 1. Aggiunto l'array emits per far comunicare il componente con index.html
+    emits: ['torna-home', 'invia-notifica'],
+    
     template: `
-        <section class="view-container fade-in">
+        <section class="view-container">
 
             <div class="header-archivio" style="text-align: center;">
                 <h2>Dashboard Statistiche</h2>
@@ -44,7 +47,7 @@ export default {
                 </table>
             </div>
 
-            <div v-show="view === 'scorers'" v-if="topScorers.length > 0" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 800px; width: 95%; margin: 0 auto; height: 500px;">
+            <div v-if="view === 'scorers' && topScorers.length > 0" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 800px; width: 95%; margin: 0 auto; height: 500px;">
                 <canvas id="topScorersChart"></canvas>
             </div>
 
@@ -58,7 +61,7 @@ export default {
             view: 'teams',
             standings: [],
             topScorers: [],
-            _chartInstance: null
+            chartInstance: null // 3. Rimosso l'underscore per garantire la reattività di Vue
         };
     },
     async mounted() {
@@ -75,7 +78,7 @@ export default {
     watch: {
         view(newVal) {
             if (newVal === 'scorers') {
-                this.$nextTick(() => this.renderizzaGrafico());
+                this.renderizzaGrafico(); // Il nextTick interno al metodo basterà
             }
         }
     },
@@ -86,21 +89,22 @@ export default {
                 if (!canvas) return;
                 const ctx = canvas.getContext('2d');
 
-                if (this._chartInstance) {
-                    this._chartInstance.destroy();
+                // Aggiornato con il nome variabile corretto
+                if (this.chartInstance) {
+                    this.chartInstance.destroy();
                 }
 
-                // Usiamo i dati reali, con fallback a 0 per sicurezza
                 const top5 = this.topScorers.slice(0, 5);
                 
-                this._chartInstance = new window.Chart(ctx, {
+                // Aggiornato con il nome variabile corretto
+                this.chartInstance = new window.Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: top5.map(g => g.nome || 'Sconosciuto'),
                         datasets: [{
                             label: 'Punti Segnati',
                             data: top5.map(g => g.punti_totali || 0),
-                            backgroundColor: '#f39c12',
+                            backgroundColor: ['#FFD700', '#C0C0C0','#FF8C00', '#4169E1', '#696969'  ],
                             borderRadius: 8, 
                             barPercentage: 0.6
                         }]
@@ -113,7 +117,7 @@ export default {
                                 beginAtZero: true, 
                                 grid: { 
                                     color: 'rgba(0,0,0,0.06)', 
-                                    borderDash: [5, 5] // Linee tratteggiate ripristinate!
+                                    borderDash: [5, 5] 
                                 }, 
                                 ticks: { stepSize: 1, font: { size: 16 }, color: '#7f8c8d' } 
                             },

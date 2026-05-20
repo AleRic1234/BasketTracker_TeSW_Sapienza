@@ -4,6 +4,8 @@ import LandingPage from '../src/components/LandingPage.js';
 import LoginForm from '../src/components/LoginForm.js';
 import LeaderboardView from '../src/components/LeaderboardView.js';
 import api from './api.js';
+import HomeView from '../src/components/HomeView.js';
+import HistoryView from '../src/components/HistoryView.js';
 
 const { createApp } = Vue;
 
@@ -26,9 +28,9 @@ const app = createApp({
         return {
             currentView: 'landing',
             ruolo: null,
+            username:'',
+            password:'',
             tabellinoAttivo: 'casa',
-            storicoPartite: [],
-            listaReferti: [],
             erroreLogin: false,
             mostraInputCodice: false,
             codicePartitaInput: '',
@@ -52,13 +54,6 @@ const app = createApp({
             
             // --- STATO UI VUE NATIVO (Ex jQuery) ---
             notifiche: [],
-            mostraRadar: false,
-            radarPlayerA: null,
-            radarPlayerB: null,
-            radarChartIstanza: null,
-            //Anteprima XML
-            mostraModalAnteprima: false,
-            datiAnteprima: { id: '', data: '', casa: '', puntiCasa: '', ospite: '', puntiOspite: '', giocatoriCasa: [], giocatoriOspite: [] },
 
             squadreDisponibili: [
                 { nome: "Sapienza Bulls", logo: "./assets/sapienza_bulls.jpeg" },
@@ -113,7 +108,6 @@ const app = createApp({
         },
     },
     mounted() {
-        this.aggiornaListaReferti();
         
         if (typeof io !== 'undefined') {
             this.socket = io();
@@ -205,105 +199,8 @@ const app = createApp({
         chiudiPopupAvviso() {
             this.mostraPopupAvviso = false;
         },
-
         // =========================================
-        // 2. SISTEMA GRAFICI E MODALI (EX DATA-VIZ)
-        // =========================================
-
-        chiudiRadar() {
-            this.mostraRadar = false;
-            if (this.radarChartIstanza) {
-                this.radarChartIstanza.destroy();
-                this.radarChartIstanza = null;
-            }
-        },
-
-        creaConfrontoAutomatico(idPartita) {
-            fetch(`/api/partita/${idPartita}`)
-                .then(res => {
-                    if (!res.ok) throw new Error("Partita non trovata");
-                    return res.json();
-                })
-                .then(data => {
-                    const listaGiocatori = data.giocatori;
-                    if (!listaGiocatori || listaGiocatori.length < 2) {
-                        this.mostraNotifica("⚠️ Statistiche insufficienti nel database.", "warning");
-                        return;
-                    }
-
-                    const squadrePresenti = [...new Set(listaGiocatori.map(g => g.squadra))];
-                    if (squadrePresenti.length < 2) {
-                        this.mostraNotifica("⚠️ Impossibile dividere i giocatori in due squadre.", "warning");
-                        return;
-                    }
-
-                    const giocatoriSquadraA = listaGiocatori.filter(g => g.squadra === squadrePresenti[0]);
-                    const giocatoriSquadraB = listaGiocatori.filter(g => g.squadra === squadrePresenti[1]);
-
-                    const calcolaVal = (p) => (p.punti + p.rimbalzi + p.assist + p.rubate + p.stoppate) - (p.falli + p.perse);
-
-                    giocatoriSquadraA.sort((a, b) => calcolaVal(b) - calcolaVal(a));
-                    giocatoriSquadraB.sort((a, b) => calcolaVal(b) - calcolaVal(a));
-                    
-                    this.radarPlayerA = giocatoriSquadraA[0];
-                    this.radarPlayerB = giocatoriSquadraB[0];
-                    
-                    if (this.radarPlayerA && this.radarPlayerB) {
-                        this.mostraRadar = true; 
-                        this.$nextTick(() => { this.renderizzaGraficoRadar(); });
-                        this.mostraNotifica(`📊 Confronto Leader: ${this.radarPlayerA.nome} vs ${this.radarPlayerB.nome}`, "success");
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    this.mostraNotifica("Errore caricamento dati.", "error");
-                });
-        },
-
-        renderizzaGraficoRadar() {
-            const canvas = document.getElementById('radarChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-
-            if (this.radarChartIstanza) this.radarChartIstanza.destroy();
-
-            const p1 = this.radarPlayerA;
-            const p2 = this.radarPlayerB;
-
-            this.radarChartIstanza = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: ['PUNTI', 'RIMBALZI', 'ASSIST', 'RUBATE', 'STOPPATE'],
-                    datasets: [
-                        {
-                            label: `${p1.nome} (${p1.squadra})`,
-                            data: [p1.punti, p1.rimbalzi, p1.assist, p1.rubate, p1.stoppate],
-                            fill: true, backgroundColor: 'rgba(26, 42, 108, 0.3)', borderColor: '#1a2a6c', pointBackgroundColor: '#1a2a6c', pointRadius: 5
-                        },
-                        {
-                            label: `${p2.nome} (${p2.squadra})`,
-                            data: [p2.punti, p2.rimbalzi, p2.assist, p2.rubate, p2.stoppate],
-                            fill: true, backgroundColor: 'rgba(231, 76, 60, 0.3)', borderColor: '#e74c3c', pointBackgroundColor: '#e74c3c', pointRadius: 5
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    elements: { line: { borderWidth: 4 } },
-                    plugins: { legend: { display: true, position: 'top', labels: { font: { size: 16, weight: 'bold' } } } },
-                    scales: { 
-                        r: { 
-                            suggestedMin: 0, suggestedMax: 20,
-                            pointLabels: { font: { size: 14, weight: '900' }, color: '#34495e', padding: 15 },
-                            ticks: { font: { size: 13, weight: 'bold' }, color: '#7f8c8d', backdropColor: 'transparent', stepSize: 5 }
-                        } 
-                    }
-                }
-            });
-        },
-        
-        // =========================================
-        // 3. FUNZIONI DI NAVIGAZIONE E SALVATAGGIO
+        // FUNZIONI DI NAVIGAZIONE E SALVATAGGIO
         // =========================================
 
         apriBoxScore() {
@@ -360,7 +257,6 @@ const app = createApp({
                     giocatori: this.teamB.giocatori.filter(p => p.nome.trim() !== '')
                 },
                 
-                // ⚠️ MODIFICA QUI: Devi usare 'punteggio' e non 'punti'
                 punteggioCasa: this.punteggioCasa,
                 punteggioOspite: this.punteggioOspite,
                 
@@ -373,17 +269,17 @@ const app = createApp({
                 }))
             };
 
-           try {
+            try {
                 const risultato = await api.salva(payload);
                 if (risultato.success) {
                     
-                    // --- IL BLOCCO RIPRISTINATO! ---
                     this.partitaTerminata = true; 
-                    this.trasmettiDatiLive(); // Avvisa anche gli spettatori che è finita
-                    // -------------------------------
+                    this.trasmettiDatiLive(); 
 
                     this.mostraNotifica(`🏆 Partita Archiviata!<br><small>${risultato.message}</small>`, "success");
-                    await this.aggiornaListaReferti();
+                    
+                    // ❌ CANCELLATA LA REGOLA DA QUI: await this.aggiornaListaReferti();
+                    
                     this.apriBoxScore();
                     
                     if (this.giocatoreMVP) {
@@ -417,55 +313,7 @@ const app = createApp({
             this.trasmettiDatiLive();
         },        
 
-        async aggiornaListaReferti() {
-            try {
-                const files = await api.getListaReferti();
-                this.listaReferti = files || [];
-                
-                if (files && files.length > 0) {
-                    let nuovoStorico = [];
-                    for (const ref of files) {
-                        const idMatch = ref.replace('referto_', '').replace('.xml', '');
-                        nuovoStorico.push({
-                            id: idMatch, nomeFile: ref, mvpNome: 'Calcolo...', valutazioneMvp: 0,
-                            squadraCasa: '....', squadraOspite: '...' 
-                        });
-                    }
-                    
-                    nuovoStorico.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
-                    this.storicoPartite = [...nuovoStorico];
-                    
-                    for (let i = 0; i < this.storicoPartite.length; i++) {
-                        const partita = this.storicoPartite[i];
-                        const idPuroDB = parseInt(partita.id, 10); 
-                        
-                        try {
-                            const partitaDB = await api.ottieniPartita(partita.id);
-                                if (partitaDB && partitaDB.info) {
-                                    this.storicoPartite[i].squadraCasa = partitaDB.info.squadra_casa;
-                                    this.storicoPartite[i].squadraOspite = partitaDB.info.squadra_ospite;
-                                }
-                        } catch (e) {
-                            this.storicoPartite[i].squadraCasa = "N/D";
-                            this.storicoPartite[i].squadraOspite = "N/D";
-                        }
-                        
-                        const datiMvp = await api.getMVP(idPuroDB);
-                        if (datiMvp && datiMvp.nome) {
-                            this.storicoPartite[i].mvpNome = datiMvp.nome;
-                            this.storicoPartite[i].valutazioneMvp = datiMvp.valutazione;
-                        } else {
-                            this.storicoPartite[i].mvpNome = 'N/D';
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error("❌ Errore lista referti ed MVP:", error);
-            }
-        },
-
         async apriArchivio() {
-            this.listaReferti = await api.getListaReferti();
             this.currentView = 'history';
         },
 
@@ -474,83 +322,8 @@ const app = createApp({
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
 
-        anteprimaXML(nomeFile) {
-            fetch('/referti/' + nomeFile)
-                .then(res => {
-                    if (!res.ok) throw new Error("File XML non trovato.");
-                    return res.text();
-                })
-                .then(str => {
-                    let parser = new DOMParser();
-                    let xmlDoc = parser.parseFromString(str, "text/xml");
-
-                    let radice = xmlDoc.getElementsByTagName("referto_partita")[0];
-                    let garaId = radice ? radice.getAttribute("id") : "N/D";
-                    
-                    let tagData = xmlDoc.getElementsByTagName("data")[0];
-                    let dataGara = tagData ? tagData.textContent.trim() : "N/D";
-                    
-                    let nodoCasa = xmlDoc.getElementsByTagName("squadra_casa")[0] || xmlDoc.getElementsByTagName("casa")[0];
-                    let nodoOspiti = xmlDoc.getElementsByTagName("squadra_ospite")[0] || xmlDoc.getElementsByTagName("ospiti")[0];
-                    
-                    // LETTURA SICURA CON textContent (risolve l'errore "undefined")
-                    let squadraCasa = nodoCasa ? nodoCasa.getAttribute("nome") : "Team Casa";
-                    let puntiCasa = nodoCasa ? nodoCasa.textContent.trim() : "0";
-                    
-                    let squadraOspite = nodoOspiti ? nodoOspiti.getAttribute("nome") : "Team Ospiti";
-                    let puntiOspite = nodoOspiti ? nodoOspiti.textContent.trim() : "0";
-
-                    let nodiGiocatori = xmlDoc.getElementsByTagName("giocatore");
-                    let rosterCasa = [];
-                    let rosterOspiti = [];
-
-                    for (let i = 0; i < nodiGiocatori.length; i++) {
-                        let nG = nodiGiocatori[i];
-                        let squadraAttr = nG.getAttribute("squadra");
-                        let maglia = nG.getAttribute("maglia");
-                        
-                        let tagNome = nG.getElementsByTagName("nome")[0];
-                        let nome = tagNome ? tagNome.textContent.trim() : "";
-                        
-                        let tagPunti = nG.getElementsByTagName("punti")[0];
-                        let punti = tagPunti ? parseInt(tagPunti.textContent.trim(), 10) || 0 : 0;
-
-                        let playerObj = { nome, numero: maglia, punti };
-
-                        if (squadraAttr === 'Casa') {
-                            rosterCasa.push(playerObj);
-                        } else {
-                            rosterOspiti.push(playerObj);
-                        }
-                    }
-
-                    rosterCasa.sort((a, b) => b.punti - a.punti);
-                    rosterOspiti.sort((a, b) => b.punti - a.punti);
-
-                    // Mappiamo sia 'punti' che 'punteggio' per sicurezza assoluta con il tuo file HTML
-                    this.datiAnteprima = {
-                        id: garaId,
-                        data: dataGara,
-                        casa: squadraCasa,
-                        puntiCasa: puntiCasa,
-                        punteggioCasa: puntiCasa, 
-                        ospite: squadraOspite,
-                        puntiOspite: puntiOspite,
-                        punteggioOspite: puntiOspite, 
-                        giocatoriCasa: rosterCasa.slice(0, 3),
-                        giocatoriOspite: rosterOspiti.slice(0, 3)
-                    };
-                    
-                    this.mostraModalAnteprima = true;
-                })
-                .catch(err => {
-                    console.error("Errore lettura o parsing XML:", err);
-                    this.mostraNotifica("⚠️ Impossibile caricare l'anteprima del referto XML.", "error");
-                });
-        },
-
         // =========================================
-        // 4. FUNZIONI DI GESTIONE PARTITA E LOGICHE
+        //  FUNZIONI DI GESTIONE PARTITA E LOGICHE
         // =========================================
 
         caricaTestNBA() {
@@ -670,12 +443,14 @@ const app = createApp({
             this.mostraNotifica(`🏀 Partita N° ${this.idPartitaCorrente} creata con successo!`, "success");
         },
 
-        async accediPartitaConCodice() {
-            if (this.codicePartitaInput.trim() === '') {
+        async accediPartitaConCodice(codice) {
+            const codiceDaUsare = codice || this.codicePartitaInput;
+
+            if (!codiceDaUsare || codiceDaUsare.trim() === '') {
                 this.mostraNotifica("⚠️ Inserisci un codice!", "warning");
                 return;
             }
-            const idCercato = this.codicePartitaInput.padStart(4, '0');
+            const idCercato = codiceDaUsare.padStart(4, '0');
             this.idPartitaCorrente = idCercato;
 
             try {
@@ -964,4 +739,6 @@ app.component('score-board', Scoreboard);
 app.component('landing-page', LandingPage);
 app.component('login-form', LoginForm);
 app.component('leaderboard-view', LeaderboardView);
+app.component('home-view', HomeView);
+app.component('history-view', HistoryView);
 app.mount('#app');
