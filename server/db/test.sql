@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS giocatori (
     UNIQUE(numero_maglia, squadra)
 );
 
--- Tabella espansa per le statistiche delle partite e calcolo MVP
+-- Tabella espansa per le statistiche delle partite e calcolo MVP (AGGIORNATA)
 CREATE TABLE IF NOT EXISTS statistiche_partite (
     id_partita INTEGER,
     id_giocatore INTEGER,
@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS statistiche_partite (
     rubate INTEGER DEFAULT 0,
     stoppate INTEGER DEFAULT 0,
     perse INTEGER DEFAULT 0,
+    minuti TEXT DEFAULT '0:00', -- <-- Modificato da INTEGER a TEXT con default '0:00'
     FOREIGN KEY (id_partita) REFERENCES partite(id) ON DELETE CASCADE,
     FOREIGN KEY (id_giocatore) REFERENCES giocatori(id) ON DELETE CASCADE,
     PRIMARY KEY (id_partita, id_giocatore)

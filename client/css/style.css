@@ -16,17 +16,303 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e0e0e0; color: #333; line-height: 1.6; }
 
-/* --- 2. HEADER E STRUTTURA APP --- */
-header { background-color: var(--dark-bg); color: var(--text-light); padding: 1rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-nav button { background: transparent; border: 1px solid var(--text-light); color: var(--text-light); padding: 5px 15px; margin-left: 10px; border-radius: 4px; cursor: pointer; transition: 0.3s; }
-nav button:hover { background: var(--primary-color); border-color: var(--primary-color); }
+/* --- 2. HEADER E STRUTTURA APP (Design 2026: Floating Glassmorphism) --- */
+/* --- HEADER: Estetica voluta + Posizionamento funzionante --- */
+header { 
+    /* Dimensioni e centramento */
+    width: 96%;
+    max-width: 1400px;
+    margin: 0 auto; /* Centrato orizzontalmente */
+    border-radius: 24px;
+    
+    /* Effetto Vetro (Glassmorphism) */
+    background: rgba(20, 25, 35, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    /* Layout interno */
+    padding: 12px 25px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    
+    /* Ombra moderna e morbida */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.1); 
+    
+    /* POSIZIONAMENTO FISSO CHE FUNZIONA */
+    position: absolute;
+    top: 15px;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
 
-.btn-logout { border-color: var(--danger-color); color: var(--danger-color); }
-.btn-success { border-color: var(--success-color); color: var(--success-color); }
-.btn-success:hover { background-color: var(--success-color) !important; color: white !important; }
+/* --- LOGO: Stile sdoppiato (Brand + Tracker) --- */
+header h1 {
+    font-size: 1.8rem;
+    margin: 0;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #f39c12, #e74c3c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Spazio tra l'emoji della palla e il testo */
+}
 
-.view-container { padding: 20px; max-width: 1000px; margin: 0 auto; animation: fadeIn 0.5s ease; display: flex; flex-direction: column; align-items: center; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+header h1 .brand-basket {
+    font-weight: 900; /* Molto spesso */
+}
+
+header h1 .brand-tracker {
+    font-weight: 300; /* Più sottile */
+    font-style: italic; /* In corsivo per dare dinamismo */
+    letter-spacing: 0.5px;
+}
+
+/* --- NAVIGAZIONE E BOTTONI A PILLOLA --- */
+nav {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+nav button { 
+    background: rgba(255, 255, 255, 0.05); 
+    border: 1px solid rgba(255, 255, 255, 0.15); 
+    color: var(--text-light); 
+    padding: 8px 18px; 
+    border-radius: 30px; 
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+nav button:hover:not(:disabled) { 
+    background: rgba(255, 255, 255, 0.15); 
+    border-color: rgba(255, 255, 255, 0.4); 
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+nav button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Bottone Logout */
+nav .btn-logout {
+    background: rgba(231, 76, 60, 0.1);
+    color: #ff6b6b;
+    border-color: rgba(231, 76, 60, 0.3);
+}
+
+nav .btn-logout:hover:not(:disabled) {
+    background: #e74c3c;
+    color: white;
+    box-shadow: 0 0 15px rgba(231, 76, 60, 0.4);
+    border-color: #e74c3c;
+}
+
+/* --- CONTENITORE PRINCIPALE DELLE VISTE CHE FUNZIONA --- */
+.view-container { 
+    padding: 40px 20px; 
+    max-width: 1000px; 
+    margin: 0 auto; 
+    margin-top: 110px; /* IMPORTANTE: Lascia lo spazio all'header fisso (aumentato leggermente per sicurezza) */
+    animation: smoothFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    opacity: 0; /* Inizia invisibile per l'animazione */
+}
+
+/* Animazione di entrata fluida */
+@keyframes smoothFadeIn { 
+    from { 
+        opacity: 0; 
+        transform: translateY(20px) scale(0.98); 
+    } 
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    } 
+}
+/* =========================================
+   DESIGN LANDING PAGE (VETRINA)
+   ========================================= */
+.landing-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+    color: #fff;
+}
+
+/* Sezione Eroe (Hero) iniziale */
+.landing-hero {
+    text-align: center;
+    padding: 60px 20px;
+    background: rgba(20, 25, 35, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 32px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    margin-bottom: 40px;
+}
+
+.landing-hero h2 {
+    font-size: 2.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #f39c12, #e74c3c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 15px;
+}
+
+.landing-hero p {
+    font-size: 1.2rem;
+    color: #ccc;
+    max-width: 700px;
+    margin: 0 auto 30px auto;
+}
+
+/* Griglia per la Galleria delle Funzionalità */
+.features-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-bottom: 5px;
+}
+
+.feature-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Spazio segnaposto per gli screenshot dell'app */
+.image-placeholder {
+    width: 100%;
+    height: 180px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 16px;
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7f8c8d;
+    font-weight: bold;
+    font-size: 0.9rem;
+    border: 2px dashed rgba(255,255,255,0.15);
+}
+
+/* Sezione istruzioni e ruoli */
+.instructions-section {
+    margin-top: 50px;
+    background: rgba(20, 25, 35, 0.5);
+    backdrop-filter: blur(10px);
+    border-radius: 28px;
+    padding: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.instructions-section h3 {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+    color: #ecf0f1;
+}
+
+.roles-grid {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.role-box {
+    flex: 1;
+    min-width: 280px;
+    background: rgba(0,0,0,0.2);
+    padding: 30px;
+    border-radius: 20px;
+    border-left: 5px solid #3498db;
+}
+
+/* Enfasi speciale sulla card Admin (bordo arancione/oro) */
+.role-box.admin-emphasis {
+    border-left: 6px solid #f39c12;
+    background: rgba(243, 156, 18, 0.04);
+    box-shadow: 0 10px 30px rgba(243, 156, 18, 0.05);
+}
+
+.role-box h4 {
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.role-box ul {
+    list-style: none;
+    padding: 0;
+}
+
+.role-box li {
+    margin-bottom: 12px;
+    position: relative;
+    padding-left: 20px;
+    color: #e0e0e0;
+}
+
+.role-box li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: inherit;
+    font-size: 1.2rem;
+}
+
+/* Pulsante principale di accesso */
+.btn-cta {
+    background: linear-gradient(135deg, #f39c12, #e74c3c);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    border-radius: 50px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+    transition: all 0.3s ease;
+}
+
+.btn-cta:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(231, 76, 60, 0.6);
+}
 
 /* --- 3. VISTE: LOGIN E HOME A 3 CARTE --- */
 .login-card, .setup-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: inline-block; min-width: 350px; margin-top: 50px; text-align: center; }
@@ -153,6 +439,44 @@ input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
     background-color: var(--danger-color);
     opacity: 0.8; /* Rende i panchinari un po' più sbiaditi */
 }
+
+/* =========================================
+   BADGE INFERIORI (ID PARTITA E RUOLO) - AGGIORNATI
+   ========================================= */
+.status-badge {
+    position: fixed; 
+    bottom: 25px;    
+    padding: 6px 14px; /* Rimpicciolito il padding (prima era 10px 20px) */
+    background: rgba(20, 25, 35, 0.85); 
+    backdrop-filter: blur(10px); 
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    border-radius: 30px; 
+    font-size: 0.8rem; /* Testo più piccolo (prima era 0.95rem) */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    z-index: 1000; 
+}
+
+/* MODIFICA: Li avviciniamo al centro aumentando la distanza dai bordi laterali (da 25px a 70px) */
+.status-badge.bottom-left {
+    left: 70px; 
+}
+
+.status-badge.bottom-right {
+    right: 70px; 
+}
+
+/* Stile per il valore in grassetto (0017 / ADMIN) */
+.status-badge strong {
+    color: #f1c40f; 
+    font-size: 0.9rem; /* Valore proporzionato al nuovo testo piccolo (prima era 1.15rem) */
+    margin-left: 4px;
+}
+
 /* --- 5. COMPONENTI E TABELLE --- */
 .timer-component { width: 100%; display: flex; justify-content: center; margin-top: 20px; }
 .scoreboard-timer { position: absolute; top: -125px; left: 50%; transform: translateX(-50%); background-color: #222; color: var(--timer-color); padding: 5px 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 40px; font-weight: bold; border: 2px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
@@ -614,7 +938,7 @@ select {
 
 .home-container {
     max-width: 1200px;
-    margin: 50px auto;
+    margin: 120px auto 50px auto; /* Aumentato il margine superiore per non finire sotto l'header */
     padding: 0 20px;
     text-align: center;
 }

@@ -14,9 +14,12 @@
 <body>
     <div id="app" v-cloak>
         <header>
-            <h1>BasketTracker</h1>
+           <h1>
+                <span style="-webkit-text-fill-color: initial; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));">🏀</span>
+                <span class="brand-basket">Basket</span><span class="brand-tracker">Tracker</span>
+           </h1>
             
-            <nav v-if="currentView == 'home'">
+            <nav v-if="currentView == 'home' || currentView == 'login'">
                 <button @click="chiediConfermaLogout" class="btn-logout">Esci</button>  
             </nav>
             
@@ -33,15 +36,79 @@
                 <button v-if="currentView == 'court'" @click="apriBoxScore">📊 Box Score</button>
                 <button v-if="currentView == 'boxscore'" @click="tornaAlCampo">🏀 Torna al Campo</button>
                 
-                <button @click="backhome" class="btn-logout">Home</button>
+                <button @click="backhome" class="btn-logout">🏠 Home</button>
             </nav>
             
             <nav v-if="currentView == 'setup' || currentView == 'history'">
-                <button @click="backhome" class="btn-logout">Home</button>
+                <button @click="backhome" class="btn-logout">🏠 Home</button>
             </nav>
         </header>
 
         <main>
+
+            <section v-if="currentView === 'landing'" class="landing-container fade-in">
+            
+            <div class="landing-hero" style= "margin-top: 150px;" >
+                <h2>Analisi Basket in Tempo Reale</h2>
+                <p>La piattaforma evoluta e reattiva per il monitoraggio delle statistiche sul campo, la generazione automatica di referti ufficiali e la trasmissione in diretta streaming per gli spettatori.</p>
+                <button class="btn-cta" @click="currentView = 'login'">Entra nella Piattaforma 🏀</button>
+            </div>
+
+            <div class="features-gallery">
+                
+                <div class="feature-card">
+                    <h3 style="color: #3498db; font-weight: 800;">Pedine & Campo Live</h3>
+                    <p style="font-size: 0.95rem; margin-top: 5px; color: #bbb;">Un'interfaccia interattiva a forma di campo da gioco per registrare o guardare falli, canestri e movimenti in tempo reale.</p>
+                    <img src="assets/campo.png" alt="Campo Live" style="width: 100%; height: 180px; object-fit: cover; border-radius: 16px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                </div>
+
+                <div class="feature-card">
+                    <h3 style="color: #f1c40f; font-weight: 800;">Archivio & MVP</h3>
+                    <p style="font-size: 0.95rem; margin-top: 5px; color: #bbb;">Tutti i match vengono archiviati in formato XML rigido. Il sistema calcola all'istante l'MVP estraendolo via SQL dal database.</p>
+                    <img src="assets/archivio.png" alt="Archivio Referti" style="width: 100%; height: 180px; object-fit: cover; border-radius: 16px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                </div>
+
+                <div class="feature-card">
+                    <h3 style="color: #2ecc71; font-weight: 800;">Classifiche e Grafici</h3>
+                    <p style="font-size: 0.95rem; margin-top: 5px; color: #bbb;">Analisi visiva immediata tramite grafici radar per scontri diretti tra i leader e grafici a barre per il rendimento dei team.</p>
+                    <img src="assets/classifica.png" alt="Classifiche e Grafici" style="width: 100%; height: 180px; object-fit: cover; border-radius: 16px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                </div>
+
+            </div>
+
+            <div class="instructions-section">
+                <h3>Come Funziona il Sistema</h3>
+                
+                <div class="roles-grid">
+                    
+                    <div class="role-box">
+                        <h4 style="color: #3498db;">👥 Spettatore (Viewer)</h4>
+                        <p style="font-size: 0.9rem; margin-bottom: 15px; color: #aaa;">Ideale per il pubblico, i tifosi o gli atleti che vogliono seguire la gara da remoto.</p>
+                        <ul>
+                            <li style="color: #3498db;">Accesso libero senza password tramite il Codice Partita.</li>
+                            <li>Ricezione asincrona dei dati sul campo tramite WebSockets.</li>
+                            <li>Popup automatici visivi (Fischio d'inizio e Sirena finale).</li>
+                            <li>Consultazione dello storico referti e confronto radar dei leader.</li>
+                        </ul>
+                    </div>
+
+                    <div class="role-box admin-emphasis">
+                        <h4 style="color: #f39c12;">⚡ Amministratore (Tavolo Ufficiali)</h4>
+                        <p style="font-size: 0.9rem; margin-bottom: 15px; color: #e67e22; font-weight: bold;">Il centro di controllo operativo della partita.</p>
+                        <ul>
+                            <li style="color: #f39c12; font-weight: bold;">Richiede credenziali di sicurezza per l'autenticazione.</li>
+                            <li>Creazione guidata dei roster con blocco dei numeri duplicati.</li>
+                            <li>Gestione completa del cronometro di gioco (con popup di conferma "Next Q" integrato).</li>
+                            <li>Assegnazione real-time di Punti (PTS), Rimbalzi (REB), Assist (AST) e Falli con tracciamento automatico dell'espulsione (OUT).</li>
+                            <li>Esportazione nativa del referto in formato ufficiale XML al termine della gara.</li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
             <section v-if="currentView === 'login'" class="view-container login-section">
                 <div class="login-card">
                     <div class="login-header">
@@ -126,8 +193,8 @@
                         <div class="referto-icon" style="font-size:3.5rem; margin-bottom:10px;">📄</div>
                         
                         <div class="referto-info">
-                            <span class="file-name" style="display:block; margin-bottom:10px; font-weight:800; color: var(--dark-bg); font-size: 1.1rem;">
-                                {{ partita.nomeFile.replace('.xml', '') }}
+                            <span class="file-name" style="display:block; margin-bottom:10px; font-weight:800; color: var(--dark-bg); font-size: 1.05rem; text-transform: uppercase;">
+                                {{ partita.squadraCasa }} vs {{ partita.squadraOspite }} (#{{ partita.id }})
                             </span>
                             
                             <div style="background: rgba(241, 196, 15, 0.1); border: 1px solid #f1c40f; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
@@ -325,12 +392,7 @@
             </section>
 
             <section v-show="currentView === 'court'" class="view-container" style="max-width: 1100px; margin-top: 10px;">
-                <div style="background: #333; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 578px;">
-                    <span>ID Partita: <strong style="font-size: 1.2em; color: #ffeb3b;">{{ idPartitaCorrente }}</strong></span>
-                    <span style="font-size: 0.9em; text-transform: uppercase;">Ruolo: <strong>{{ ruolo }}</strong></span>
-                </div>
-
-                <div class="court-wrapper" style="margin-top: 120px;">
+                <div class="court-wrapper" style="margin-top: 180px;">
                     
                     <div class="basketball-court">
                         <score-board 
@@ -460,6 +522,14 @@
                         </div>
                     </div>
                 </div>
+                <div class="status-badge bottom-left">
+                    ID Partita: <strong>{{ idPartitaCorrente }}</strong>
+                </div>
+                
+                <div class="status-badge bottom-right">
+                    Ruolo: <strong>{{ ruolo }}</strong>
+                </div>
+
             </section>
 
             <section v-if="currentView === 'boxscore'" class="view-container">
@@ -606,7 +676,7 @@
                     <div class="popup-icon">🚪</div>
                     <h2 class="popup-title" style="color: #c0392b; font-size: 2.2rem; letter-spacing: 1px;">Logout</h2>
                     <h3 class="popup-subtitle">Sei sicuro di voler uscire?</h3>
-                    <p class="popup-text">Verrai riportato alla schermata di Login.</p>
+                    <p class="popup-text">Verrai riportato alla schermata iniziale.</p>
                     
                     <div class="popup-actions">
                         <button class="btn-primary btn-large" style="background-color: #c0392b;" @click="eseguiLogout">🚪 Sì, Esci</button>
