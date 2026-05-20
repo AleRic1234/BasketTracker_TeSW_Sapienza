@@ -51,9 +51,6 @@ export default {
                 <canvas id="topScorersChart"></canvas>
             </div>
 
-            <div style="text-align: center; margin-top: 30px;">
-                <button @click="$emit('torna-home')" class="btn-primary" style="max-width: 250px;">🏠 Torna alla Home</button>
-            </div>
         </section>
     `,
     data() {

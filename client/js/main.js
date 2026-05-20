@@ -7,25 +7,14 @@ import HomeView from '../src/components/HomeView.js';
 import HistoryView from '../src/components/HistoryView.js';
 import SetupView from '../src/components/SetupView.js';
 import BoxScoreView from '../src/components/BoxScoreView.js';
+import courtLogic from '../src/mixins/courtLogic.js';
+import authLogic from '../src/mixins/authLogic.js';
 import api from './api.js';
 
 const { createApp } = Vue;
 
-// Spostata fuori per fare in modo che Vue non vada MAI PIÙ in crash all'avvio
-const generaSquadraVuota = (nome, idPrefix, posSuffix) => {
-    return {
-        nome: nome,
-        logo: null,
-        giocatori: Array.from({ length: 10 }, (_, i) => ({
-            id: idPrefix + i, nome: '', numero: '', inCampo: i < 5,
-            minuti: 0, punti: 0, rimbalzi: 0, assist: 0, rubate: 0, stoppate: 0, perse: 0, falli: 0, plsm: 0,
-            posClass: 'p' + (i + 1) + posSuffix,
-            popupMsg: '', showPopup: false, isNegativo: false
-        }))
-    };
-};
-
 const app = createApp({
+    mixins: [courtLogic, authLogic],
     data() {
         return {
             currentView: 'landing',
@@ -52,20 +41,18 @@ const app = createApp({
             mostraPopupAvviso: false,
             messaggioAvviso: '',
             menuAvanzatoGiocatore: false,
-            
-            // --- STATO UI VUE NATIVO (Ex jQuery) ---
-            notifiche: [],
-
+            notifiche: [], //Contenitore per le notifiche toast
             giocatoreAttivo: null,
             panchinaroSelezionato: null,
-            
-            teamA: generaSquadraVuota("", "A", "a"),
-            teamB: generaSquadraVuota("", "B", "b")
+        
+            // Inizializza con un oggetto vuoto, o chiama una funzione se 'generaSquadraVuota' è nel main/mixin
+            teamA: { nome: "", giocatori: [] }, 
+            teamB: { nome: "", giocatori: [] }  
         }
     },
     computed: {
-        punteggioCasa() { return this.teamA.giocatori.reduce((sum, p) => sum + p.punti, 0); },
-        punteggioOspite() { return this.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0); },
+        punteggioCasa() { return this.teamA.giocatori.reduce((sum, p) => sum + (p.punti || 0), 0); },
+        punteggioOspite() { return this.teamB.giocatori.reduce((sum, p) => sum + (p.punti || 0), 0); },
 
         testoPeriodo() {
             if (this.partitaInterrotta) return `🛑 INTERROTTA`;
@@ -77,14 +64,14 @@ const app = createApp({
             return this.periodo <= 4 ? 600 : 300;
         },
         giocatoriValidiA() {
-            return this.teamA.giocatori.filter(p => p.nome.trim() !== '');
+            return this.teamA.giocatori.filter(p => p.nome && p.nome.trim() !== '');
         },
         giocatoriValidiB() {
-            return this.teamB.giocatori.filter(p => p.nome.trim() !== '');
+            return this.teamB.giocatori.filter(p => p.nome && p.nome.trim() !== '');
         },
         giocatoreMVP() {
             if (!this.partitaTerminata) return null;
-            const tuttiGiocatori = [...this.teamA.giocatori, ...this.teamB.giocatori].filter(g => g.nome.trim() !== '');
+            const tuttiGiocatori = [...this.teamA.giocatori, ...this.teamB.giocatori].filter(g => g.nome && g.nome.trim() !== '');
             if (tuttiGiocatori.length === 0) return null;
 
             let mvp = null;
@@ -102,6 +89,10 @@ const app = createApp({
     },
     mounted() {
         
+        // Per sicurezza, inizializziamo le squadre qui (dopo che i mixins sono caricati)
+        this.teamA = this.getEmptyTeam("", "A", "a");
+        this.teamB = this.getEmptyTeam("", "B", "b");
+
         if (typeof io !== 'undefined') {
             this.socket = io();
 
@@ -165,7 +156,6 @@ const app = createApp({
         }
     },
     methods: {
-        
         // =========================================
         // 1. SISTEMA UI VUE NATIVO E NOTIFICHE
         // =========================================
@@ -192,8 +182,9 @@ const app = createApp({
         chiudiPopupAvviso() {
             this.mostraPopupAvviso = false;
         },
+        
         // =========================================
-        // FUNZIONI DI NAVIGAZIONE E SALVATAGGIO
+        // 2. FUNZIONI DI NAVIGAZIONE E SALVATAGGIO
         // =========================================
 
         apriBoxScore() {
@@ -255,8 +246,6 @@ const app = createApp({
 
                     this.mostraNotifica(`🏆 Partita Archiviata!<br><small>${risultato.message}</small>`, "success");
                     
-                    // ❌ CANCELLATA LA REGOLA DA QUI: await this.aggiornaListaReferti();
-                    
                     this.apriBoxScore();
                     
                     if (this.giocatoreMVP) {
@@ -297,48 +286,6 @@ const app = createApp({
         apriLeaderboard() {
             this.currentView = 'leaderboard';
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        },
-
-        // =========================================
-        //  FUNZIONI DI GESTIONE PARTITA E LOGICHE
-        // =========================================
-
-
-        getEmptyTeam(nome, idPrefix, posSuffix) {
-            return generaSquadraVuota(nome, idPrefix, posSuffix);
-        },
-
-        getClasseGiocatore(p, teamId) {
-            const isCasa = teamId === 'A';
-            return [
-                'player', 
-                isCasa ? 'team-left' : 'team-right', 
-                p.posClass, 
-                p.inCampo ? (isCasa ? 'bordo-verdea' : 'bordo-verdeb') : (isCasa ? 'bordo-biancoa' : 'bordo-biancob'),
-                { 'pronto-al-cambio': this.panchinaroSelezionato === p },
-                { 'espulso': p.falli >= 5 }
-            ];
-        },
-
-        effettuaLogin(credenziali) {
-            const user = credenziali.username.toLowerCase();
-            const pass = credenziali.password;
-
-            if (user === 'admin' && pass === '1234') {
-                this.ruolo = 'admin';
-                this.username = user; // Salviamo lo user globale
-                this.erroreLogin = false;
-                this.currentView = 'home';
-            } 
-            else if (user === 'utente' && pass === '0000') {
-                this.ruolo = 'utente';
-                this.username = user; // Salviamo lo user globale
-                this.erroreLogin = false;
-                this.currentView = 'home';
-            } 
-            else {
-                this.erroreLogin = true;
-            }
         },
 
         async iniziaPartita() {
@@ -456,55 +403,6 @@ const app = createApp({
             }
         },
 
-        chiediConfermaLogout() {
-            this.mostraPopupLogout = true;
-        },
-
-        annullaLogout() {
-            this.mostraPopupLogout = false;
-        },
-
-        eseguiLogout() {
-            this.mostraPopupLogout = false;
-            
-            if (this.socket && this.ruolo === 'admin' && this.currentView === 'court' && !this.partitaTerminata) {
-                this.partitaInterrotta = true;
-                if (this.$refs.timerRef) {
-                    this.$refs.timerRef.timerRunning = false;
-                    clearInterval(this.$refs.timerRef.interval);
-                }
-                this.socket.emit('interrompi_partita', this.idPartitaCorrente);
-                this.trasmettiDatiLive();
-            }
-
-            if (this.$refs.timerRef) {
-                this.$refs.timerRef.timerRunning = false;
-                clearInterval(this.$refs.timerRef.interval);
-                this.$refs.timerRef.timer = 600; 
-            }
-
-            this.currentView = 'landing'; 
-            this.password = ''; 
-            this.ruolo = null;
-            this.username = '';
-
-            this.codicePartitaInput = '';
-            this.partitaTerminata = false;
-            this.partitaInterrotta = false; 
-            this.mostraPopupInizioPartita = false;
-            this.fischioInizioMostrato = false;
-            this.mostraPopupFinePartitaSpettatore = false;
-            this.periodo = 1;
-            this.idPartitaCorrente = '0000';
-            this.squadraCasaSelezionata = null;
-            this.squadraOspiteSelezionata = null;
-            this.giocatoreAttivo = null;
-            this.panchinaroSelezionato = null;
-
-            this.teamA = this.getEmptyTeam("", "A", "a");
-            this.teamB = this.getEmptyTeam("", "B", "b");
-        },
-
         backhome() { 
             if (this.currentView === 'court' || this.currentView === 'setup' || this.currentView === 'boxscore') {
                 this.mostraPopupHome = true;
@@ -552,103 +450,7 @@ const app = createApp({
 
         annullaBackhome() {
             this.mostraPopupHome = false;
-        },
-
-        gestisciClickGiocatore(p) {
-            if (this.ruolo !== 'admin' || this.partitaTerminata) return;
-            if (!p.inCampo && p.falli >= 5) {
-                this.mostraMessaggio("Questo giocatore ha 5 falli e non può rientrare in campo.");
-                this.panchinaroSelezionato = null;
-                return;
-            }
-            if (!p.inCampo) {
-                if (this.panchinaroSelezionato === p) this.panchinaroSelezionato = null;
-                else this.panchinaroSelezionato = p;
-                return;
-            }
-            if (p.inCampo && this.panchinaroSelezionato) {
-                if (p.id.charAt(0) !== this.panchinaroSelezionato.id.charAt(0)) {
-                    this.panchinaroSelezionato = null; return;
-                }
-                p.inCampo = false; this.panchinaroSelezionato.inCampo = true;
-                const tempPos = p.posClass;
-                p.posClass = this.panchinaroSelezionato.posClass;
-                this.panchinaroSelezionato.posClass = tempPos;
-                this.panchinaroSelezionato = null;
-                return;
-            }
-            if (p.inCampo && p.falli >= 5) {
-                this.mostraMessaggio("Giocatore espulso per 5 falli. Effettua un cambio.");
-                return;
-            }
-            if (this.ruolo === 'admin' && !this.partitaTerminata) this.giocatoreAttivo = p;
-        },
-
-        aggiungiStat(tipo, val) {
-            if (this.partitaTerminata) return;
-            
-            if (this.giocatoreAttivo) {
-                this.giocatoreAttivo[tipo] += val;
-
-                if (tipo === 'punti') {
-                    const isCasa = this.giocatoreAttivo.id.startsWith('A');
-                    const compagni = isCasa ? this.teamA.giocatori : this.teamB.giocatori;
-                    compagni.forEach(p => { if(p.inCampo) p.plsm += val; });
-
-                    const avversari = isCasa ? this.teamB.giocatori : this.teamA.giocatori;
-                    avversari.forEach(p => { if(p.inCampo) p.plsm -= val; });
-                }
-
-                if (tipo === 'falli' && this.giocatoreAttivo.falli >= 5) {
-                    this.mostraMessaggio(`Il giocatore numero ${this.giocatoreAttivo.numero} è uscito per 5 falli!`);
-                }
-                
-                const abbreviazioni = { punti: 'PTS', rimbalzi: 'REB', assist: 'AST', rubate: 'STL', stoppate: 'BLK', perse: 'TOV', falli: 'FLS' };
-                const sigla = abbreviazioni[tipo] || tipo.toUpperCase();
-                const playerToAnimate = this.giocatoreAttivo;
-                
-                playerToAnimate.popupMsg = `+${val} ${sigla}`;
-                playerToAnimate.isNegativo = false; 
-                playerToAnimate.showPopup = true;
-
-                setTimeout(() => { playerToAnimate.showPopup = false; }, 1200);
-                this.giocatoreAttivo = null;
-
-                this.trasmettiDatiLive();
-            }
-        },
-
-        rimuoviStat(tipo, val) {
-            if (this.partitaTerminata) return;
-            
-            if (this.giocatoreAttivo) {
-                this.giocatoreAttivo[tipo] -= val;
-                
-                if (tipo === 'falli' && this.giocatoreAttivo.falli >= 5) {
-                    this.mostraMessaggio(`Il giocatore numero ${this.giocatoreAttivo.numero} è uscito per 5 falli!`);
-                }
-
-                const abbreviazioni = { punti: 'PTS', rimbalzi: 'REB', assist: 'AST', rubate: 'STL', stoppate: 'BLK', perse: 'TOV', falli: 'FLS' };
-                const sigla = abbreviazioni[tipo] || tipo.toUpperCase();
-                const playerToAnimate = this.giocatoreAttivo;
-                
-                playerToAnimate.popupMsg = `-${val} ${sigla}`;
-                playerToAnimate.isNegativo = true; 
-                playerToAnimate.showPopup = true;
-
-                setTimeout(() => { playerToAnimate.showPopup = false; }, 1200);
-                this.giocatoreAttivo = null;
-
-                this.trasmettiDatiLive();
-            }
-        },
-
-        aggiornaMinutiGiocatori() {
-            if (this.partitaTerminata) return;
-            this.teamA.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
-            this.teamB.giocatori.forEach(p => { if(p.inCampo && p.nome.trim() !== '') p.minuti++; });
-            this.trasmettiDatiLive();
-        },
+        }
 
     }
 });
