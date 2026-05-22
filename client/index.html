@@ -128,28 +128,28 @@
                             <h4>{{ giocatoreAttivo.nome }} (#{{ giocatoreAttivo.numero }})</h4>
                             
                             <div v-if="!menuAvanzatoGiocatore" class="actions">
-                                <button @click="aggiungiStat('punti', 1)" class="btn-hover-green">+1 PT</button>
-                                <button @click="aggiungiStat('punti', 2)" class="btn-hover-green">+2 PT</button>
-                                <button @click="aggiungiStat('punti', 3)" class="btn-hover-green">+3 PT</button>
+                                <button @click="aggiungiStat('punti', 1)" class="btn-hover-green">+1 PTS</button>
+                                <button @click="aggiungiStat('punti', 2)" class="btn-hover-green">+2 PTS</button>
+                                <button @click="aggiungiStat('punti', 3)" class="btn-hover-green">+3 PTS</button>
                                 
-                                <button @click="aggiungiStat('rimbalzi', 1)" class="btn-hover-blue">+1 RB</button>
+                                <button @click="aggiungiStat('rimbalzi', 1)" class="btn-hover-blue">+1 REB</button>
                                 <button @click="aggiungiStat('assist', 1)" class="btn-hover-blue">+1 AST</button>
                                 <button @click="aggiungiStat('rubate', 1)" class="btn-hover-blue">+1 STL</button>
                                 <button @click="aggiungiStat('stoppate', 1)" class="btn-hover-blue">+1 BLK</button>
                                 <button @click="aggiungiStat('perse', 1)" class="btn-hover-red">+1 TOV</button>
-                                <button @click="aggiungiStat('falli', 1)" class="btn-hover-red">+1 PF</button>
+                                <button @click="aggiungiStat('falli', 1)" class="btn-hover-red">+1 FLS</button>
                                 
                                 <button @click="menuAvanzatoGiocatore = true" class="btn-hover-orange">⚙️</button>
                             </div>
                             
                             <div v-else class="actions">
-                                <button @click="rimuoviStat('punti', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 PT</button>
-                                <button @click="rimuoviStat('rimbalzi', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 RB</button>
+                                <button @click="rimuoviStat('punti', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 PTS</button>
+                                <button @click="rimuoviStat('rimbalzi', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 REB</button>
                                 <button @click="rimuoviStat('assist', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 AST</button>
                                 <button @click="rimuoviStat('rubate', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 STL</button>
                                 <button @click="rimuoviStat('stoppate', 1); menuAvanzatoGiocatore = false" class="btn-hover-red">-1 BLK</button>
                                 <button @click="rimuoviStat('perse', 1); menuAvanzatoGiocatore = false" class="btn-hover-green">-1 TOV</button>
-                                <button @click="rimuoviStat('falli', 1); menuAvanzatoGiocatore = false" class="btn-hover-green">-1 PF</button>
+                                <button @click="rimuoviStat('falli', 1); menuAvanzatoGiocatore = false" class="btn-hover-green">-1 FLS</button>
                                 
                                 <button @click="menuAvanzatoGiocatore = false" class="btn-hover-gray">🔙</button>
                             </div>

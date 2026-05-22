@@ -30,7 +30,7 @@ export default {
                             <tr>
                                 <th>#</th>
                                 <th style="text-align: left;">Nome</th>
-                                <th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>BLK</th><th>STL</th><th>TOV</th><th>PF</th><th>+/-</th>
+                                <th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>BLK</th><th>STL</th><th>TOV</th><th>FLS</th><th>+/-</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -66,7 +66,7 @@ export default {
                             <tr>
                                 <th>#</th>
                                 <th style="text-align: left;">Nome</th>
-                                <th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>BLK</th><th>STL</th><th>TOV</th><th>PF</th><th>+/-</th>
+                                <th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>BLK</th><th>STL</th><th>TOV</th><th>FLS</th><th>+/-</th>
                             </tr>
                         </thead>
                         <tbody>
