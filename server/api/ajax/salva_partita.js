@@ -5,7 +5,7 @@ const router = express.Router();
 
 module.exports = function(db) {
 
-    // Nuova funzione helper interna per formattare i secondi in MM:SS
+    // Formatta i secondi in MM:SS
     function formattaSecondi(secondiTotali) {
         const sTot = secondiTotali || 0;
         const m = Math.floor(sTot / 60);
@@ -13,7 +13,7 @@ module.exports = function(db) {
         return `${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
-    // Funzione interna per generare l'XML
+    // Funzione per generare l'XML
     function generaRefertoXML(dati, idPartita) {
         const idFormattato = idPartita.toString().padStart(4, '0');
         
@@ -83,7 +83,7 @@ module.exports = function(db) {
                 tuttiGiocatori.forEach(giocatore => {
                     if (giocatore.nome && giocatore.nome.trim() !== '') {
                         const nomeSquadraReale = giocatore.id.startsWith('A') ? nomeCasa : nomeOspite;
-                        const tempoFormattato = formattaSecondi(giocatore.minuti); // Formatta prima del DB
+                        const tempoFormattato = formattaSecondi(giocatore.minuti); 
 
                         db.run(`INSERT OR IGNORE INTO giocatori (nome, numero_maglia, squadra) VALUES (?, ?, ?)`,
                             [giocatore.nome, giocatore.numero, nomeSquadraReale],
@@ -105,7 +105,7 @@ module.exports = function(db) {
                                                     giocatore.rubate || 0,
                                                     giocatore.stoppate || 0,
                                                     giocatore.perse || 0,
-                                                    tempoFormattato /* MODIFICA: Inserisce la stringa formattata (es. '1:12') */
+                                                    tempoFormattato 
                                                 ]
                                             );
                                         }

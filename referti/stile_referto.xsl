@@ -5,7 +5,8 @@
       <head>
         <title>Referto Ufficiale di Gara</title>
         <style>
-          /* Stile burocratico e ufficiale tipo FIP */
+         
+          /* Stile ufficiale FIP */
           body { font-family: 'Arial', sans-serif; background-color: #f4f4f4; color: #000; margin: 20px; font-size: 14px; }
           .referto-container { background-color: #fff; border: 3px solid #000; padding: 30px; max-width: 900px; margin: auto; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
           
@@ -73,17 +74,15 @@
                 <xsl:sort select="punti" data-type="number" order="descending"/>
                 <tr>
                   <td class="center"><strong><xsl:value-of select="@maglia"/></strong></td>
-                  <td><xsl:value-of select="nome"/></td>
-                  <td class="center"><xsl:value-of select="minuti"/></td> <td class="center"><strong><xsl:value-of select="punti"/></strong></td>
+                  <td><xsl:value-of select="nome"/><xsl:if test="falli >= 5"> <span class="alert"> (ESPULSO)</span></xsl:if></td>
+                  <td class="center"><xsl:value-of select="minuti"/></td>
+                  <td class="center"><strong><xsl:value-of select="punti"/></strong></td>
                   <td class="center"><xsl:value-of select="rimbalzi"/></td>
                   <td class="center"><xsl:value-of select="assist"/></td>
                   <td class="center"><xsl:value-of select="rubate"/></td>
                   <td class="center"><xsl:value-of select="stoppate"/></td>
                   <td class="center"><xsl:value-of select="perse"/></td>
-                  <td class="center">
-                    <xsl:value-of select="falli"/>
-                    <xsl:if test="falli >= 5"> <span class="alert">(USCITO)</span></xsl:if>
-                  </td>
+                  <td class="center"><xsl:value-of select="falli"/></td>
                   <td class="center"><xsl:value-of select="plsm"/></td>
                 </tr>
               </xsl:for-each>
@@ -109,17 +108,15 @@
                 <xsl:sort select="punti" data-type="number" order="descending"/>
                 <tr>
                   <td class="center"><strong><xsl:value-of select="@maglia"/></strong></td>
-                  <td><xsl:value-of select="nome"/></td>
-                  <td class="center"><xsl:value-of select="minuti"/></td> <td class="center"><strong><xsl:value-of select="punti"/></strong></td>
+                  <td><xsl:value-of select="nome"/><xsl:if test="falli >= 5"> <span class="alert"> (ESPULSO)</span></xsl:if></td>
+                  <td class="center"><xsl:value-of select="minuti"/></td>
+                  <td class="center"><strong><xsl:value-of select="punti"/></strong></td>
                   <td class="center"><xsl:value-of select="rimbalzi"/></td>
                   <td class="center"><xsl:value-of select="assist"/></td>
                   <td class="center"><xsl:value-of select="rubate"/></td>
                   <td class="center"><xsl:value-of select="stoppate"/></td>
                   <td class="center"><xsl:value-of select="perse"/></td>
-                  <td class="center">
-                    <xsl:value-of select="falli"/>
-                    <xsl:if test="falli >= 5"> <span class="alert">(USCITO)</span></xsl:if>
-                  </td>
+                  <td class="center"><xsl:value-of select="falli"/> </td>
                   <td class="center"><xsl:value-of select="plsm"/></td>
                 </tr>
               </xsl:for-each>

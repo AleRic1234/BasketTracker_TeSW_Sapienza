@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 module.exports = function(db) {
-    // Rotta per ottenere l'MVP di una singola partita
+    
     router.get('/:idPartita', (req, res) => {
         const idPartita = req.params.idPartita;
 

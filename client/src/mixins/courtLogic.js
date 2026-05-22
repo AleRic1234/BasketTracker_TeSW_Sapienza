@@ -16,9 +16,9 @@ const generaSquadraVuota = (nome, idPrefix, posSuffix) => {
 
 export default {
     methods: {
+
+        // Svuota Le Squadre
         getEmptyTeam(nome, idPrefix, posSuffix) {
-            // Nota: qui potresti aver bisogno di spostare anche la funzione generaSquadraVuota se non vuoi tenerla in main.js
-            // Per ora assumiamo che generaSquadraVuota sia accessibile (magari importandola o definendola nel mixin)
             return generaSquadraVuota(nome, idPrefix, posSuffix); 
         },
 
@@ -122,6 +122,8 @@ export default {
                 this.trasmettiDatiLive();
             }
         },
+
+        // Timer Giocatore in Box Score
 
         aggiornaMinutiGiocatori() {
             if (this.partitaTerminata) return;

@@ -1,5 +1,5 @@
-/* --- 2. HEADER E STRUTTURA APP (Design 2026: Floating Glassmorphism) --- */
-/* --- HEADER: Estetica voluta + Posizionamento funzionante --- */
+/* ---  HEADER E STRUTTURA APP  --- */
+
 header { 
     /* Dimensioni e centramento */
     width: 96%;
@@ -22,7 +22,7 @@ header {
     /* Ombra moderna e morbida */
     box-shadow: 0 10px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.1); 
     
-    /* POSIZIONAMENTO FISSO CHE FUNZIONA */
+    /* POSIZIONAMENTO FISSO  */
     position: absolute;
     top: 15px;
     left: 0;
@@ -46,12 +46,12 @@ header h1 {
 }
 
 header h1 .brand-basket {
-    font-weight: 900; /* Molto spesso */
+    font-weight: 900; 
 }
 
 header h1 .brand-tracker {
-    font-weight: 300; /* Più sottile */
-    font-style: italic; /* In corsivo per dare dinamismo */
+    font-weight: 300; 
+    font-style: italic; 
     letter-spacing: 0.5px;
 }
 
@@ -106,12 +106,12 @@ nav .btn-logout:hover:not(:disabled) {
 
 /* Tasto Salva Partita (Vetro Scuro + Bordo Verde) */
 nav .btn-save {
-    background: rgba(20, 25, 35, 0.6); /* Sfondo grigio scuro sfocato */
-    color: #27ae60; /* Testo verde */
-    border-color: #27ae60; /* Bordo verde */
+    background: rgba(20, 25, 35, 0.6); 
+    color: #27ae60; 
+    border-color: #27ae60; 
 }
 
-/* Effetto Hover (Diventa tutto verde brillante) */
+
 nav .btn-save:hover:not(:disabled) {
     background: #27ae60;
     color: white;
@@ -128,12 +128,12 @@ nav .btn-save:disabled {
     color: white;
 }
 
-/* --- CONTENITORE PRINCIPALE DELLE VISTE CHE FUNZIONA --- */
+/* --- CONTENITORE PRINCIPALE DELLE VISTE --- */
 .view-container { 
     padding: 40px 20px; 
     max-width: 1000px; 
     margin: 0 auto; 
-    margin-top: 110px; /* IMPORTANTE: Lascia lo spazio all'header fisso (aumentato leggermente per sicurezza) */
+    margin-top: 110px; 
     animation: smoothFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
     display: flex; 
     flex-direction: column; 
@@ -163,19 +163,17 @@ nav .btn-save:disabled {
     to { opacity: 1; transform: translateY(0); } 
 }
 
-/* =========================================
-   BADGE INFERIORI (ID PARTITA E RUOLO) - AGGIORNATI
-   ========================================= */
+/* BADGE INFERIORI (ID PARTITA E RUOLO)  */
 .status-badge {
     position: fixed; 
     bottom: 25px;    
-    padding: 6px 14px; /* Rimpicciolito il padding (prima era 10px 20px) */
+    padding: 6px 14px;
     background: rgba(20, 25, 35, 0.85); 
     backdrop-filter: blur(10px); 
     -webkit-backdrop-filter: blur(10px);
     color: white;
     border-radius: 30px; 
-    font-size: 0.8rem; /* Testo più piccolo (prima era 0.95rem) */
+    font-size: 0.8rem; 
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -184,7 +182,7 @@ nav .btn-save:disabled {
     z-index: 1000; 
 }
 
-/* MODIFICA: Li avviciniamo al centro aumentando la distanza dai bordi laterali (da 25px a 70px) */
+
 .status-badge.bottom-left {
     left: 70px; 
 }
@@ -196,6 +194,6 @@ nav .btn-save:disabled {
 /* Stile per il valore in grassetto (0017 / ADMIN) */
 .status-badge strong {
     color: #f1c40f; 
-    font-size: 0.9rem; /* Valore proporzionato al nuovo testo piccolo (prima era 1.15rem) */
+    font-size: 0.9rem; 
     margin-left: 4px;
 }

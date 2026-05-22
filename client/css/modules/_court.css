@@ -1,4 +1,4 @@
-/* --- 4. IL CAMPO DA BASKET --- */
+/* ---  IL CAMPO DA BASKET --- */
 .court-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; }
 .basketball-court { position: relative; width: 578px; height: 325px; background-color: rgb(230, 156, 19); border: var(--border-width) solid var(--line-color); box-sizing: border-box; margin-bottom: 5px; }
 
@@ -37,13 +37,14 @@
 
 .setup-titolare {
     border: 3px solid #27ae60 !important; /* Solo il contorno verde brillante */
-    /* Sfondo invisibile/bianco */
+
 }
 
 .setup-panchina {
-    border: 3px solid transparent !important; /* Nessun contorno */
+    border: 3px solid transparent !important;
 }
-/* --- +/- --- */
+
+/* --- PLUS/MIN --- */
 .plus-stat {
     color: #27ae60;
     font-weight: bold;
@@ -55,8 +56,8 @@
 }
 /* --- STATO GIOCATORI (In Campo / Panchina) --- */
 .player.espulso {
-    background-color: #555 !important; /* Grigio scuro */
-    border: 3px solid var(--danger-color) !important; /* Bordo rosso */
+    background-color: #555 !important; 
+    border: 3px solid var(--danger-color) !important; 
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -76,22 +77,22 @@
     padding: 10px;
     margin-bottom: 8px;
     border-radius: 6px;
-    transition: all 0.3s ease; /* Rende il cambio di colore fluido */
+    transition: all 0.3s ease; 
 }
 
 .bordo-verdea {
     border: 3px solid #27ae60 !important; /* Verde per i 5 in campo */
-    background-color:var(--primary-color); /* Sfondo leggermente verdino */
+    background-color:var(--primary-color); 
 }
 
 .bordo-biancoa {
-    border: 3px solid #ffff !important; /* Nero per chi è in panchina */
+    border: 3px solid #ffff !important; /* Bianco per chi è in panchina */
     background-color: var(--primary-color);
     opacity: 0.8; /* Rende i panchinari un po' più sbiaditi */
 }
 .bordo-verdeb {
     border: 3px solid #27ae60 !important; /* Verde per i 5 in campo */
-    background-color:var(--danger-color); /* Sfondo leggermente verdino */
+    background-color:var(--danger-color); 
 }
 
 .bordo-biancob {
@@ -106,7 +107,7 @@
     left: 50%;
     transform: translateX(-50%);
     background-color: rgba(0, 0, 0, 0.75);
-    color: #00ff00; /* Verde brillante */
+    color: #00ff00; 
     font-weight: bold;
     font-size: 14px;
     padding: 3px 8px;
@@ -118,7 +119,7 @@
 }
 
 .floating-stat.negativo {
-    color: #ff4444; /* Rosso brillante */
+    color: #ff4444;
 }
 
 @keyframes floatUpFade {
@@ -126,7 +127,7 @@
     100% { opacity: 0; top: -45px; } 
 }
 
-/* --- 5. COMPONENTI E TABELLE --- */
+/* --- COMPONENTI E TABELLE --- */
 .timer-component { width: 100%; display: flex; justify-content: center; margin-top: 20px; }
 .scoreboard-timer { position: absolute; top: -125px; left: 50%; transform: translateX(-50%); background-color: #222; color: var(--timer-color); padding: 5px 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 40px; font-weight: bold; border: 2px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 .controls { display: flex; gap: 15px; }

@@ -1,6 +1,8 @@
 // Percorso: client/js/api.js
 const api = {
-    // 1. Funzione per salvare la partita (quella che avevi già)
+    
+    // Funzione per salvare la partita 
+    
     async salva(dati) {
         try {
             const response = await fetch('/api/salva_partita', {
@@ -10,7 +12,7 @@ const api = {
             });
 
             if (response.ok) {
-                // Leggiamo la risposta come JSON e prendiamo solo la stringa "message"
+                // Leggiamo la risposta come JSON
                 const datiRisposta = await response.json();
                 return { success: true, message: datiRisposta.message };
             } else {
@@ -44,7 +46,7 @@ const api = {
     
     async getListaReferti() {
         try {
-            // URL corretto derivato dal tuo server.js
+    
             const response = await fetch('/api/lista_referti');
             
             if (response.ok) {
@@ -58,7 +60,7 @@ const api = {
             return [];
         }
     },
-    // 2. Recupera la classifica marcatori globale
+    // Recupera dal server la classifica marcatori globale
     async ottieniClassifica() {
         try {
             const response = await fetch('/api/classifica');
@@ -74,8 +76,8 @@ const api = {
         }
     },
 
-    // Recupera il tabellino di una singola partita dato il suo ID
-    // (Utile per una pagina "Storico Partite" o per rileggere i dati prima di stampare il referto)
+    // Recupera dal server il tabellino di una singola partita dato il suo ID
+
     async ottieniPartita(id) {
         try {
             const response = await fetch(`/api/partita/${id}`);
@@ -90,6 +92,8 @@ const api = {
             return null;
         }
     },
+
+    // Recupera dal server l'MVP
 
     async getMVP(idPartita) {
         try {
@@ -112,27 +116,27 @@ const api = {
         }
     },
 
-    // FUNZIONE: Scarica un XML e ne fa il parse con il DOMParser
+    // Scarica un XML e ne fa il parse con il DOMParser
     async leggiAnteprimaXML(nomeFileXML) {
         try {
-            // Scarica il file XML dalla cartella pubblica
+            // Scarica il file XML dalla cartella referti
             const response = await fetch(`/referti/${nomeFileXML}`);
             
             if (!response.ok) throw new Error("Errore nel download dell'XML");
             
             const testoXML = await response.text();
             
-            // Magia del DOMParser: trasforma la stringa in un documento navigabile
+            // Il DOMParser trasforma la stringa in un documento navigabile
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(testoXML, "text/xml");
             
-            // --- ESTRAZIONE DATI CON IL DOM (Slide 15) ---
-            // Nota: Se la tua funzione XML genera tag con nomi diversi, 
-            // devi aggiornare le stringhe qui sotto (es. "squadra_casa").
+            //  Estrazione dati con il Dom
+    
             const radice = xmlDoc.getElementsByTagName("referto_partita")[0];
             const idPartita = radice ? radice.getAttribute("id") : "Sconosciuto";
             
             // Estrazione sicura: controlla che il tag esista prima di leggerne il valore
+            
             const tagCasa = xmlDoc.getElementsByTagName("squadra_casa")[0];
             const squadraCasa = tagCasa ? tagCasa.childNodes[0].nodeValue : "N/D";
             
@@ -141,7 +145,6 @@ const api = {
             
             console.log(`[DOM XML] Letto referto partita #${idPartita}: ${squadraCasa} vs ${squadraOspite}`);
             
-            // Ritorna l'oggetto a Vue (o a chi chiama la funzione)
             return {
                 id: idPartita,
                 casa: squadraCasa,

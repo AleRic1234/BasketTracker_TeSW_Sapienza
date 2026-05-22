@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS giocatori (
     UNIQUE(numero_maglia, squadra)
 );
 
--- Tabella espansa per le statistiche delle partite e calcolo MVP (AGGIORNATA)
+-- Tabella espansa per le statistiche delle partite e calcolo MVP 
 CREATE TABLE IF NOT EXISTS statistiche_partite (
     id_partita INTEGER,
     id_giocatore INTEGER,

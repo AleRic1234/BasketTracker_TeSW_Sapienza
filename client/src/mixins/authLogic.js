@@ -2,6 +2,7 @@
 
 export default {
     methods: {
+        
         effettuaLogin(credenziali) {
             const user = credenziali.username.toLowerCase();
             const pass = credenziali.password;

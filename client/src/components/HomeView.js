@@ -49,12 +49,14 @@ export default {
         </section>
     `,
     data() {
+        
         return {
             mostraInputCodice: false,
             codiceInput: ''
         };
     },
     methods: {
+
         inviaCodice() {
             if (this.codiceInput.trim() !== '') {
                 this.$emit('accedi-partita', this.codiceInput);

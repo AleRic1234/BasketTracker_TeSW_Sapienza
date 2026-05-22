@@ -48,23 +48,25 @@ export default {
     `,
     props: ['ruolo', 'terminata', 'periodoTesto', 'durataDefault', 'periodo', 'puntiCasa', 'puntiOspite'],
     data() {
+
         return {
             timer: 600,
             timerRunning: false,
             interval: null,
             wasRunningBeforePopup: false,
-            // Variabili per il nuovo popup:
             mostraPopupModificaTempo: false, 
             nuovoTempoInput: '10:00',
             erroreTempo: false
         }
     },
     computed: {
+
         isPartitaFinita() {
             return this.periodo >= 4 && this.timer === 0 && this.puntiCasa !== this.puntiOspite;
         }
     },
     watch: {
+
         terminata(newVal) {
             if (newVal) {
                 this.timerRunning = false;
@@ -73,14 +75,17 @@ export default {
         }
     },
     mounted() {
+
         this.timer = this.durataDefault || 600;
     },
     methods: {
+
         formatTime(s) {
             const m = Math.floor(s / 60);
             const sec = s % 60;
             return `${m}:${sec < 10 ? '0' : ''}${sec}`;
         },
+
         toggleTimer() {
             if (this.timerRunning) { 
                 this.timerRunning = false; 
@@ -93,19 +98,18 @@ export default {
                         this.timer--;
                         this.$emit('tick', this.timer);
                     } else {
-                        // IL TEMPO È SCADUTO (0:00)
+                        // TEMPO SCADUTO (0:00)
                         clearInterval(this.interval);
                         this.timerRunning = false;
                         
-                        // Controllo: Siamo a fine partita (Q4 o OT senza pareggio)?
+                        // Controllo Fine Partita
                         if (this.periodo >= 4 && this.puntiCasa !== this.puntiOspite) {
                             this.$emit('avanza-periodo');
                             this.$emit('sync-status');
                         } else {
-                            // Altrimenti (Q1, Q2, Q3 o pareggio): Avanza al periodo successivo
+
                             this.$emit('avanza-periodo');
                             
-                            // Aspetta un istante per far aggiornare il periodo a main.js, poi resetta il tempo
                             setTimeout(() => {
                                 this.timer = this.durataDefault;
                                 this.$emit('sync-status');
@@ -116,6 +120,7 @@ export default {
                 this.$emit('sync-status');
             }
         },
+
         resetTimer() {
             clearInterval(this.interval);
             this.timerRunning = false;
@@ -124,6 +129,9 @@ export default {
                 this.$emit('sync-status');
             }, 50);
         },
+
+        // Tasto Next Q
+
         forzaAvanzamento() {
             this.wasRunningBeforePopup = this.timerRunning;
             if (this.timerRunning) {
@@ -133,6 +141,7 @@ export default {
             }
             this.$root.mostraPopupConfermaNextQ = true;
         },
+
         confermaAvanzamento(accettato) {
             this.$root.mostraPopupConfermaNextQ = false;
             if (accettato) {
@@ -176,6 +185,9 @@ export default {
                 }
             }
         },
+
+        // SIncronizzazione Viewer
+
         impostaDatiEsterni(nuovoTempo, inEsecuzione) {
             this.timer = nuovoTempo;
             if (inEsecuzione && !this.timerRunning) {
@@ -191,9 +203,10 @@ export default {
             }
         },
         
-        // --- NUOVI METODI PER IL POPUP DEL TEMPO ---
+        //  POPUP DEL TEMPO 
+
         modificaTempoManuale() {
-            // Memorizziamo lo stato del timer e mettiamo in pausa
+
             this.wasRunningBeforePopup = this.timerRunning;
             if (this.timerRunning) {
                 this.timerRunning = false;
@@ -201,7 +214,6 @@ export default {
                 this.$emit('sync-status');
             }
             
-            // Prepariamo il popup precompilandolo col tempo attuale
             this.erroreTempo = false;
             this.nuovoTempoInput = this.formatTime(this.timer);
             this.mostraPopupModificaTempo = true;
@@ -222,8 +234,7 @@ export default {
                     return;
                 }
             }
-            // Se l'utente sbaglia a scrivere (es. lettere o formato errato), mostriamo l'errore rosso
-            this.erroreTempo = true;
+              this.erroreTempo = true;
         },
 
         annullaModificaTempo() {

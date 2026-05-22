@@ -816,25 +816,3 @@ select {
 .toast-glass.warning { border-left: 6px solid #f59e0b; }
 .toast-glass.info { border-left: 6px solid #3b82f6; }
 
-/* --- STILE 2: ACTION PILL TOAST (Effetto Sportivo NBA) --- */
-.toast-pill {
-    background: #111827; 
-    color: #f8fafc;
-    padding: 14px 28px;
-    border-radius: 50px; 
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    font-weight: 800; 
-    text-transform: uppercase; 
-    letter-spacing: 0.5px;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    pointer-events: auto;
-}
-
-.toast-pill.success { background: #059669; }
-.toast-pill.error { background: #dc2626; }
-.toast-pill.warning { background: #d97706; color: #fff;}
-.toast-pill.info { background: #2563eb; }

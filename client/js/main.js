@@ -17,6 +17,9 @@ const app = createApp({
     mixins: [courtLogic, authLogic],
     data() {
         return {
+            
+            // Variabili Di Stato
+
             currentView: 'landing',
             ruolo: null,
             username:'',
@@ -41,16 +44,19 @@ const app = createApp({
             mostraPopupAvviso: false,
             messaggioAvviso: '',
             menuAvanzatoGiocatore: false,
+            
             notifiche: [], //Contenitore per le notifiche toast
+            
             giocatoreAttivo: null,
             panchinaroSelezionato: null,
         
-            // Inizializza con un oggetto vuoto, o chiama una funzione se 'generaSquadraVuota' è nel main/mixin
+            // Inizializza con un oggetto vuoto
             teamA: { nome: "", giocatori: [] }, 
             teamB: { nome: "", giocatori: [] }  
         }
     },
     computed: {
+
         punteggioCasa() { return this.teamA.giocatori.reduce((sum, p) => sum + (p.punti || 0), 0); },
         punteggioOspite() { return this.teamB.giocatori.reduce((sum, p) => sum + (p.punti || 0), 0); },
 
@@ -60,15 +66,19 @@ const app = createApp({
             if (this.periodo === 5) return `OVERTIME`;
             return `OT ${this.periodo - 4}`;
         },
+
         durataPeriodo() {
             return this.periodo <= 4 ? 600 : 300;
         },
+
         giocatoriValidiA() {
             return this.teamA.giocatori.filter(p => p.nome && p.nome.trim() !== '');
         },
+
         giocatoriValidiB() {
             return this.teamB.giocatori.filter(p => p.nome && p.nome.trim() !== '');
         },
+
         giocatoreMVP() {
             if (!this.partitaTerminata) return null;
             const tuttiGiocatori = [...this.teamA.giocatori, ...this.teamB.giocatori].filter(g => g.nome && g.nome.trim() !== '');
@@ -89,9 +99,12 @@ const app = createApp({
     },
     mounted() {
         
-        // Per sicurezza, inizializziamo le squadre qui (dopo che i mixins sono caricati)
+        // Inizzializziamo Le Squadre (Funzione in mixins/courtLogic.js)
+        
         this.teamA = this.getEmptyTeam("", "A", "a");
         this.teamB = this.getEmptyTeam("", "B", "b");
+
+        // RICEZIONE DATI LIVE
 
         if (typeof io !== 'undefined') {
             this.socket = io();
@@ -156,9 +169,8 @@ const app = createApp({
         }
     },
     methods: {
-        // =========================================
-        // 1. SISTEMA UI VUE NATIVO E NOTIFICHE
-        // =========================================
+        
+        // SISTEMA UI VUE NATIVO E NOTIFICHE
         
         mostraNotifica(messaggio, tipo = 'info') {
             let icona = "ℹ️";
@@ -183,10 +195,9 @@ const app = createApp({
             this.mostraPopupAvviso = false;
         },
         
-        // =========================================
-        // 2. FUNZIONI DI NAVIGAZIONE E SALVATAGGIO
-        // =========================================
-
+        
+        // FUNZIONI DI NAVIGAZIONE E SALVATAGGIO
+       
         apriBoxScore() {
             this.currentView = 'boxscore';
             window.scrollTo({ top: 0, behavior: 'smooth' });
