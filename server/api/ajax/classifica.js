@@ -13,7 +13,7 @@ module.exports = function(db) {
             LIMIT 5
         `;
 
-        // 2. Calcola la Classifica Squadre NBA/FIBA
+        // 2. Calcola la Classifica Squadre 
         const sqlStandings = `
             SELECT 
                 squadra,

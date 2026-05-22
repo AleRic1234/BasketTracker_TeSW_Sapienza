@@ -103,11 +103,13 @@ export default {
         };
     },
     methods: {
+        
         formatMinuti(secondiTotali) {
             const m = Math.floor(secondiTotali / 60);
             const s = secondiTotali % 60;
             return `${m}:${s < 10 ? '0' : ''}${s}`;
         },
+
         async stampaRefertoUfficiale() {
             if (!this.idPartitaCorrente || this.idPartitaCorrente === '0000') {
                 this.$emit('invia-notifica', { msg: "❌ Nessuna partita selezionata per la stampa del referto.", type: "error" });

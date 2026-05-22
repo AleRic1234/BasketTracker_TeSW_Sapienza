@@ -1,7 +1,7 @@
 // Percorso: client/src/components/LeaderboardView.js
 
 export default {
-    // 1. Aggiunto l'array emits per far comunicare il componente con index.html
+    // Array emits per far comunicare il componente con index.html
     emits: ['torna-home', 'invia-notifica'],
     
     template: `
@@ -54,14 +54,16 @@ export default {
         </section>
     `,
     data() {
+
         return {
             view: 'teams',
             standings: [],
             topScorers: [],
-            chartInstance: null // 3. Rimosso l'underscore per garantire la reattività di Vue
+            chartInstance: null 
         };
     },
     async mounted() {
+
         try {
             const response = await fetch('/api/classifica');
             const data = await response.json();
@@ -73,6 +75,7 @@ export default {
         }
     },
     watch: {
+
         view(newVal) {
             if (newVal === 'scorers') {
                 this.renderizzaGrafico(); // Il nextTick interno al metodo basterà
@@ -80,20 +83,19 @@ export default {
         }
     },
     methods: {
+
         renderizzaGrafico() {
             this.$nextTick(() => {
                 const canvas = document.getElementById('topScorersChart');
                 if (!canvas) return;
                 const ctx = canvas.getContext('2d');
 
-                // Aggiornato con il nome variabile corretto
                 if (this.chartInstance) {
                     this.chartInstance.destroy();
                 }
 
                 const top5 = this.topScorers.slice(0, 5);
-                
-                // Aggiornato con il nome variabile corretto
+ 
                 this.chartInstance = new window.Chart(ctx, {
                     type: 'bar',
                     data: {

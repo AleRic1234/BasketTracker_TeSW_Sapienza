@@ -37,6 +37,7 @@ export default {
         };
     },
     methods: {
+        
         inviaLogin() {
             // Invia i dati inseriti al componente principale (main.js)
             this.$emit('esegui-login', { username: this.user, password: this.pass });

@@ -64,7 +64,8 @@ export default {
     `,
     data() {
         return {
-            // Spostato qui da main.js: il setup gestisce autonomamente il menu a tendina
+
+            // gestisce il menu a tendina
             squadreDisponibili: [
                 { nome: "Sapienza Bulls", logo: "./assets/sapienza_bulls.jpeg" },
                 { nome: "Lamis Lions", logo: "./assets/lamis_lions.jpeg" },
@@ -76,6 +77,7 @@ export default {
         };
     },
     methods: {
+
         applicaSquadra(tipo) {
             if (tipo === 'casa') {
                 this.teamA.nome = this.squadraCasaSelezionata ? this.squadraCasaSelezionata.nome : '';
@@ -85,6 +87,9 @@ export default {
                 this.teamB.logo = this.squadraOspiteSelezionata ? this.squadraOspiteSelezionata.logo : null;
             }
         },
+
+        // Funzione Per Facilitare Creazione Partita -- Test
+
         caricaTestNBA() {
             this.teamA.nome = "Los Angeles Lakers";
             this.teamA.logo = null;
@@ -120,6 +125,9 @@ export default {
 
             this.$emit('invia-notifica', { msg: "🏀 Roster NBA completi caricati!", type: "success" });
         },
+
+        // Controlli Per Il Corretto Avvio del Match
+
         validaEInizia() {
             const getValidi = (team) => team.giocatori.filter(p => p.nome.trim() !== '' && p.numero !== '');
             const vA = getValidi(this.teamA);
@@ -136,7 +144,6 @@ export default {
                 return; 
             }
 
-            // Se tutto è corretto, avvisa il main.js di far partire i motori!
             this.$emit('inizia-partita');
         }
     }

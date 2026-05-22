@@ -99,12 +99,15 @@ export default {
         </section>
     `,
     data() {
+
         return {
             storicoPartite: [],
-            // Stato Modale XML
+            
+            // Anteprima XML
             mostraModalAnteprima: false,
             datiAnteprima: { id: '', data: '', casa: '', puntiCasa: '', ospite: '', puntiOspite: '', giocatoriCasa: [], giocatoriOspite: [] },
-            // Stato Modale Radar
+            
+            // Radar Stats
             mostraRadar: false,
             radarPlayerA: null,
             radarPlayerB: null,
@@ -112,9 +115,11 @@ export default {
         };
     },
     mounted() {
+        
         this.aggiornaListaReferti();
     },
     methods: {
+
         async aggiornaListaReferti() {
             try {
                 const files = await api.getListaReferti();
@@ -184,7 +189,8 @@ export default {
                     let rosterCasa = [];
                     let rosterOspiti = [];
 
-                    // 1. Estrapoliamo PUNTI, RIMBALZI e ASSIST per tutti
+                    // Estrapoliamo PUNTI, RIMBALZI e ASSIST per tutti
+                    
                     for (let i = 0; i < nodiGiocatori.length; i++) {
                         let nG = nodiGiocatori[i];
                         let squadraAttr = nG.getAttribute("squadra");
@@ -201,7 +207,7 @@ export default {
                         else rosterOspiti.push(playerObj);
                     }
 
-                    // 2. Funzione per trovare i leader di una singola squadra
+                    // Funzione per trovare i leader di una singola squadra
                     const calcolaLeaders = (roster) => {
                         if (roster.length === 0) return [];
                         
@@ -225,8 +231,8 @@ export default {
                         puntiCasa, 
                         ospite: squadraOspite, 
                         puntiOspite,
-                        giocatoriCasa: calcolaLeaders(rosterCasa),     // <--- Applichiamo la funzione
-                        giocatoriOspite: calcolaLeaders(rosterOspiti)  // <--- Applichiamo la funzione
+                        giocatoriCasa: calcolaLeaders(rosterCasa),     
+                        giocatoriOspite: calcolaLeaders(rosterOspiti)  
                     };
                     
                     this.mostraModalAnteprima = true;
@@ -236,7 +242,9 @@ export default {
                     this.$emit('invia-notifica', { msg: "Impossibile caricare anteprima XML.", type: "error" });
                 });
         },
-
+         
+        // logica Radar
+        
         creaConfrontoAutomatico(idPartita) {
             fetch(`/api/partita/${idPartita}`)
                 .then(res => res.json())

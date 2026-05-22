@@ -43,9 +43,7 @@
     }
 }
 
-/* =========================================
-   FIX SCALING CAMPO DA BASKET (Mobile)
-   ========================================= */
+/*   FIX SCALING CAMPO DA BASKET (Mobile) */
 
 /* Schermi medi in orizzontale (es. iPhone Pro Max / Android grandi) */
 @media (max-width: 950px) and (orientation: landscape) {
@@ -74,9 +72,7 @@
     }
 }
 
-/* =========================================
-   FIX SCALING POPUP IN ORIZZONTALE
-   ========================================= */
+/* FIX SCALING POPUP IN ORIZZONTALE */
 @media (max-height: 450px) and (orientation: landscape) {
     .popup-content {
         padding: 15px 20px;

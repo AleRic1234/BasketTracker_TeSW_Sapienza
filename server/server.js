@@ -62,7 +62,7 @@ io.on('connection', (socket) => {
         socket.to(idPartita).emit('nuovo_spettatore');
     });
 
-    // Quando l'admin aggiorna i dati, li trasmettiamo a tutti i visualizzatori nella stanza
+    // Quando l'admin aggiorna i dati, li trasmettiamo a tutti gli spettatori nella stanza
     socket.on('aggiornamento_admin', (dati) => {
         // Invia il payload a tutti i client nella stanza 'idPartita' eccetto il mittente
         socket.to(dati.idPartita).emit('dati_live', dati.payload);
@@ -76,7 +76,7 @@ io.on('connection', (socket) => {
 // --- 5. AVVIO DEL SERVER E RICERCA IP ---
 const PORT = 3000;
 
-// Funzione magica per scovare l'IP della tua rete (Wi-Fi, Ethernet o Hotspot)
+// Funzione per scovare l'IP della rete in uso
 function getNetworkIPs() {
     const interfacce = os.networkInterfaces();
     const indirizzi = [];
