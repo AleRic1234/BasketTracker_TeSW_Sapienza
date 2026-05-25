@@ -68,6 +68,12 @@ io.on('connection', (socket) => {
         socket.to(dati.idPartita).emit('dati_live', dati.payload);
     });
 
+    socket.on('partita_salvata', (idPartita) => {
+        console.log(`Il referto della partita ${idPartita} è stato salvato. Avviso gli spettatori!`);
+        // Il server riceve la conferma dall'admin e fa broadcasting a tutti gli utenti
+        io.emit('referto_pronto', idPartita);
+    });
+    
     socket.on('disconnect', () => {
         console.log('Utente disconnesso');
     });

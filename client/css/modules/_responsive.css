@@ -45,7 +45,7 @@
 
 /*   FIX SCALING CAMPO DA BASKET (Mobile) */
 
-/* Schermi medi in orizzontale (es. iPhone Pro Max / Android grandi) */
+/* Schermi medi in orizzontale  */
 @media (max-width: 950px) and (orientation: landscape) {
     .court-wrapper {
         transform: scale(0.80); 
@@ -54,7 +54,7 @@
     }
 }
 
-/* Schermi piccoli in orizzontale (es. iPhone base / Android standard) */
+/* Schermi piccoli in orizzontale  */
 @media (max-width: 750px) and (orientation: landscape) {
     .court-wrapper {
         transform: scale(0.65); 
@@ -63,7 +63,7 @@
     }
 }
 
-/* Schermi in Verticale (Portrait) */
+/* Schermi in Verticale  */
 @media (max-width: 500px) and (orientation: portrait) {
     .court-wrapper {
         transform: scale(0.40); 

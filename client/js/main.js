@@ -44,6 +44,7 @@ const app = createApp({
             mostraPopupAvviso: false,
             messaggioAvviso: '',
             menuAvanzatoGiocatore: false,
+            mostraPopupRefertoDisponibile: false,
             
             notifiche: [], //Contenitore per le notifiche toast
             
@@ -145,10 +146,10 @@ const app = createApp({
                     
                     if (payload.periodo >= 4 && payload.timer && payload.timer.tempoResiduo === 0 && 
                         (payload.teamA.giocatori.reduce((sum, p) => sum + p.punti, 0) !== payload.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0)) && 
-                        !this.mostraPopupFinePartitaSpettatore && !this.partitaTerminata) {
+                        !this.mostraPopupFinePartitaSpettatore && !payload.partitaTerminata) { 
                         
                         this.mostraPopupFinePartitaSpettatore = true;
-                        setTimeout(() => { this.mostraPopupFinePartitaSpettatore = false; }, 3000); 
+                        setTimeout(() => { this.mostraPopupFinePartitaSpettatore = false; }, 3000);
                     }
 
                     this.teamA = payload.teamA;
@@ -166,8 +167,19 @@ const app = createApp({
             this.socket.on('nuovo_spettatore', () => {
                 if (this.ruolo === 'admin') this.trasmettiDatiLive();
             });
+
+            this.socket.on('referto_pronto', (idPartitaRiferimento) => {
+                // Se chi riceve non è l'admin e sta guardando proprio questa partita...
+                if (this.ruolo !== 'admin' && this.idPartitaCorrente === idPartitaRiferimento) {
+                    this.mostraPopupRefertoDisponibile = true;
+                    setTimeout(() => {
+                        this.mostraPopupRefertoDisponibile = false;
+                    }, 3000);
+                }
+            });
         }
     },
+
     methods: {
         
         // SISTEMA UI VUE NATIVO E NOTIFICHE
@@ -254,6 +266,10 @@ const app = createApp({
                     
                     this.partitaTerminata = true; 
                     this.trasmettiDatiLive(); 
+                    
+                    if (this.socket) {
+                        this.socket.emit('partita_salvata', this.idPartitaCorrente);
+                    }
 
                     this.mostraNotifica(`🏆 Partita Archiviata!<br><small>${risultato.message}</small>`, "success");
                     

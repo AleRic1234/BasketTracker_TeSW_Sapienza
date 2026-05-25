@@ -36,7 +36,7 @@
 .p6b { top: 3%; right: -22%; } .p7b { top: 23%; right: -22%; } .p8b { top: 43%; right: -22%; } .p9b { top: 63%; right:-22%; } .p10b { top: 83%; right: -22%; }/* --- STILI ESCLUSIVI PER IL SETUP SQUADRE (Nessuno sfondo) --- */
 
 .setup-titolare {
-    border: 3px solid #27ae60 !important; /* Solo il contorno verde brillante */
+    border: 3px solid #27ae60 !important; 
 
 }
 
