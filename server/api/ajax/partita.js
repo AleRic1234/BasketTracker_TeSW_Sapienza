@@ -13,7 +13,7 @@ module.exports = function(db) {
             if (!partita) return res.status(404).json({ message: "Partita non trovata" });
             
             const sqlStats = `
-                SELECT g.nome, g.numero_maglia AS numero, g.squadra, s.punti, s.falli, s.assist, s.rimbalzi, s.rubate, s.stoppate, s.perse
+                SELECT g.nome, g.numero_maglia AS numero, g.squadra, s.punti, s.falli, s.assist, s.rimbalzi, s.rubate, s.stoppate, s.perse, s.plsm, s.minuti, s.in_campo
                 FROM statistiche_partite s
                 JOIN giocatori g ON s.id_giocatore = g.id
                 WHERE s.id_partita = ?

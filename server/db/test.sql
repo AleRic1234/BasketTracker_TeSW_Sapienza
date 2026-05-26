@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS statistiche_partite (
     rubate INTEGER DEFAULT 0,
     stoppate INTEGER DEFAULT 0,
     perse INTEGER DEFAULT 0,
-    minuti TEXT DEFAULT '0:00', -- Formato "minuti:secondi", contiamo i minuti giocati
+    minuti INTEGER DEFAULT 0,
+    plsm INTEGER DEFAULT 0, 
+    in_campo INTEGER DEFAULT 0,
     FOREIGN KEY (id_partita) REFERENCES partite(id) ON DELETE CASCADE,
     FOREIGN KEY (id_giocatore) REFERENCES giocatori(id) ON DELETE CASCADE,
     PRIMARY KEY (id_partita, id_giocatore)
