@@ -173,6 +173,13 @@
                         @avanza-periodo="avanzaPeriodo">
                     </game-timer>
 
+                    <button v-if="ruolo === 'admin' && !terminata" 
+                                @click="currentView = 'setup'" 
+                                class="btn-modifica-squadre"
+                                title="Modifica Squadre">
+                            ✏️
+                    </button>
+
                     <div v-if="partitaInterrotta && ruolo === 'viewer'" class="popup-overlay" style="z-index: 2000;">
                         <div class="popup-content" style="border-top: 8px solid #e74c3c;">
                             <div class="popup-icon">🛑</div>
