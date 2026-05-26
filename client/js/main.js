@@ -256,7 +256,7 @@ const app = createApp({
                     numero: p.numero,
                     squadra: p.posClass.includes('a') ? (this.teamA.nome || 'Casa') : (this.teamB.nome || 'Ospite'),
                     punti: p.punti, falli: p.falli, rimbalzi: p.rimbalzi,
-                    assist: p.assist, rubate: p.rubate, stoppate: p.stoppate, perse: p.perse
+                    assist: p.assist, rubate: p.rubate, stoppate: p.stoppate, perse: p.perse, plsm: p.plsm, inCampo: p.inCampo ? 1 : 0
                 }))
             };
 
@@ -365,16 +365,31 @@ const app = createApp({
 
                     const dbGiocatoriA = partitaDB.giocatori.filter(g => g.squadra === partitaDB.info.squadra_casa);
                     const dbGiocatoriB = partitaDB.giocatori.filter(g => g.squadra === partitaDB.info.squadra_ospite);
+                    
+                    dbGiocatoriA.sort((a, b) => b.in_campo - a.in_campo);
+                    dbGiocatoriB.sort((a, b) => b.in_campo - a.in_campo);
 
                     dbGiocatoriA.forEach((dbPlayer, index) => {
                         if (index < 10) { 
-                            this.teamA.giocatori[index] = { ...this.teamA.giocatori[index], ...dbPlayer, inCampo: index < 5 };
+                            this.teamA.giocatori[index] = { 
+                                ...this.teamA.giocatori[index], 
+                                ...dbPlayer, 
+                                minuti: parseInt(dbPlayer.minuti, 10) || 0,
+                                plsm: parseInt(dbPlayer.plsm, 10) || 0, 
+                                inCampo: index < 5 
+                            };
                         }
                     });
 
                     dbGiocatoriB.forEach((dbPlayer, index) => {
                         if (index < 10) {
-                            this.teamB.giocatori[index] = { ...this.teamB.giocatori[index], ...dbPlayer, inCampo: index < 5 };
+                            this.teamB.giocatori[index] = { 
+                                ...this.teamB.giocatori[index], 
+                                ...dbPlayer, 
+                                minuti: parseInt(dbPlayer.minuti, 10) || 0,
+                                plsm: parseInt(dbPlayer.plsm, 10) || 0, 
+                                inCampo: index < 5 
+                            };
                         }
                     });
                     

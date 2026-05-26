@@ -93,8 +93,8 @@ module.exports = function(db) {
                                     (err, row) => {
                                         if (row) {
                                             db.run(`INSERT INTO statistiche_partite 
-                                                (id_partita, id_giocatore, punti, falli, rimbalzi, assist, rubate, stoppate, perse, minuti) 
-                                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                                (id_partita, id_giocatore, punti, falli, rimbalzi, assist, rubate, stoppate, perse, minuti, plsm, in_campo) 
+                                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                                                 [
                                                     idPartita, 
                                                     row.id, 
@@ -105,7 +105,9 @@ module.exports = function(db) {
                                                     giocatore.rubate || 0,
                                                     giocatore.stoppate || 0,
                                                     giocatore.perse || 0,
-                                                    tempoFormattato 
+                                                    giocatore.minuti || 0,
+                                                    giocatore.plsm || 0,
+                                                    giocatore.inCampo || 0
                                                 ]
                                             );
                                         }

@@ -173,7 +173,7 @@
                         @avanza-periodo="avanzaPeriodo">
                     </game-timer>
 
-                    <button v-if="ruolo === 'admin' && !terminata" 
+                    <button v-if="ruolo === 'admin' && !partitaTerminata"
                                 @click="currentView = 'setup'" 
                                 class="btn-modifica-squadre"
                                 title="Modifica Squadre">
