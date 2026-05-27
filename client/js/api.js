@@ -3,11 +3,11 @@ const api = {
     
     // Funzione per salvare la partita 
     
-    async salva(dati) {
+    async salva(dati, tokenAdmin) {
         try {
             const response = await fetch('/api/salva_partita', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': tokenAdmin },
                 body: JSON.stringify(dati) 
             });
 

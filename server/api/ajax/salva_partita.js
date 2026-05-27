@@ -61,6 +61,16 @@ module.exports = function(db) {
     }
 
     router.post('/', (req, res) => {
+        
+        const CHIAVE_SEGRETA = "BasketTrackerSecret2026";
+
+        const tokenRicevuto = req.headers['authorization'];
+
+        if (tokenRicevuto !== CHIAVE_SEGRETA) {
+            console.warn("⚠️ [SICUREZZA] Tentativo di salvataggio API non autorizzato!");
+            return res.status(403).json({ error: "Accesso negato. Non sei l'amministratore autorizzato." });
+        }
+        
         const datiVue = req.body; 
         
         const nomeCasa = datiVue.squadraCasa.nome;
