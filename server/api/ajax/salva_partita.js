@@ -60,6 +60,7 @@ module.exports = function(db) {
         console.log(`Creato con successo XML: ${nomeFile}`);
     }
 
+    // Endpoint per salvare i dati della partita e generare il referto XML
     router.post('/', (req, res) => {
         
         const CHIAVE_SEGRETA = "BasketTrackerSecret2026";
