@@ -10,6 +10,7 @@ export default {
             if (user === 'admin' && pass === '1234') {
                 this.ruolo = 'admin';
                 this.username = user; 
+                this.tokenAdmin = "BasketTrackerSecret2026";
                 this.erroreLogin = false;
                 this.currentView = 'home';
             } 

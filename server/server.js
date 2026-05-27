@@ -64,6 +64,13 @@ io.on('connection', (socket) => {
 
     // Quando l'admin aggiorna i dati, li trasmettiamo a tutti gli spettatori nella stanza
     socket.on('aggiornamento_admin', (dati) => {
+        //Controllo anti hackeraggio
+        const CHIAVE_SEGRETA = "BasketTrackerSecret2026";
+        // Verifica che il payload contenga la chiave segreta corretta
+        if (!dati || dati.token !== CHIAVE_SEGRETA) {
+            console.warn(`⚠️ [SICUREZZA] Tentativo di spoofing/hackeraggio rilevato dal socket ${socket.id}! Bloccato.`);
+            return; 
+        }
         // Invia il payload a tutti i client nella stanza 'idPartita' eccetto il mittente
         socket.to(dati.idPartita).emit('dati_live', dati.payload);
     });

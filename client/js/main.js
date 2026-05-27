@@ -25,6 +25,7 @@ const app = createApp({
             username:'',
             password:'',
             erroreLogin: false,
+            tokenAdmin: '',
             mostraInputCodice: false,
             codicePartitaInput: '',
             idRicerca: '',
@@ -34,6 +35,8 @@ const app = createApp({
             partitaInterrotta: false,
             mostraPopupInizioPartita: false,
             fischioInizioMostrato: false,
+            //Risoluzione bug presentazione (fischio di fine partita mostrato agli spettatori più volete)
+            fischioFineMostrato: false,
             mostraPopupFinePartitaSpettatore: false,
             mostraPopupConfermaNextQ: false,
             periodo: 1,
@@ -146,8 +149,10 @@ const app = createApp({
                     
                     if (payload.periodo >= 4 && payload.timer && payload.timer.tempoResiduo === 0 && 
                         (payload.teamA.giocatori.reduce((sum, p) => sum + p.punti, 0) !== payload.teamB.giocatori.reduce((sum, p) => sum + p.punti, 0)) && 
-                        !this.mostraPopupFinePartitaSpettatore && !payload.partitaTerminata) { 
+                        !this.fischioFineMostrato && !payload.partitaTerminata) { 
                         
+                        //Mostra il pop up di fine partita solo se non è già stato mostrato e se la partita non è terminata (per evitare che venga mostrato più volte agli spettatori)
+                        this.fischioFineMostrato = true;
                         this.mostraPopupFinePartitaSpettatore = true;
                         setTimeout(() => { this.mostraPopupFinePartitaSpettatore = false; }, 3000);
                     }
@@ -261,7 +266,7 @@ const app = createApp({
             };
 
             try {
-                const risultato = await api.salva(payload);
+                const risultato = await api.salva(payload, this.tokenAdmin);
                 if (risultato.success) {
                     
                     this.partitaTerminata = true; 
@@ -433,6 +438,7 @@ const app = createApp({
 
                 this.socket.emit('aggiornamento_admin', {
                     idPartita: this.idPartitaCorrente,
+                    token: this.tokenAdmin,
                     payload: {
                         teamA: this.teamA,
                         teamB: this.teamB,
@@ -477,6 +483,7 @@ const app = createApp({
             this.mostraPopupInizioPartita = false;
             this.fischioInizioMostrato = false;
             this.mostraPopupFinePartitaSpettatore = false;
+            this.fischioFineMostrato = false;     // Reset variabile per bug fischio fine partita
             this.periodo = 1;
             this.squadraCasaSelezionata = null;
             this.squadraOspiteSelezionata = null;
