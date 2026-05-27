@@ -1,5 +1,5 @@
 // Percorso: client/src/mixins/authLogic.js
-
+// Questo mixin gestisce la logica di autenticazione, login e logout, e il controllo degli accessi
 export default {
     methods: {
         

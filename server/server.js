@@ -62,7 +62,7 @@ io.on('connection', (socket) => {
         socket.to(idPartita).emit('nuovo_spettatore');
     });
 
-    // Quando l'admin aggiorna i dati, li trasmettiamo a tutti gli spettatori nella stanza
+    // Quando l'admin (e soltanto l'admin) aggiorna i dati, li trasmettiamo a tutti gli spettatori nella stanza
     socket.on('aggiornamento_admin', (dati) => {
         //Controllo anti hackeraggio
         const CHIAVE_SEGRETA = "BasketTrackerSecret2026";

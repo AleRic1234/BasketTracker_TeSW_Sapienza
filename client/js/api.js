@@ -24,6 +24,7 @@ const api = {
         }
     },
 
+    // Funzione per salvare la partita in formato XML e ricevere il nome del file generato
     async salvaFileXML(dati) {
         try {
             const response = await fetch('/api/salva_partita/xml', {
@@ -43,7 +44,7 @@ const api = {
             return { success: false, message: "Errore di connessione durante la generazione." };
         }
     },
-    
+    // Recupera dal server la lista dei referti disponibili (file con estenzione .xml)
     async getListaReferti() {
         try {
     

@@ -296,6 +296,7 @@ const app = createApp({
             }
         },
 
+        //Forzamento avanzamento periodo (per testing, l'admin ha il pieno controllo del timer)
         avanzaPeriodo() {
             if (this.periodo >= 4) {
                 if (this.punteggioCasa === this.punteggioOspite) {
